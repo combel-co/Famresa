@@ -294,6 +294,36 @@
     50% { box-shadow: 0 4px 16px rgba(37, 99, 235, 0.15); }
   }
 
+  /* ---- KPI ---- */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .kpi-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+  }
+  .kpi-label {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-bottom: 6px;
+  }
+  .kpi-value {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+  }
+  .kpi-sub {
+    font-size: 11px;
+    color: var(--text-light);
+    margin-top: 4px;
+  }
+
   /* ---- LEGEND ---- */
   .legend { display: flex; gap: 20px; justify-content: center; margin-top: 24px; font-size: 13px; color: var(--text-light); }
   .legend span { display: flex; align-items: center; gap: 6px; }
@@ -445,6 +475,29 @@
 <main id="app-main" style="display:none;">
   <div class="car-selector" id="car-selector" style="display:none;"></div>
   <div class="car-helper" id="car-helper" style="display:none;"></div>
+
+  <section class="kpi-grid" aria-label="Indicateurs mensuels">
+    <article class="kpi-card">
+      <div class="kpi-label">Réservations (mois)</div>
+      <div class="kpi-value" id="kpi-bookings">0</div>
+      <div class="kpi-sub" id="kpi-bookings-sub">Tous conducteurs</div>
+    </article>
+    <article class="kpi-card">
+      <div class="kpi-label">Taux d'occupation</div>
+      <div class="kpi-value" id="kpi-occupancy">0%</div>
+      <div class="kpi-sub" id="kpi-occupancy-sub">Sur le mois affiché</div>
+    </article>
+    <article class="kpi-card">
+      <div class="kpi-label">Km estimés</div>
+      <div class="kpi-value" id="kpi-km">0 km</div>
+      <div class="kpi-sub">Base Paris · 34 km / réservation</div>
+    </article>
+    <article class="kpi-card">
+      <div class="kpi-label">CO₂ estimé</div>
+      <div class="kpi-value" id="kpi-co2">0 kg</div>
+      <div class="kpi-sub">Base 120 g CO₂ / km</div>
+    </article>
+  </section>
 
   <div class="month-nav">
     <button class="month-btn" onclick="prevMonth()">‹</button>
@@ -631,6 +684,30 @@ function renderCalendar() {
   for (let i = totalCells; i < 42; i++) html += '<div class="cal-day empty"></div>';
 
   grid.innerHTML = html;
+  renderKpis(daysInMonth);
+}
+
+function renderKpis(daysInMonth) {
+  const monthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-`;
+  const monthDates = Object.keys(bookings).filter(d => d.startsWith(monthPrefix));
+  const totalBookings = monthDates.length;
+  const myBookings = monthDates.filter(d => currentUser && bookings[d]?.userId === currentUser.id).length;
+  const occupancy = daysInMonth ? Math.round((totalBookings / daysInMonth) * 100) : 0;
+
+  // Estimation simple demandée (peut évoluer avec des destinations réelles)
+  const avgKmPerBooking = 34;
+  const co2KgPerKm = 0.12; // 120g/km
+  const estimatedKm = totalBookings * avgKmPerBooking;
+  const estimatedCo2 = (estimatedKm * co2KgPerKm).toFixed(1);
+
+  document.getElementById('kpi-bookings').textContent = String(totalBookings);
+  document.getElementById('kpi-bookings-sub').textContent = currentUser
+    ? `Dont ${myBookings} pour ${currentUser.name}`
+    : 'Tous conducteurs';
+  document.getElementById('kpi-occupancy').textContent = `${occupancy}%`;
+  document.getElementById('kpi-occupancy-sub').textContent = `${totalBookings} jour${totalBookings > 1 ? 's' : ''} réservé${totalBookings > 1 ? 's' : ''}`;
+  document.getElementById('kpi-km').textContent = `${estimatedKm} km`;
+  document.getElementById('kpi-co2').textContent = `${estimatedCo2} kg`;
 }
 
 function prevMonth() { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(); }
