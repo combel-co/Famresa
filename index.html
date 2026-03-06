@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FamCar — Réservation voiture familiale</title>
+<meta name="description" content="Réservation de la voiture familiale — simple, rapide, gratuit.">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,300&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -17,8 +20,6 @@
     --accent-light: #eff4ff;
     --danger: #ef4444;
     --danger-light: #fef2f2;
-    --success: #10b981;
-    --radius: 14px;
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
     --shadow-md: 0 4px 20px rgba(0,0,0,0.06);
     --shadow-lg: 0 12px 40px rgba(0,0,0,0.1);
@@ -59,115 +60,62 @@
   }
 
   .logo-icon {
-    width: 32px;
-    height: 32px;
-    background: var(--text);
-    border-radius: 9px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 16px;
+    width: 32px; height: 32px;
+    background: var(--text); border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 16px;
   }
 
   .user-pill {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 14px 6px 6px;
-    border-radius: 100px;
-    border: 1px solid var(--border);
-    cursor: pointer;
-    transition: all 0.2s;
-    background: white;
-    font-size: 14px;
-    font-weight: 500;
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 14px 6px 6px; border-radius: 100px;
+    border: 1px solid var(--border); cursor: pointer;
+    transition: all 0.2s; background: white;
+    font-size: 14px; font-weight: 500;
   }
-
   .user-pill:hover { border-color: #ccc; box-shadow: var(--shadow-sm); }
 
   .user-pill .avatar {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: var(--accent);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 600;
-    overflow: hidden;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; overflow: hidden;
   }
-
-  .user-pill .avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  .user-pill .avatar img { width: 100%; height: 100%; object-fit: cover; }
 
   /* ---- MAIN ---- */
-  main {
-    max-width: 520px;
-    margin: 0 auto;
-    padding: 32px 20px 100px;
-  }
+  main { max-width: 520px; margin: 0 auto; padding: 32px 20px 100px; }
 
   /* ---- MONTH NAV ---- */
-  .month-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 28px;
-  }
+  .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
 
   .month-title {
-    font-family: 'Fraunces', serif;
-    font-size: 26px;
-    font-weight: 500;
-    letter-spacing: -0.5px;
-    text-transform: capitalize;
+    font-family: 'Fraunces', serif; font-size: 26px;
+    font-weight: 500; letter-spacing: -0.5px; text-transform: capitalize;
   }
 
   .month-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 1px solid var(--border);
-    background: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    transition: all 0.15s;
-    color: var(--text);
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid var(--border); background: white;
+    cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: 18px;
+    transition: all 0.15s; color: var(--text);
   }
-
   .month-btn:hover { background: #f5f5f5; }
 
   /* ---- CALENDAR GRID ---- */
   .cal-header {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-light);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
-    padding: 0 2px;
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    text-align: center; font-size: 12px; font-weight: 500;
+    color: var(--text-light); text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 8px; padding: 0 2px;
   }
 
-  .cal-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-  }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
 
+  /* FIXED HEIGHT — no aspect-ratio */
   .cal-day {
-    aspect-ratio: 1;
+    height: 56px;
     border-radius: 12px;
     display: flex;
     flex-direction: column;
@@ -179,60 +127,38 @@
     transition: all 0.15s;
     position: relative;
     border: 2px solid transparent;
-    gap: 2px;
-  }
-
-  .cal-day:hover:not(.empty):not(.past) {
-    background: #f7f7f7;
-  }
-
-  .cal-day.empty { cursor: default; }
-
-  .cal-day.today {
-    font-weight: 600;
-    border-color: var(--text);
-  }
-
-  .cal-day.past {
-    color: #ccc;
-    cursor: default;
-  }
-
-  .cal-day.booked {
-    background: var(--accent-light);
-    border-color: var(--accent);
-    cursor: pointer;
-  }
-
-  .cal-day.booked .booking-avatar {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--accent);
-    color: white;
-    font-size: 8px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     overflow: hidden;
   }
 
-  .booking-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+  .cal-day:hover:not(.empty):not(.past) { background: #f7f7f7; }
+  .cal-day.empty { cursor: default; }
+  .cal-day.today { font-weight: 600; border-color: var(--text); }
+  .cal-day.past { color: #ccc; cursor: default; }
 
-  .cal-day.mine {
+  .cal-day.booked { background: var(--accent-light); border-color: var(--accent); cursor: pointer; }
+  .cal-day.mine { background: var(--accent); color: white; border-color: var(--accent); }
+
+  /* AVATAR — position absolute, never changes cell size */
+  .cal-day .booking-avatar {
+    position: absolute;
+    bottom: 3px;
+    width: 18px; height: 18px;
+    min-width: 18px; max-width: 18px;
+    min-height: 18px; max-height: 18px;
+    border-radius: 50%;
     background: var(--accent);
     color: white;
-    border-color: var(--accent);
+    font-size: 7px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
   }
 
-  .cal-day.mine .booking-avatar {
-    background: rgba(255,255,255,0.3);
+  .cal-day .booking-avatar img {
+    width: 100%; height: 100%;
+    object-fit: cover; display: block;
   }
+
+  .cal-day.mine .booking-avatar { background: rgba(255,255,255,0.35); }
 
   .day-num { line-height: 1; }
 
@@ -242,405 +168,148 @@
 
   /* ---- MODAL / BOTTOM SHEET ---- */
   .overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.3);
-    z-index: 200;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.25s;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+    z-index: 200; opacity: 0; visibility: hidden; transition: all 0.25s;
   }
-
   .overlay.open { opacity: 1; visibility: visible; }
 
   .sheet {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    border-radius: 20px 20px 0 0;
-    padding: 28px 24px 40px;
-    z-index: 201;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: white; border-radius: 20px 20px 0 0;
+    padding: 28px 24px 40px; z-index: 201;
     transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-    max-width: 520px;
-    margin: 0 auto;
+    max-width: 520px; margin: 0 auto;
+    max-height: 85vh; overflow-y: auto;
   }
-
   .overlay.open .sheet { transform: translateY(0); }
 
-  .sheet-handle {
-    width: 36px;
-    height: 4px;
-    background: #ddd;
-    border-radius: 4px;
-    margin: 0 auto 20px;
-  }
+  .sheet-handle { width: 36px; height: 4px; background: #ddd; border-radius: 4px; margin: 0 auto 20px; }
 
   .sheet-date {
-    font-family: 'Fraunces', serif;
-    font-size: 22px;
-    font-weight: 500;
-    margin-bottom: 6px;
-    text-transform: capitalize;
+    font-family: 'Fraunces', serif; font-size: 22px;
+    font-weight: 500; margin-bottom: 6px; text-transform: capitalize;
   }
 
-  .sheet-status {
-    font-size: 14px;
-    color: var(--text-light);
-    margin-bottom: 24px;
-  }
+  .sheet-status { font-size: 14px; color: var(--text-light); margin-bottom: 24px; }
 
   .sheet-status .booked-by {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 12px;
-    padding: 12px;
-    background: #f8f8f8;
-    border-radius: 12px;
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 12px; padding: 12px; background: #f8f8f8; border-radius: 12px;
   }
 
   .sheet-status .booked-by .avatar-lg {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--accent);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 15px;
-    font-weight: 600;
-    overflow: hidden;
-    flex-shrink: 0;
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 600; overflow: hidden; flex-shrink: 0;
   }
+  .sheet-status .booked-by .avatar-lg img { width: 100%; height: 100%; object-fit: cover; }
 
-  .avatar-lg img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .sheet-status .booked-by .info {
-    font-size: 15px;
-    color: var(--text);
-    font-weight: 500;
-  }
-
-  .sheet-status .booked-by .info small {
-    display: block;
-    font-weight: 400;
-    color: var(--text-light);
-    font-size: 13px;
-  }
+  .sheet-status .booked-by .info { font-size: 15px; color: var(--text); font-weight: 500; }
+  .sheet-status .booked-by .info small { display: block; font-weight: 400; color: var(--text-light); font-size: 13px; }
 
   .btn {
-    width: 100%;
-    padding: 16px;
-    border: none;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    transition: all 0.15s;
+    width: 100%; padding: 16px; border: none; border-radius: 12px;
+    font-size: 16px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; transition: all 0.15s;
   }
-
-  .btn-primary {
-    background: var(--text);
-    color: white;
-  }
-
+  .btn-primary { background: var(--text); color: white; }
   .btn-primary:hover { background: #333; }
-
-  .btn-danger {
-    background: var(--danger-light);
-    color: var(--danger);
-  }
-
+  .btn-danger { background: var(--danger-light); color: var(--danger); }
   .btn-danger:hover { background: #fee2e2; }
-
   .btn + .btn { margin-top: 10px; }
 
-  /* ---- LOGIN SHEET ---- */
-  .login-sheet {
-    text-align: center;
-  }
+  /* ---- LOGIN / SIGNUP SHEET ---- */
+  .login-sheet { text-align: center; }
+  .login-sheet h2 { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 500; margin-bottom: 6px; }
+  .login-sheet p { color: var(--text-light); font-size: 14px; margin-bottom: 28px; }
 
-  .login-sheet h2 {
-    font-family: 'Fraunces', serif;
-    font-size: 24px;
-    font-weight: 500;
-    margin-bottom: 6px;
-  }
-
-  .login-sheet p {
-    color: var(--text-light);
-    font-size: 14px;
-    margin-bottom: 28px;
-  }
-
-  .input-group {
-    margin-bottom: 14px;
-    text-align: left;
-  }
-
-  .input-group label {
-    display: block;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-light);
-    margin-bottom: 6px;
-  }
-
+  .input-group { margin-bottom: 14px; text-align: left; }
+  .input-group label { display: block; font-size: 13px; font-weight: 500; color: var(--text-light); margin-bottom: 6px; }
   .input-group input, .input-group select {
-    width: 100%;
-    padding: 14px 16px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    font-size: 16px;
-    font-family: 'DM Sans', sans-serif;
-    outline: none;
-    transition: border 0.15s;
-    background: white;
+    width: 100%; padding: 14px 16px; border: 1px solid var(--border);
+    border-radius: 12px; font-size: 16px; font-family: 'DM Sans', sans-serif;
+    outline: none; transition: border 0.15s; background: white;
   }
+  .input-group input:focus, .input-group select:focus { border-color: var(--accent); }
 
-  .input-group input:focus, .input-group select:focus {
-    border-color: var(--accent);
-  }
-
-  .photo-upload {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 24px;
-    margin-top: 4px;
-  }
+  .photo-upload { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; margin-top: 4px; }
 
   .photo-preview {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: #f0f0f0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    color: #bbb;
-    overflow: hidden;
-    flex-shrink: 0;
-    border: 2px dashed #ddd;
-    cursor: pointer;
-    transition: all 0.15s;
+    width: 56px; height: 56px; border-radius: 50%; background: #f0f0f0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: #bbb; overflow: hidden; flex-shrink: 0;
+    border: 2px dashed #ddd; cursor: pointer; transition: all 0.15s;
   }
-
   .photo-preview:hover { border-color: var(--accent); }
-
-  .photo-preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
+  .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
   .photo-preview.has-photo { border-style: solid; border-color: var(--accent); }
 
-  .photo-label {
-    font-size: 14px;
-    color: var(--text-light);
-    cursor: pointer;
-  }
-
+  .photo-label { font-size: 14px; color: var(--text-light); cursor: pointer; }
   .photo-label:hover { color: var(--accent); }
-
   #photo-input { display: none; }
 
   /* ---- CAR SELECTOR ---- */
   .car-selector {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin-bottom: 24px;
-    padding: 4px;
-    background: #f5f5f5;
-    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; margin-bottom: 24px; padding: 4px; background: #f5f5f5; border-radius: 12px;
   }
-
   .car-tab {
-    flex: 1;
-    padding: 10px 16px;
-    border-radius: 10px;
-    border: none;
-    background: transparent;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s;
-    color: var(--text-light);
+    flex: 1; padding: 10px 16px; border-radius: 10px; border: none;
+    background: transparent; font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    transition: all 0.15s; color: var(--text-light);
   }
-
-  .car-tab.active {
-    background: white;
-    color: var(--text);
-    box-shadow: var(--shadow-sm);
-  }
+  .car-tab.active { background: white; color: var(--text); box-shadow: var(--shadow-sm); }
 
   /* ---- LEGEND ---- */
-  .legend {
-    display: flex;
-    gap: 20px;
-    justify-content: center;
-    margin-top: 24px;
-    font-size: 13px;
-    color: var(--text-light);
-  }
-
-  .legend span {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .legend-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-  }
+  .legend { display: flex; gap: 20px; justify-content: center; margin-top: 24px; font-size: 13px; color: var(--text-light); }
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
 
   /* ---- TOAST ---- */
   .toast {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
+    position: fixed; bottom: 30px; left: 50%;
     transform: translateX(-50%) translateY(80px);
-    background: var(--text);
-    color: white;
-    padding: 14px 24px;
-    border-radius: 14px;
-    font-size: 15px;
-    font-weight: 500;
-    z-index: 300;
-    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-    box-shadow: var(--shadow-lg);
-    white-space: nowrap;
+    background: var(--text); color: white; padding: 14px 24px;
+    border-radius: 14px; font-size: 15px; font-weight: 500;
+    z-index: 300; transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: var(--shadow-lg); white-space: nowrap;
   }
-
   .toast.show { transform: translateX(-50%) translateY(0); }
-
-  /* ---- LOADING ---- */
-  .loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 60px;
-    color: var(--text-light);
-    font-size: 15px;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  .spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--border);
-    border-top-color: var(--text);
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-    margin-right: 10px;
-  }
 
   /* ---- LOCK SCREEN ---- */
   .lock-screen {
-    position: fixed;
-    inset: 0;
-    background: white;
-    z-index: 500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: fixed; inset: 0; background: white; z-index: 500;
+    display: flex; align-items: center; justify-content: center;
     transition: opacity 0.4s, visibility 0.4s;
   }
+  .lock-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 
-  .lock-screen.hidden {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
-
-  .lock-box {
-    text-align: center;
-    padding: 24px;
-    width: 100%;
-    max-width: 320px;
-  }
+  .lock-box { text-align: center; padding: 24px; width: 100%; max-width: 320px; }
 
   .lock-box .lock-icon {
-    width: 64px;
-    height: 64px;
-    background: #f5f5f5;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 30px;
-    margin: 0 auto 24px;
+    width: 64px; height: 64px; background: #f5f5f5; border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; margin: 0 auto 24px;
   }
+  .lock-box h1 { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 500; margin-bottom: 6px; }
+  .lock-box p { color: var(--text-light); font-size: 15px; margin-bottom: 32px; }
 
-  .lock-box h1 {
-    font-family: 'Fraunces', serif;
-    font-size: 26px;
-    font-weight: 500;
-    margin-bottom: 6px;
-  }
-
-  .lock-box p {
-    color: var(--text-light);
-    font-size: 15px;
-    margin-bottom: 32px;
-  }
-
-  .pin-input {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    margin-bottom: 28px;
-  }
+  .pin-input { display: flex; gap: 12px; justify-content: center; margin-bottom: 28px; }
 
   .pin-input input {
-    width: 52px;
-    height: 60px;
-    text-align: center;
-    font-size: 24px;
-    font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
-    border: 2px solid var(--border);
-    border-radius: 14px;
-    outline: none;
-    transition: border 0.15s;
-    background: #fafafa;
+    width: 52px; height: 60px; text-align: center;
+    font-size: 24px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+    border: 2px solid var(--border); border-radius: 14px;
+    outline: none; transition: border 0.15s; background: #fafafa;
     -moz-appearance: textfield;
   }
-
   .pin-input input::-webkit-outer-spin-button,
-  .pin-input input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-
-  .pin-input input:focus {
-    border-color: var(--text);
-    background: white;
-  }
-
-  .pin-input input.error {
-    border-color: var(--danger);
-    animation: shake 0.4s ease;
-  }
+  .pin-input input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .pin-input input:focus { border-color: var(--text); background: white; }
+  .pin-input input.error { border-color: var(--danger); animation: shake 0.4s ease; }
 
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
@@ -648,12 +317,49 @@
     40%, 80% { transform: translateX(6px); }
   }
 
-  .lock-error {
-    color: var(--danger);
-    font-size: 14px;
-    margin-top: -16px;
-    margin-bottom: 16px;
-    min-height: 20px;
+  .lock-error { color: var(--danger); font-size: 14px; margin-top: -16px; margin-bottom: 16px; min-height: 20px; }
+
+  /* ---- MEMBER SELECT SCREEN ---- */
+  .member-select { text-align: center; padding: 60px 20px 40px; max-width: 520px; margin: 0 auto; }
+  .member-select h2 { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 500; margin-bottom: 8px; }
+  .member-select p { color: var(--text-light); font-size: 15px; margin-bottom: 36px; }
+
+  .member-grid { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; margin-bottom: 32px; }
+
+  .member-card {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; cursor: pointer; transition: all 0.15s; width: 80px;
+  }
+  .member-card:hover { transform: scale(1.08); }
+
+  .member-card .m-avatar {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 600; overflow: hidden;
+    border: 3px solid transparent; transition: border 0.15s;
+  }
+  .member-card:hover .m-avatar { border-color: var(--accent); }
+  .member-card .m-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  .member-card .m-name { font-size: 13px; font-weight: 500; color: var(--text); }
+
+  .add-member-card .m-avatar {
+    background: #f0f0f0; color: var(--text-light);
+    font-size: 28px; border: 2px dashed #ddd;
+  }
+  .add-member-card:hover .m-avatar { border-color: var(--accent); color: var(--accent); }
+
+  /* ---- LOADING ---- */
+  .loading {
+    display: flex; align-items: center; justify-content: center;
+    padding: 60px; color: var(--text-light); font-size: 15px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 20px; height: 20px; border: 2px solid var(--border);
+    border-top-color: var(--text); border-radius: 50%;
+    animation: spin 0.6s linear infinite; margin-right: 10px;
   }
 
   /* ---- RESPONSIVE ---- */
@@ -661,13 +367,16 @@
     header { padding: 16px 18px; }
     main { padding: 24px 14px 100px; }
     .month-title { font-size: 22px; }
-    .cal-day { font-size: 13px; border-radius: 10px; }
+    .cal-day { font-size: 13px; border-radius: 10px; height: 48px; }
+    .member-select { padding: 40px 16px 40px; }
+    .member-grid { gap: 16px; }
+    .member-card .m-avatar { width: 56px; height: 56px; font-size: 18px; }
   }
 </style>
 </head>
 <body>
 
-<!-- Lock Screen -->
+<!-- Lock Screen (PIN familial) -->
 <div class="lock-screen" id="lock-screen">
   <div class="lock-box">
     <div class="lock-icon">🔒</div>
@@ -684,37 +393,41 @@
   </div>
 </div>
 
-<header>
+<!-- Member selection screen -->
+<div class="member-select" id="member-select" style="display:none;">
+  <h2>Qui conduit ?</h2>
+  <p>Sélectionnez votre profil</p>
+  <div class="member-grid" id="member-grid"></div>
+</div>
+
+<header id="app-header" style="display:none;">
   <div class="logo">
     <div class="logo-icon">🚗</div>
     FamCar
   </div>
-  <div class="user-pill" id="user-pill" onclick="showLogin()">
+  <div class="user-pill" id="user-pill" onclick="showProfile()">
     <div class="avatar" id="header-avatar">?</div>
     <span id="header-name">Se connecter</span>
   </div>
 </header>
 
-<main>
-  <!-- Car selector (extensible) -->
+<main id="app-main" style="display:none;">
   <div class="car-selector" id="car-selector" style="display:none;"></div>
 
-  <!-- Month navigation -->
   <div class="month-nav">
     <button class="month-btn" onclick="prevMonth()">‹</button>
     <div class="month-title" id="month-title"></div>
     <button class="month-btn" onclick="nextMonth()">›</button>
   </div>
 
-  <!-- Calendar header -->
   <div class="cal-header">
     <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
   </div>
 
-  <!-- Calendar grid -->
-  <div class="cal-grid" id="cal-grid"></div>
+  <div class="cal-grid" id="cal-grid">
+    <div class="loading"><div class="spinner"></div> Chargement...</div>
+  </div>
 
-  <!-- Legend -->
   <div class="legend">
     <span><span class="legend-dot" style="background:var(--accent)"></span> Ma résa</span>
     <span><span class="legend-dot" style="background:var(--accent-light);border:1px solid var(--accent)"></span> Réservé</span>
@@ -722,7 +435,6 @@
   </div>
 </main>
 
-<!-- Overlay for sheets -->
 <div class="overlay" id="overlay" onclick="closeSheet()">
   <div class="sheet" id="sheet" onclick="event.stopPropagation()">
     <div class="sheet-handle"></div>
@@ -730,12 +442,11 @@
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
 // ==========================================
-// FIREBASE CONFIG — À REMPLACER AVEC LA TIENNE
+// FIREBASE CONFIG
 // ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyCf-3Gpbx8FacaeXiwvfSuhsaOJxv2FHTw",
@@ -760,51 +471,46 @@ let bookings = {};
 let cars = [];
 let selectedCar = null;
 let unsubscribe = null;
+let tempPhoto = null;
 
 // ==========================================
-// CARS MANAGEMENT
+// CARS
 // ==========================================
 async function loadCars() {
-  const snap = await db.collection('cars').orderBy('name').get();
-  cars = [];
-  snap.forEach(doc => cars.push({ id: doc.id, ...doc.data() }));
-  
-  // Create default car if none exists
-  if (cars.length === 0) {
-    const ref = await db.collection('cars').add({ name: 'Voiture familiale', emoji: '🚗' });
-    cars = [{ id: ref.id, name: 'Voiture familiale', emoji: '🚗' }];
+  try {
+    const snap = await db.collection('cars').orderBy('name').get();
+    cars = [];
+    snap.forEach(doc => cars.push({ id: doc.id, ...doc.data() }));
+    if (cars.length === 0) {
+      const ref = await db.collection('cars').add({ name: 'Voiture familiale', emoji: '🚗' });
+      cars = [{ id: ref.id, name: 'Voiture familiale', emoji: '🚗' }];
+    }
+    selectedCar = cars[0].id;
+    renderCarSelector();
+    subscribeBookings();
+  } catch (e) {
+    console.error('Firebase error:', e);
+    document.getElementById('cal-grid').innerHTML =
+      '<div class="loading" style="flex-direction:column;gap:8px;color:var(--danger)">⚠️ Connexion impossible<br><small style="color:var(--text-light)">Vérifiez votre connexion ou Firebase.</small></div>';
   }
-  
-  selectedCar = cars[0].id;
-  renderCarSelector();
-  subscribeBookings();
 }
 
 function renderCarSelector() {
   const el = document.getElementById('car-selector');
-  if (cars.length <= 1) {
-    el.style.display = 'none';
-    return;
-  }
+  if (cars.length <= 1) { el.style.display = 'none'; return; }
   el.style.display = 'flex';
   el.innerHTML = cars.map(c =>
-    `<button class="car-tab ${c.id === selectedCar ? 'active' : ''}" 
-             onclick="selectCar('${c.id}')">${c.emoji} ${c.name}</button>`
+    `<button class="car-tab ${c.id === selectedCar ? 'active' : ''}" onclick="selectCar('${c.id}')">${c.emoji} ${c.name}</button>`
   ).join('');
 }
 
-function selectCar(id) {
-  selectedCar = id;
-  renderCarSelector();
-  subscribeBookings();
-}
+function selectCar(id) { selectedCar = id; renderCarSelector(); subscribeBookings(); }
 
 // ==========================================
 // BOOKINGS (REAL-TIME)
 // ==========================================
 function subscribeBookings() {
   if (unsubscribe) unsubscribe();
-  
   unsubscribe = db.collection('bookings')
     .where('carId', '==', selectedCar)
     .onSnapshot(snap => {
@@ -818,31 +524,24 @@ function subscribeBookings() {
 }
 
 // ==========================================
-// CALENDAR RENDER
+// CALENDAR RENDER (fixed 6 rows)
 // ==========================================
 function renderCalendar() {
   const grid = document.getElementById('cal-grid');
   const titleEl = document.getElementById('month-title');
-  
   const date = new Date(currentYear, currentMonth, 1);
-  const monthName = date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-  titleEl.textContent = monthName;
-  
-  // First day offset (Monday = 0)
+  titleEl.textContent = date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+
   let firstDay = date.getDay() - 1;
   if (firstDay < 0) firstDay = 6;
-  
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  
+  const today = new Date(); today.setHours(0,0,0,0);
+
   let html = '';
-  
-  // Empty cells
-  for (let i = 0; i < firstDay; i++) {
-    html += '<div class="cal-day empty"></div>';
-  }
-  
+
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) html += '<div class="cal-day empty"></div>';
+
   // Day cells
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -853,94 +552,72 @@ function renderCalendar() {
     const isPast = cellDate < today;
     const booking = bookings[dateStr];
     const isMine = booking && currentUser && booking.userId === currentUser.id;
-    
+
     let classes = ['cal-day'];
     if (isWeekend) classes.push('weekend');
     if (isToday) classes.push('today');
     if (isPast) classes.push('past');
     if (booking && isMine) classes.push('mine');
     else if (booking) classes.push('booked');
-    
+
     let avatarHtml = '';
     if (booking) {
       if (booking.photo) {
         avatarHtml = `<div class="booking-avatar"><img src="${booking.photo}" alt=""></div>`;
       } else {
-        const initials = getInitials(booking.userName);
-        avatarHtml = `<div class="booking-avatar">${initials}</div>`;
+        avatarHtml = `<div class="booking-avatar">${getInitials(booking.userName)}</div>`;
       }
     }
-    
+
     html += `<div class="${classes.join(' ')}" onclick="onDayClick('${dateStr}', ${isPast})">
       <span class="day-num">${d}</span>
       ${avatarHtml}
     </div>`;
   }
-  
+
+  // Pad to 42 cells (6 rows) for consistent height
+  const totalCells = firstDay + daysInMonth;
+  for (let i = totalCells; i < 42; i++) html += '<div class="cal-day empty"></div>';
+
   grid.innerHTML = html;
 }
 
-function prevMonth() {
-  currentMonth--;
-  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-  renderCalendar();
-}
-
-function nextMonth() {
-  currentMonth++;
-  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-  renderCalendar();
-}
+function prevMonth() { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(); }
+function nextMonth() { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(); }
 
 // ==========================================
-// DAY CLICK → SHEET
+// DAY CLICK
 // ==========================================
 function onDayClick(dateStr, isPast) {
   if (isPast) return;
-  
+  if (!currentUser) { showMemberSelect(); return; }
+
   const booking = bookings[dateStr];
   const date = new Date(dateStr + 'T00:00:00');
   const prettyDate = date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-  
+
   let html = '';
-  
   if (booking) {
     const isMine = currentUser && booking.userId === currentUser.id;
-    const avatarContent = booking.photo 
-      ? `<img src="${booking.photo}" alt="">` 
-      : getInitials(booking.userName);
-    
+    const avatarContent = booking.photo ? `<img src="${booking.photo}" alt="">` : getInitials(booking.userName);
     html = `
       <div class="sheet-date">${prettyDate}</div>
       <div class="sheet-status">
         <div class="booked-by">
           <div class="avatar-lg">${avatarContent}</div>
-          <div class="info">
-            ${booking.userName}
-            <small>${isMine ? 'Votre réservation' : 'A réservé ce jour'}</small>
-          </div>
+          <div class="info">${booking.userName}<small>${isMine ? 'Votre réservation' : 'A réservé ce jour'}</small></div>
         </div>
       </div>
-      ${isMine ? `<button class="btn btn-danger" onclick="cancelBooking('${booking.id}', '${dateStr}')">Annuler ma réservation</button>` : ''}
-      <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Fermer</button>
-    `;
+      ${isMine ? `<button class="btn btn-danger" onclick="cancelBooking('${booking.id}')">Annuler ma réservation</button>` : ''}
+      <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Fermer</button>`;
   } else {
-    if (!currentUser) {
-      html = `
-        <div class="sheet-date">${prettyDate}</div>
-        <div class="sheet-status">Jour disponible</div>
-        <button class="btn btn-primary" onclick="closeSheet(); showLogin();">Se connecter pour réserver</button>
-      `;
-    } else {
-      html = `
-        <div class="sheet-date">${prettyDate}</div>
-        <div class="sheet-status">✅ Jour disponible</div>
-        <button class="btn btn-primary" onclick="book('${dateStr}')">Réserver ce jour</button>
-        <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Annuler</button>
-      `;
-    }
+    html = `
+      <div class="sheet-date">${prettyDate}</div>
+      <div class="sheet-status">✅ Jour disponible</div>
+      <button class="btn btn-primary" onclick="book('${dateStr}')">Réserver ce jour</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Annuler</button>`;
   }
-  
+
   document.getElementById('sheet-content').innerHTML = html;
   document.getElementById('overlay').classList.add('open');
 }
@@ -950,79 +627,136 @@ function onDayClick(dateStr, isPast) {
 // ==========================================
 async function book(dateStr) {
   if (!currentUser) return;
-  
   try {
+    // Check for existing booking (prevent double-booking)
+    const existing = await db.collection('bookings').where('carId', '==', selectedCar).where('date', '==', dateStr).get();
+    if (!existing.empty) { closeSheet(); showToast("Ce jour vient d'être réservé"); return; }
+
     await db.collection('bookings').add({
-      carId: selectedCar,
-      date: dateStr,
-      userId: currentUser.id,
-      userName: currentUser.name,
+      carId: selectedCar, date: dateStr,
+      userId: currentUser.id, userName: currentUser.name,
       photo: currentUser.photo || null,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     closeSheet();
     showToast('Réservation confirmée ✓');
-  } catch (e) {
-    showToast('Erreur — réessayez');
-  }
+  } catch (e) { showToast('Erreur — réessayez'); }
 }
 
-async function cancelBooking(bookingId, dateStr) {
+async function cancelBooking(bookingId) {
   try {
     await db.collection('bookings').doc(bookingId).delete();
     closeSheet();
     showToast('Réservation annulée');
-  } catch (e) {
-    showToast('Erreur — réessayez');
-  }
+  } catch (e) { showToast('Erreur — réessayez'); }
 }
 
 // ==========================================
-// AUTH (SIMPLE)
+// MEMBER SELECT (Netflix-style)
 // ==========================================
-let tempPhoto = null;
+async function showMemberSelect() {
+  document.getElementById('app-header').style.display = 'none';
+  document.getElementById('app-main').style.display = 'none';
+  document.getElementById('member-select').style.display = 'block';
 
-function showLogin() {
-  if (currentUser) {
-    // Show profile / logout
-    const avatarContent = currentUser.photo 
-      ? `<img src="${currentUser.photo}" alt="">` 
-      : getInitials(currentUser.name);
-    
-    document.getElementById('sheet-content').innerHTML = `
-      <div class="login-sheet">
-        <h2>Mon profil</h2>
-        <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:20px 0 28px">
-          <div class="avatar-lg" style="width:56px;height:56px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;overflow:hidden">${avatarContent}</div>
-          <div style="text-align:left">
-            <div style="font-size:18px;font-weight:600">${currentUser.name}</div>
-            <div style="font-size:14px;color:var(--text-light)">${currentUser.email}</div>
-          </div>
-        </div>
-        <button class="btn btn-danger" onclick="logout()">Se déconnecter</button>
-        <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>
+  const snap = await db.collection('users').orderBy('name').get();
+  const members = [];
+  snap.forEach(doc => members.push({ id: doc.id, ...doc.data() }));
+
+  const grid = document.getElementById('member-grid');
+
+  let html = members.map(m => {
+    const av = m.photo ? `<img src="${m.photo}" alt="">` : getInitials(m.name);
+    const safeId = m.id;
+    const safeName = m.name.replace(/'/g, "\\'");
+    const safePhoto = (m.photo || '').replace(/'/g, "\\'");
+    return `<div class="member-card" onclick="askMemberPin('${safeId}', '${safeName}', '${safePhoto}')">
+      <div class="m-avatar">${av}</div>
+      <div class="m-name">${m.name}</div>
+    </div>`;
+  }).join('');
+
+  html += `<div class="member-card add-member-card" onclick="showSignupForm()">
+    <div class="m-avatar">+</div>
+    <div class="m-name">Nouveau</div>
+  </div>`;
+
+  grid.innerHTML = html;
+
+  if (members.length === 0) showSignupForm();
+}
+
+// ==========================================
+// ASK MEMBER PIN
+// ==========================================
+function askMemberPin(userId, name, photo) {
+  const av = photo ? `<img src="${photo}" alt="" style="width:100%;height:100%;object-fit:cover">` : getInitials(name);
+  document.getElementById('sheet-content').innerHTML = `
+    <div class="login-sheet">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:24px">
+        <div style="width:64px;height:64px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;overflow:hidden">${av}</div>
+        <div style="font-size:18px;font-weight:600">${name}</div>
       </div>
-    `;
-    document.getElementById('overlay').classList.add('open');
-    return;
-  }
-  
+      <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Entrez votre code personnel</p>
+      <div class="pin-input" id="member-pin-input">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="lock-error" id="member-pin-error"></div>
+      <button class="btn btn-primary" onclick="verifyMemberPin('${userId}')">Valider</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Retour</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+
+  const inputs = document.querySelectorAll('#member-pin-input input');
+  setTimeout(() => inputs[0].focus(), 300);
+  setupPinInputs(inputs, () => verifyMemberPin(userId));
+}
+
+async function verifyMemberPin(userId) {
+  const inputs = document.querySelectorAll('#member-pin-input input');
+  const pin = Array.from(inputs).map(i => i.value.replace(/\D/g, '')).join('');
+  if (pin.length < 4) { document.getElementById('member-pin-error').textContent = 'Entrez les 4 chiffres'; return; }
+
+  try {
+    const doc = await db.collection('users').doc(userId).get();
+    if (!doc.exists) { document.getElementById('member-pin-error').textContent = 'Utilisateur introuvable'; return; }
+
+    const data = doc.data();
+    if (String(data.pin) === pin) {
+      currentUser = { id: userId, name: data.name, email: data.email, photo: data.photo };
+      localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+      closeSheet();
+      enterApp();
+      showToast(`Bonjour ${currentUser.name} !`);
+    } else {
+      document.getElementById('member-pin-error').textContent = 'Code incorrect';
+      inputs.forEach(i => { i.value = ''; i.classList.add('error'); });
+      inputs[0].focus();
+      setTimeout(() => inputs.forEach(i => i.classList.remove('error')), 600);
+    }
+  } catch (e) { document.getElementById('member-pin-error').textContent = 'Erreur de connexion'; }
+}
+
+// ==========================================
+// SIGNUP (new member)
+// ==========================================
+function showSignupForm() {
   tempPhoto = null;
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
-      <h2>Bienvenue</h2>
-      <p>Identifiez-vous pour réserver</p>
-      
+      <h2>Nouveau membre</h2>
+      <p>Créez votre profil</p>
       <div class="input-group">
         <label>Prénom</label>
-        <input type="text" id="login-name" placeholder="Votre prénom" autocomplete="given-name">
+        <input type="text" id="signup-name" placeholder="Votre prénom" autocomplete="given-name">
       </div>
-      
       <div class="input-group">
         <label>Email</label>
-        <input type="email" id="login-email" placeholder="votre@email.com" autocomplete="email">
+        <input type="email" id="signup-email" placeholder="votre@email.com" autocomplete="email">
       </div>
-      
       <div class="input-group">
         <label>Photo (optionnel)</label>
         <div class="photo-upload">
@@ -1031,35 +765,64 @@ function showLogin() {
           <input type="file" id="photo-input" accept="image/*" onchange="handlePhoto(this)">
         </div>
       </div>
-      
-      <button class="btn btn-primary" onclick="login()">C'est parti !</button>
-    </div>
-  `;
+      <div class="input-group">
+        <label>Code personnel (4 chiffres)</label>
+        <div class="pin-input" id="signup-pin" style="justify-content:flex-start;margin-top:8px">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="signup()">C'est parti !</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Retour</button>
+    </div>`;
   document.getElementById('overlay').classList.add('open');
-  setTimeout(() => document.getElementById('login-name')?.focus(), 300);
+
+  const pins = document.querySelectorAll('#signup-pin input');
+  setupPinInputs(pins);
+  setTimeout(() => document.getElementById('signup-name')?.focus(), 300);
 }
 
+async function signup() {
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const pin = Array.from(document.querySelectorAll('#signup-pin input')).map(i => i.value.replace(/\D/g, '')).join('');
+
+  if (!name || !email) { showToast('Prénom et email requis'); return; }
+  if (pin.length < 4) { showToast('Code à 4 chiffres requis'); return; }
+
+  const existing = await db.collection('users').where('email', '==', email).get();
+  if (!existing.empty) { showToast('Cet email est déjà utilisé'); return; }
+
+  try {
+    const ref = await db.collection('users').add({
+      name, email, photo: tempPhoto || null, pin,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    currentUser = { id: ref.id, name, email, photo: tempPhoto };
+    localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+    closeSheet();
+    enterApp();
+    showToast(`Bienvenue ${name} !`);
+  } catch (e) { showToast('Erreur — réessayez'); }
+}
+
+// ==========================================
+// PHOTO HANDLER
+// ==========================================
 function handlePhoto(input) {
   const file = input.files[0];
   if (!file) return;
-  
   const reader = new FileReader();
   reader.onload = (e) => {
-    // Compress to small size
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const size = 120;
-      canvas.width = size;
-      canvas.height = size;
+      const size = 120; canvas.width = size; canvas.height = size;
       const ctx = canvas.getContext('2d');
-      
-      // Crop to square
       const min = Math.min(img.width, img.height);
-      const sx = (img.width - min) / 2;
-      const sy = (img.height - min) / 2;
-      ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
-      
+      ctx.drawImage(img, (img.width - min)/2, (img.height - min)/2, min, min, 0, 0, size, size);
       tempPhoto = canvas.toDataURL('image/jpeg', 0.6);
       const preview = document.getElementById('photo-preview');
       preview.innerHTML = `<img src="${tempPhoto}" alt="">`;
@@ -1070,66 +833,81 @@ function handlePhoto(input) {
   reader.readAsDataURL(file);
 }
 
-async function login() {
-  const name = document.getElementById('login-name').value.trim();
-  const email = document.getElementById('login-email').value.trim();
-  
-  if (!name || !email) {
-    showToast('Prénom et email requis');
-    return;
-  }
-  
-  // Check if user exists
-  const snap = await db.collection('users').where('email', '==', email).get();
-  
-  if (snap.empty) {
-    // Create user
-    const ref = await db.collection('users').add({
-      name: name,
-      email: email,
-      photo: tempPhoto || null,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    currentUser = { id: ref.id, name, email, photo: tempPhoto };
-  } else {
-    const doc = snap.docs[0];
-    const data = doc.data();
-    currentUser = { id: doc.id, name: data.name, email: data.email, photo: data.photo };
-    
-    // Update photo if new one provided
-    if (tempPhoto) {
-      await db.collection('users').doc(doc.id).update({ photo: tempPhoto });
-      currentUser.photo = tempPhoto;
-    }
-  }
-  
-  localStorage.setItem('famcar_user', JSON.stringify(currentUser));
-  updateUserPill();
-  closeSheet();
-  showToast(`Bonjour ${currentUser.name} !`);
-  renderCalendar();
+// ==========================================
+// PROFILE / LOGOUT / CHANGE PIN
+// ==========================================
+function showProfile() {
+  if (!currentUser) { showMemberSelect(); return; }
+  const av = currentUser.photo ? `<img src="${currentUser.photo}" alt="">` : getInitials(currentUser.name);
+  document.getElementById('sheet-content').innerHTML = `
+    <div class="login-sheet">
+      <h2>Mon profil</h2>
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:20px 0 28px">
+        <div style="width:56px;height:56px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;overflow:hidden">${av}</div>
+        <div style="text-align:left">
+          <div style="font-size:18px;font-weight:600">${currentUser.name}</div>
+          <div style="font-size:14px;color:var(--text-light)">${currentUser.email}</div>
+        </div>
+      </div>
+      <button class="btn" style="background:var(--accent-light);color:var(--accent)" onclick="showChangePin()">Changer mon code</button>
+      <button class="btn btn-danger" style="margin-top:10px" onclick="logout()">Se déconnecter</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function showChangePin() {
+  document.getElementById('sheet-content').innerHTML = `
+    <div class="login-sheet">
+      <h2>Nouveau code</h2>
+      <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Choisissez un nouveau code à 4 chiffres</p>
+      <div class="pin-input" id="change-pin-input">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="lock-error" id="change-pin-error"></div>
+      <button class="btn btn-primary" onclick="saveNewPin()">Enregistrer</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="showProfile()">Retour</button>
+    </div>`;
+  const inputs = document.querySelectorAll('#change-pin-input input');
+  setTimeout(() => inputs[0].focus(), 100);
+  setupPinInputs(inputs);
+}
+
+async function saveNewPin() {
+  const pin = Array.from(document.querySelectorAll('#change-pin-input input')).map(i => i.value.replace(/\D/g, '')).join('');
+  if (pin.length < 4) { document.getElementById('change-pin-error').textContent = 'Entrez 4 chiffres'; return; }
+  try {
+    await db.collection('users').doc(currentUser.id).update({ pin });
+    closeSheet();
+    showToast('Code personnel mis à jour ✓');
+  } catch (e) { document.getElementById('change-pin-error').textContent = 'Erreur — réessayez'; }
 }
 
 function logout() {
   currentUser = null;
   localStorage.removeItem('famcar_user');
-  updateUserPill();
   closeSheet();
-  renderCalendar();
+  showMemberSelect();
   showToast('Déconnecté');
+}
+
+function enterApp() {
+  document.getElementById('member-select').style.display = 'none';
+  document.getElementById('app-header').style.display = 'flex';
+  document.getElementById('app-main').style.display = 'block';
+  updateUserPill();
+  renderCalendar();
 }
 
 function updateUserPill() {
   const avatar = document.getElementById('header-avatar');
   const name = document.getElementById('header-name');
-  
   if (currentUser) {
     name.textContent = currentUser.name;
-    if (currentUser.photo) {
-      avatar.innerHTML = `<img src="${currentUser.photo}" alt="">`;
-    } else {
-      avatar.textContent = getInitials(currentUser.name);
-    }
+    avatar.innerHTML = currentUser.photo ? `<img src="${currentUser.photo}" alt="">` : getInitials(currentUser.name);
   } else {
     avatar.innerHTML = '?';
     name.textContent = 'Se connecter';
@@ -1137,92 +915,31 @@ function updateUserPill() {
 }
 
 // ==========================================
-// HELPERS
-// ==========================================
-function getInitials(name) {
-  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-}
-
-function closeSheet() {
-  document.getElementById('overlay').classList.remove('open');
-}
-
-function showToast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
-}
-
-// ==========================================
-// PIN LOCK (code stocké dans Firestore)
+// PIN LOCK (family code)
 // ==========================================
 let isUnlocked = localStorage.getItem('famcar_unlocked') === 'true';
 
 function initLockScreen() {
-  if (isUnlocked) {
-    document.getElementById('lock-screen').classList.add('hidden');
-    return;
-  }
-  
-  // Auto-focus & auto-advance PIN inputs
+  if (isUnlocked) { document.getElementById('lock-screen').classList.add('hidden'); return; }
   const inputs = document.querySelectorAll('#pin-input input');
   inputs[0].focus();
-  
-  inputs.forEach((input, i) => {
-    input.addEventListener('input', (e) => {
-      const val = e.target.value;
-      // Keep only last digit
-      if (val.length > 1) e.target.value = val.slice(-1);
-      // Auto-advance
-      if (val && i < inputs.length - 1) {
-        inputs[i + 1].focus();
-      }
-      // Auto-submit when all filled
-      if (i === inputs.length - 1 && val) {
-        checkPin();
-      }
-    });
-    
-    input.addEventListener('keydown', (e) => {
-      // Backspace → go back
-      if (e.key === 'Backspace' && !e.target.value && i > 0) {
-        inputs[i - 1].focus();
-      }
-      // Enter → submit
-      if (e.key === 'Enter') checkPin();
-    });
-  });
+  setupPinInputs(inputs, checkPin);
 }
 
 async function checkPin() {
   const inputs = document.querySelectorAll('#pin-input input');
   const pin = Array.from(inputs).map(i => i.value.replace(/\D/g, '')).join('');
-  
-  if (pin.length < 4) {
-    showPinError('Entrez les 4 chiffres');
-    return;
-  }
-  
+  if (pin.length < 4) { showPinError('Entrez les 4 chiffres'); return; }
+
   try {
     const doc = await db.collection('config').doc('access').get();
-    
     if (!doc.exists) {
-      // No PIN configured yet — accept anything and save it as the PIN
-      try {
-        await db.collection('config').doc('access').set({ pin: pin });
-      } catch(writeErr) {
-        // Config might be read-only, that's OK — PIN just doesn't exist yet
-        console.log('Could not auto-create PIN (read-only rules?)', writeErr);
-      }
+      try { await db.collection('config').doc('access').set({ pin }); } catch(e) {}
       unlockApp();
       return;
     }
-    
-    const savedPin = String(doc.data().pin);
-    if (pin === savedPin) {
-      unlockApp();
-    } else {
+    if (pin === String(doc.data().pin)) { unlockApp(); }
+    else {
       showPinError('Code incorrect');
       inputs.forEach(i => { i.value = ''; i.classList.add('error'); });
       inputs[0].focus();
@@ -1234,23 +951,67 @@ async function checkPin() {
   }
 }
 
-function showPinError(msg) {
-  document.getElementById('lock-error').textContent = msg;
-}
+function showPinError(msg) { document.getElementById('lock-error').textContent = msg; }
 
 function unlockApp() {
   isUnlocked = true;
   localStorage.setItem('famcar_unlocked', 'true');
   document.getElementById('lock-screen').classList.add('hidden');
+  if (currentUser) { enterApp(); }
+  else { showMemberSelect(); }
 }
+
+// ==========================================
+// HELPERS
+// ==========================================
+function getInitials(name) { return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2); }
+function closeSheet() { document.getElementById('overlay').classList.remove('open'); }
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// Reusable PIN input setup (auto-advance, backspace, auto-submit)
+function setupPinInputs(inputs, onComplete) {
+  inputs.forEach((input, i) => {
+    input.addEventListener('input', (e) => {
+      const val = e.target.value;
+      if (val.length > 1) e.target.value = val.slice(-1);
+      if (val && i < inputs.length - 1) inputs[i + 1].focus();
+      if (i === inputs.length - 1 && val && onComplete) onComplete();
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !e.target.value && i > 0) inputs[i - 1].focus();
+      if (e.key === 'Enter' && onComplete) onComplete();
+    });
+  });
+}
+
+// Swipe to change month
+let touchStartX = 0;
+document.addEventListener('DOMContentLoaded', () => {
+  const grid = document.getElementById('cal-grid');
+  grid.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  grid.addEventListener('touchend', e => {
+    const diff = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(diff) > 60) { diff > 0 ? prevMonth() : nextMonth(); }
+  }, { passive: true });
+});
 
 // ==========================================
 // INIT
 // ==========================================
 initLockScreen();
-updateUserPill();
 loadCars();
-</script>
 
+if (isUnlocked && currentUser) {
+  document.getElementById('lock-screen').classList.add('hidden');
+  enterApp();
+} else if (isUnlocked && !currentUser) {
+  document.getElementById('lock-screen').classList.add('hidden');
+  showMemberSelect();
+}
+</script>
 </body>
 </html>
