@@ -2,43 +2,61 @@
 
 Application ultra-simple pour réserver la voiture familiale, jour par jour.
 
-**🌐 Site live** → [combel-co.github.io/Resa-voiture](https://combel-co.github.io/Resa-voiture/)
-**🔥 Firebase** → [console.firebase.google.com/project/REDACTED_PROJECT_ID](https://console.firebase.google.com/project/REDACTED_PROJECT_ID)
-
 ## Fonctionnalités
 
-- 🔒 Code PIN familial (stocké dans Firebase, invisible dans le code)
 - 📅 Calendrier mensuel avec navigation
 - 👤 Identification simple (prénom + email)
-- 📸 Photo de profil optionnelle
-- ✅ Réservation / annulation en 2 clics
-- 🔄 Mise à jour en temps réel
+- 📸 Photo de profil optionnelle (stockée en base64)
+- ✅ Réservation en 2 clics
+- 🔄 Mise à jour en temps réel (Firebase)
 - 🚗 Support multi-voitures (extensible)
-- 📱 100% responsive mobile
+- 📱 100% responsive (mobile-first)
 
-## Configuration initiale
+## Mise en route (5 minutes)
 
-### 1. Activer Firestore
+### 1. Créer un projet Firebase (gratuit)
 
-1. Aller dans la [console Firebase](https://console.firebase.google.com/project/REDACTED_PROJECT_ID)
-2. Menu gauche → **Build > Firestore Database**
-3. **Créer une base de données** → mode **test** → région `eur3 (europe-west)`
+1. Aller sur [console.firebase.google.com](https://console.firebase.google.com)
+2. Cliquer **Ajouter un projet** → nommer "famcar" → Créer
+3. Dans le projet, aller dans **Build > Firestore Database**
+4. Cliquer **Créer une base de données** → choisir **mode test** → région `eur3 (europe-west)`
+5. Dans **Paramètres du projet** (⚙️) > **Général**, descendre à "Vos applications"
+6. Cliquer l'icône **</>** (Web) → nommer "famcar" → **Enregistrer**
+7. Copier les valeurs `firebaseConfig`
 
-### 2. Définir le code PIN familial
+### 2. Configurer l'application
 
-**Option A — Automatique** : La première personne qui entre un code sur le site le définit comme code familial.
+Ouvrir `index.html` et remplacer le bloc `firebaseConfig` (ligne ~280) :
 
-**Option B — Manuel** : Dans Firestore → **Démarrer une collection** → nom `config` → ID du document `access` → champ `pin` (type string) → valeur = votre code à 4 chiffres.
+```javascript
+const firebaseConfig = {
+  apiKey: "VOTRE_CLÉ_ICI",
+  authDomain: "famcar-xxxxx.firebaseapp.com",
+  projectId: "famcar-xxxxx",
+  storageBucket: "famcar-xxxxx.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef"
+};
+```
 
-### 3. Activer GitHub Pages
+### 3. Déployer
 
-1. [Settings > Pages](https://github.com/combel-co/Resa-voiture/settings/pages) du repo
-2. Source : **Deploy from a branch**
-3. Branch : `main` / `root` → **Save**
+**Option A — GitHub Pages (gratuit) :**
+1. Pusher ce repo sur GitHub
+2. Settings > Pages > Source: main branch > `/root`
+3. L'app est live sur `https://votreuser.github.io/famcar/`
 
-### 4. Sécuriser les règles Firestore
+**Option B — Firebase Hosting (gratuit) :**
+```bash
+npm install -g firebase-tools
+firebase login
+firebase init hosting  # choisir le projet, dossier "." 
+firebase deploy
+```
 
-Dans Firestore > Règles, coller :
+### 4. Sécuriser Firestore (recommandé)
+
+Dans Firestore > Règles, remplacer par :
 
 ```
 rules_version = '2';
@@ -58,26 +76,14 @@ service cloud.firestore {
       allow create: if true;
       allow update: if true;
     }
-    match /config/{docId} {
-      allow read: if true;
-    }
   }
 }
 ```
 
-> ⚠️ La collection `config` (qui contient le PIN) est en **lecture seule** — personne ne peut la modifier depuis l'app.
-
-## Comment ça marche
-
-1. Ouvrir le site → entrer le **code PIN familial** (4 chiffres)
-2. Cliquer sur son **profil** (en haut à droite) → s'identifier avec prénom + email
-3. Cliquer sur un **jour disponible** → **Réserver**
-4. Pour annuler → cliquer sur son jour → **Annuler**
-
 ## Architecture
 
 ```
-Resa-voiture/
+famcar/
 ├── index.html     ← Toute l'app (HTML + CSS + JS) en un seul fichier
 └── README.md      ← Ce fichier
 ```
@@ -86,27 +92,12 @@ Collections Firestore :
 - **cars** → `{ name, emoji }`
 - **bookings** → `{ carId, date, userId, userName, photo, createdAt }`
 - **users** → `{ name, email, photo, createdAt }`
-- **config** → `{ pin }` (document `access`)
-
-## Modifier le code PIN
-
-1. [Console Firebase](https://console.firebase.google.com/project/REDACTED_PROJECT_ID) → Firestore
-2. Collection `config` → document `access`
-3. Modifier le champ `pin`
-4. Tout le monde devra entrer le nouveau code (ou vider le cache navigateur)
-
-## Ajouter une 2e voiture
-
-1. Dans Firestore → collection `cars`
-2. **Ajouter un document** → champs : `name` (ex: "Clio") + `emoji` (ex: "🚙")
-3. Un sélecteur d'onglets apparaîtra automatiquement dans l'app
 
 ## Stack
 
 - HTML / CSS / Vanilla JS (zéro framework, zéro build)
 - Firebase Firestore (temps réel, gratuit jusqu'à 50K lectures/jour)
 - Google Fonts (DM Sans + Fraunces)
-- GitHub Pages (hébergement gratuit)
 
 ---
 

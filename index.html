@@ -674,10 +674,10 @@
     <h1>FamCar</h1>
     <p>Entrez le code familial</p>
     <div class="pin-input" id="pin-input">
-      <input type="number" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-      <input type="number" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-      <input type="number" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-      <input type="number" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+      <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+      <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+      <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+      <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
     </div>
     <div class="lock-error" id="lock-error"></div>
     <button class="btn btn-primary" onclick="checkPin()">Entrer</button>
@@ -1197,7 +1197,7 @@ function initLockScreen() {
 
 async function checkPin() {
   const inputs = document.querySelectorAll('#pin-input input');
-  const pin = Array.from(inputs).map(i => i.value).join('');
+  const pin = Array.from(inputs).map(i => i.value.replace(/\D/g, '')).join('');
   
   if (pin.length < 4) {
     showPinError('Entrez les 4 chiffres');
@@ -1209,12 +1209,17 @@ async function checkPin() {
     
     if (!doc.exists) {
       // No PIN configured yet — accept anything and save it as the PIN
-      await db.collection('config').doc('access').set({ pin: pin });
+      try {
+        await db.collection('config').doc('access').set({ pin: pin });
+      } catch(writeErr) {
+        // Config might be read-only, that's OK — PIN just doesn't exist yet
+        console.log('Could not auto-create PIN (read-only rules?)', writeErr);
+      }
       unlockApp();
       return;
     }
     
-    const savedPin = doc.data().pin;
+    const savedPin = String(doc.data().pin);
     if (pin === savedPin) {
       unlockApp();
     } else {
@@ -1224,7 +1229,8 @@ async function checkPin() {
       setTimeout(() => inputs.forEach(i => i.classList.remove('error')), 600);
     }
   } catch (e) {
-    showPinError('Erreur de connexion');
+    console.error('PIN check error:', e);
+    showPinError('Erreur de connexion — vérifiez Firestore');
   }
 }
 
