@@ -87,12 +87,35 @@
   main { max-width: 520px; margin: 0 auto; padding: 32px 20px 100px; }
 
   /* ---- MONTH NAV ---- */
-  .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; gap: 10px; }
+
+  .month-center { flex: 1; text-align: center; min-width: 0; }
 
   .month-title {
     font-family: 'Fraunces', serif; font-size: 26px;
     font-weight: 500; letter-spacing: -0.5px; text-transform: capitalize;
   }
+
+  .active-car-badge {
+    margin: 7px auto 0;
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .active-car-badge:disabled { opacity: 0.85; cursor: default; }
 
   .month-btn {
     width: 40px; height: 40px; border-radius: 50%;
@@ -120,7 +143,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    padding-top: 8px;
+    padding-bottom: 20px;
     font-size: 15px;
     font-weight: 400;
     cursor: pointer;
@@ -160,7 +185,11 @@
 
   .cal-day.mine .booking-avatar { background: rgba(255,255,255,0.35); }
 
-  .day-num { line-height: 1; }
+  .day-num {
+    line-height: 1;
+    position: relative;
+    z-index: 2;
+  }
 
   .cal-day.weekend { background: #fafafa; }
   .cal-day.weekend.booked { background: var(--accent-light); }
@@ -250,18 +279,76 @@
   .photo-label:hover { color: var(--accent); }
   #photo-input { display: none; }
 
-  /* ---- CAR SELECTOR ---- */
-  .car-selector {
-    display: flex; align-items: center; justify-content: center;
-    gap: 8px; margin-bottom: 24px; padding: 4px; background: #f5f5f5; border-radius: 12px;
+
+  /* ---- KPI ---- */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 22px;
   }
-  .car-tab {
-    flex: 1; padding: 10px 16px; border-radius: 10px; border: none;
-    background: transparent; font-family: 'DM Sans', sans-serif;
-    font-size: 14px; font-weight: 500; cursor: pointer;
-    transition: all 0.15s; color: var(--text-light);
+  .kpi-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
   }
-  .car-tab.active { background: white; color: var(--text); box-shadow: var(--shadow-sm); }
+  .kpi-label {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-bottom: 6px;
+  }
+  .kpi-value {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+  }
+  .kpi-sub {
+    font-size: 11px;
+    color: var(--text-light);
+    margin-top: 4px;
+  }
+
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 12px;
+  }
+  .card-title { font-size: 13px; color: var(--text-light); margin-bottom: 6px; }
+  .card-value { font-size: 18px; font-weight: 600; }
+
+  .status-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .status-pill { padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #f5f5f5; }
+  .status-pill.ok { background: #ecfdf3; color: #047857; }
+  .status-pill.warn { background: #fff7ed; color: #c2410c; }
+
+  .mini-list { display: flex; flex-direction: column; gap: 8px; }
+  .mini-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; border-radius: 10px; background: #f8f8f8; font-size: 13px;
+  }
+  .mini-item strong { font-size: 14px; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .bottom-nav {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: 12px; width: calc(100% - 24px); max-width: 520px;
+    background: rgba(255,255,255,0.96); backdrop-filter: blur(10px);
+    border: 1px solid var(--border); border-radius: 14px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+    padding: 6px; z-index: 120;
+  }
+  .bottom-nav button {
+    border: none; background: transparent; border-radius: 10px; padding: 10px 6px;
+    font-size: 12px; color: var(--text-light); font-weight: 600; cursor: pointer;
+  }
+  .bottom-nav button.active { background: var(--accent-light); color: var(--accent); }
 
   /* ---- LEGEND ---- */
   .legend { display: flex; gap: 20px; justify-content: center; margin-top: 24px; font-size: 13px; color: var(--text-light); }
@@ -367,7 +454,8 @@
     header { padding: 16px 18px; }
     main { padding: 24px 14px 100px; }
     .month-title { font-size: 22px; }
-    .cal-day { font-size: 13px; border-radius: 10px; height: 48px; }
+    .active-car-badge { max-width: 170px; font-size: 11px; padding: 5px 10px; }
+    .cal-day { font-size: 13px; border-radius: 10px; height: 48px; padding-top: 7px; padding-bottom: 18px; }
     .member-select { padding: 40px 16px 40px; }
     .member-grid { gap: 16px; }
     .member-card .m-avatar { width: 56px; height: 56px; font-size: 18px; }
@@ -412,27 +500,103 @@
 </header>
 
 <main id="app-main" style="display:none;">
-  <div class="car-selector" id="car-selector" style="display:none;"></div>
+  <section class="tab-panel active" id="tab-dashboard">
+    <article class="card" id="car-status-card">
+      <div class="card-title">État de la voiture</div>
+      <div class="status-row">
+        <div>
+          <div class="card-value" id="car-status-main">Disponible aujourd’hui</div>
+          <div style="font-size:13px;color:var(--text-light);margin-top:4px" id="car-status-sub">Aucune réservation en cours</div>
+        </div>
+        <span class="status-pill ok" id="car-status-pill">OK</span>
+      </div>
+    </article>
 
-  <div class="month-nav">
-    <button class="month-btn" onclick="prevMonth()">‹</button>
-    <div class="month-title" id="month-title"></div>
-    <button class="month-btn" onclick="nextMonth()">›</button>
-  </div>
+    <section class="kpi-grid" aria-label="Indicateurs mensuels">
+      <article class="kpi-card">
+        <div class="kpi-label">Réservations (mois)</div>
+        <div class="kpi-value" id="kpi-bookings">0</div>
+        <div class="kpi-sub" id="kpi-bookings-sub">Tous conducteurs</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">Taux d'occupation</div>
+        <div class="kpi-value" id="kpi-occupancy">0%</div>
+        <div class="kpi-sub" id="kpi-occupancy-sub">Sur le mois affiché</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">Km estimés</div>
+        <div class="kpi-value" id="kpi-km">0 km</div>
+        <div class="kpi-sub">Distance saisie à la réservation</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">CO₂ estimé</div>
+        <div class="kpi-value" id="kpi-co2">0 kg</div>
+        <div class="kpi-sub">Base 120 g CO₂ / km</div>
+      </article>
+    </section>
 
-  <div class="cal-header">
-    <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
-  </div>
+    <article class="card">
+      <div class="status-row" style="margin-bottom:8px">
+        <div class="card-title" style="margin-bottom:0">Leaderboard (mois)</div>
+        <button type="button" style="border:none;background:transparent;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer" onclick="switchTab('leaderboard')">Voir tout</button>
+      </div>
+      <div class="mini-list" id="leaderboard-preview"></div>
+    </article>
 
-  <div class="cal-grid" id="cal-grid">
-    <div class="loading"><div class="spinner"></div> Chargement...</div>
-  </div>
+    <article class="card" style="margin-bottom:80px">
+      <div class="status-row" style="margin-bottom:8px">
+        <div class="card-title" style="margin-bottom:0">Historique récent</div>
+        <button type="button" style="border:none;background:transparent;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer" onclick="switchTab('history')">Voir tout</button>
+      </div>
+      <div class="mini-list" id="history-preview"></div>
+    </article>
+  </section>
 
-  <div class="legend">
-    <span><span class="legend-dot" style="background:var(--accent)"></span> Ma résa</span>
-    <span><span class="legend-dot" style="background:var(--accent-light);border:1px solid var(--accent)"></span> Réservé</span>
-    <span><span class="legend-dot" style="background:#f0f0f0"></span> Dispo</span>
-  </div>
+  <section class="tab-panel" id="tab-calendar">
+    <div class="month-nav">
+      <button class="month-btn" onclick="prevMonth()">‹</button>
+      <div class="month-center">
+        <div class="month-title" id="month-title"></div>
+        <button class="active-car-badge" id="active-car-badge" type="button" onclick="cycleCar()">🚗 Voiture active</button>
+      </div>
+      <button class="month-btn" onclick="nextMonth()">›</button>
+    </div>
+
+    <div class="cal-header">
+      <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
+    </div>
+
+    <div class="cal-grid" id="cal-grid">
+      <div class="loading"><div class="spinner"></div> Chargement...</div>
+    </div>
+
+    <div class="legend" style="margin-bottom:80px">
+      <span><span class="legend-dot" style="background:var(--accent)"></span> Ma résa</span>
+      <span><span class="legend-dot" style="background:var(--accent-light);border:1px solid var(--accent)"></span> Réservé</span>
+      <span><span class="legend-dot" style="background:#f0f0f0"></span> Dispo</span>
+    </div>
+  </section>
+
+  <section class="tab-panel" id="tab-leaderboard" style="margin-bottom:80px">
+    <article class="card">
+      <div class="card-title">Classement familial</div>
+      <div class="mini-list" id="leaderboard-full"></div>
+    </article>
+  </section>
+
+  <section class="tab-panel" id="tab-history" style="margin-bottom:80px">
+    <article class="card">
+      <div class="card-title">Historique des trajets</div>
+      <div class="mini-list" id="history-full"></div>
+    </article>
+  </section>
+
+  <nav class="bottom-nav" aria-label="Navigation principale">
+    <button type="button" id="nav-dashboard" class="active" onclick="switchTab('dashboard')">🏠 Dashboard</button>
+    <button type="button" id="nav-calendar" onclick="switchTab('calendar')">📅 Calendrier</button>
+    <button type="button" id="nav-leaderboard" onclick="switchTab('leaderboard')">🏆 Classement</button>
+    <button type="button" id="nav-history" onclick="switchTab('history')">🕓 Historique</button>
+  </nav>
 </main>
 
 <div class="overlay" id="overlay" onclick="closeSheet()">
@@ -472,6 +636,7 @@ let cars = [];
 let selectedCar = null;
 let unsubscribe = null;
 let tempPhoto = null;
+let activeTab = 'dashboard';
 
 // ==========================================
 // CARS
@@ -496,15 +661,29 @@ async function loadCars() {
 }
 
 function renderCarSelector() {
-  const el = document.getElementById('car-selector');
-  if (cars.length <= 1) { el.style.display = 'none'; return; }
-  el.style.display = 'flex';
-  el.innerHTML = cars.map(c =>
-    `<button class="car-tab ${c.id === selectedCar ? 'active' : ''}" onclick="selectCar('${c.id}')">${c.emoji} ${c.name}</button>`
-  ).join('');
+  const badge = document.getElementById('active-car-badge');
+  if (!badge) return;
+
+  if (cars.length === 0 || !selectedCar) {
+    badge.textContent = '🚗 Aucune voiture';
+    badge.disabled = true;
+    return;
+  }
+
+  const active = cars.find(c => c.id === selectedCar) || cars[0];
+  badge.textContent = `${active.emoji || '🚗'} ${active.name}`;
+  badge.disabled = cars.length <= 1;
 }
 
 function selectCar(id) { selectedCar = id; renderCarSelector(); subscribeBookings(); }
+
+function cycleCar() {
+  if (cars.length <= 1) return;
+  const currentIndex = cars.findIndex(c => c.id === selectedCar);
+  const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % cars.length : 0;
+  selectCar(cars[nextIndex].id);
+  showToast(`Voiture active : ${cars[nextIndex].name}`);
+}
 
 // ==========================================
 // BOOKINGS (REAL-TIME)
@@ -521,6 +700,75 @@ function subscribeBookings() {
       });
       renderCalendar();
     });
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  ['dashboard', 'calendar', 'leaderboard', 'history'].forEach(name => {
+    document.getElementById(`tab-${name}`)?.classList.toggle('active', name === tab);
+    document.getElementById(`nav-${name}`)?.classList.toggle('active', name === tab);
+  });
+  if (tab === 'leaderboard' || tab === 'history' || tab === 'dashboard') renderExperiencePanels();
+}
+
+function getMonthBookingEntries() {
+  const monthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-`;
+  return Object.values(bookings).filter(b => (b.date || '').startsWith(monthPrefix));
+}
+
+function renderExperiencePanels() {
+  const monthEntries = getMonthBookingEntries();
+  const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
+  const todayBooking = bookings[todayStr];
+
+  const statusMain = document.getElementById('car-status-main');
+  const statusSub = document.getElementById('car-status-sub');
+  const statusPill = document.getElementById('car-status-pill');
+  if (statusMain && statusSub && statusPill) {
+    if (todayBooking) {
+      statusMain.textContent = `Utilisée aujourd’hui par ${todayBooking.userName}`;
+      statusSub.textContent = todayBooking.destination ? `Destination: ${todayBooking.destination}` : 'Trajet prévu aujourd’hui';
+      statusPill.textContent = 'Occupée';
+      statusPill.className = 'status-pill warn';
+    } else {
+      statusMain.textContent = 'Disponible aujourd’hui';
+      statusSub.textContent = 'Aucune réservation en cours';
+      statusPill.textContent = 'OK';
+      statusPill.className = 'status-pill ok';
+    }
+  }
+
+  const points = {};
+  monthEntries.forEach(b => {
+    const key = b.userId || b.userName || 'inconnu';
+    const label = b.userName || 'Utilisateur';
+    if (!points[key]) points[key] = { label, score: 0, rides: 0 };
+    const km = estimateDistanceForBooking(b);
+    points[key].score += 20 + Math.round(km / 25);
+    points[key].rides += 1;
+  });
+  const ranking = Object.values(points).sort((a,b)=>b.score-a.score);
+
+  function fillList(id, maxItems = null) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const list = typeof maxItems === 'number' ? ranking.slice(0, maxItems) : ranking;
+    if (!list.length) { el.innerHTML = '<div class="mini-item">Aucune donnée pour ce mois.</div>'; return; }
+    el.innerHTML = list.map((r,i)=>`<div class="mini-item"><span><strong>#${i+1} ${r.label}</strong><br><small style="color:var(--text-light)">${r.rides} trajet${r.rides>1?'s':''}</small></span><span>${r.score} pts</span></div>`).join('');
+  }
+  fillList('leaderboard-preview', 3);
+  fillList('leaderboard-full');
+
+  const history = Object.values(bookings).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  function fillHistory(id, maxItems = null) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const list = typeof maxItems === 'number' ? history.slice(0, maxItems) : history;
+    if (!list.length) { el.innerHTML = '<div class="mini-item">Aucun trajet enregistré.</div>'; return; }
+    el.innerHTML = list.map(h=>`<div class="mini-item"><span><strong>${h.userName || 'Conducteur'}</strong><br><small style="color:var(--text-light)">${h.date || ''} · ${h.destination || 'Destination non précisée'}</small></span><span>${estimateDistanceForBooking(h)} km</span></div>`).join('');
+  }
+  fillHistory('history-preview', 4);
+  fillHistory('history-full');
 }
 
 // ==========================================
@@ -580,10 +828,70 @@ function renderCalendar() {
   for (let i = totalCells; i < 42; i++) html += '<div class="cal-day empty"></div>';
 
   grid.innerHTML = html;
+  renderKpis(daysInMonth);
+  renderExperiencePanels();
+}
+
+function renderKpis(daysInMonth) {
+  const monthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-`;
+  const monthDates = Object.keys(bookings).filter(d => d.startsWith(monthPrefix));
+  const totalBookings = monthDates.length;
+  const myBookings = monthDates.filter(d => currentUser && bookings[d]?.userId === currentUser.id).length;
+  const occupancy = daysInMonth ? Math.round((totalBookings / daysInMonth) * 100) : 0;
+
+  // Base réelle: destination + distance saisie à la réservation
+  const estimatedKm = monthDates.reduce((sum, d) => sum + estimateDistanceForBooking(bookings[d]), 0);
+  const co2KgPerKm = 0.12; // 120g/km
+  const estimatedCo2 = (estimatedKm * co2KgPerKm).toFixed(1);
+
+  document.getElementById('kpi-bookings').textContent = String(totalBookings);
+  document.getElementById('kpi-bookings-sub').textContent = currentUser
+    ? `Dont ${myBookings} pour ${currentUser.name}`
+    : 'Tous conducteurs';
+  document.getElementById('kpi-occupancy').textContent = `${occupancy}%`;
+  document.getElementById('kpi-occupancy-sub').textContent = `${totalBookings} jour${totalBookings > 1 ? 's' : ''} réservé${totalBookings > 1 ? 's' : ''}`;
+  document.getElementById('kpi-km').textContent = `${estimatedKm} km`;
+  document.getElementById('kpi-co2').textContent = `${estimatedCo2} kg`;
 }
 
 function prevMonth() { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(); }
 function nextMonth() { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(); }
+
+
+function estimateRoundTripKm(destination) {
+  const map = {
+    'Paris intra-muros': 12,
+    'Versailles': 46,
+    'Roissy CDG': 66,
+    'Orly': 38,
+    'Lille': 450,
+    'Reims': 290,
+    'Orléans': 268,
+    'Rouen': 272,
+    'Lyon': 930,
+    'Nantes': 770,
+    'Bordeaux': 1170,
+    'Marseille': 1540
+  };
+  return map[destination] || null;
+}
+
+function estimateDistanceForBooking(booking) {
+  if (typeof booking.distanceKm === 'number' && booking.distanceKm > 0) return booking.distanceKm;
+  if (booking.destination) {
+    const estimated = estimateRoundTripKm(booking.destination);
+    if (estimated) return estimated;
+  }
+  return 0;
+}
+
+function updateDistanceFromDestination() {
+  const destination = document.getElementById('booking-destination')?.value || '';
+  const kmInput = document.getElementById('booking-km');
+  if (!kmInput) return;
+  const estimated = estimateRoundTripKm(destination);
+  if (estimated) kmInput.value = estimated;
+}
 
 // ==========================================
 // DAY CLICK
@@ -614,6 +922,19 @@ function onDayClick(dateStr, isPast) {
     html = `
       <div class="sheet-date">${prettyDate}</div>
       <div class="sheet-status">✅ Jour disponible</div>
+      <div class="input-group">
+        <label>Destination</label>
+        <select id="booking-destination" onchange="updateDistanceFromDestination()">
+          <option value="">Choisir une destination</option>
+          <option>Paris intra-muros</option><option>Versailles</option><option>Roissy CDG</option><option>Orly</option>
+          <option>Lille</option><option>Reims</option><option>Orléans</option><option>Rouen</option>
+          <option>Lyon</option><option>Nantes</option><option>Bordeaux</option><option>Marseille</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Distance aller-retour (km)</label>
+        <input type="number" id="booking-km" min="1" step="1" placeholder="Ex: 120">
+      </div>
       <button class="btn btn-primary" onclick="book('${dateStr}')">Réserver ce jour</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Annuler</button>`;
   }
@@ -632,10 +953,17 @@ async function book(dateStr) {
     const existing = await db.collection('bookings').where('carId', '==', selectedCar).where('date', '==', dateStr).get();
     if (!existing.empty) { closeSheet(); showToast("Ce jour vient d'être réservé"); return; }
 
+    const destination = (document.getElementById('booking-destination')?.value || '').trim();
+    const distanceKm = Number(document.getElementById('booking-km')?.value || 0);
+    if (!destination) { showToast('Choisissez une destination'); return; }
+    if (!distanceKm || distanceKm <= 0) { showToast('Ajoutez une distance valide (km)'); return; }
+
     await db.collection('bookings').add({
       carId: selectedCar, date: dateStr,
       userId: currentUser.id, userName: currentUser.name,
       photo: currentUser.photo || null,
+      destination,
+      distanceKm,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     closeSheet();
@@ -656,8 +984,10 @@ async function cancelBooking(bookingId) {
 // ==========================================
 async function showMemberSelect() {
   document.getElementById('app-header').style.display = 'none';
-  document.getElementById('app-main').style.display = 'none';
+  // Garde le planning/KPI visibles en mode consultation
+  document.getElementById('app-main').style.display = 'block';
   document.getElementById('member-select').style.display = 'block';
+  switchTab('dashboard');
 
   const snap = await db.collection('users').orderBy('name').get();
   const members = [];
@@ -899,6 +1229,7 @@ function enterApp() {
   document.getElementById('app-header').style.display = 'flex';
   document.getElementById('app-main').style.display = 'block';
   updateUserPill();
+  switchTab(activeTab || 'dashboard');
   renderCalendar();
 }
 
