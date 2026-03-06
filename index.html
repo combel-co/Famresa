@@ -253,15 +253,40 @@
   /* ---- CAR SELECTOR ---- */
   .car-selector {
     display: flex; align-items: center; justify-content: center;
-    gap: 8px; margin-bottom: 24px; padding: 4px; background: #f5f5f5; border-radius: 12px;
+    gap: 8px; margin-bottom: 8px; padding: 4px; background: #f5f5f5; border-radius: 12px;
   }
   .car-tab {
     flex: 1; padding: 10px 16px; border-radius: 10px; border: none;
     background: transparent; font-family: 'DM Sans', sans-serif;
     font-size: 14px; font-weight: 500; cursor: pointer;
-    transition: all 0.15s; color: var(--text-light);
+    transition: all 0.2s ease; color: var(--text-light);
+    transform: translateY(0);
   }
-  .car-tab.active { background: white; color: var(--text); box-shadow: var(--shadow-sm); }
+  .car-tab:hover:not(.active):not(.single) { color: var(--text); }
+  .car-tab.active { background: white; color: var(--text); box-shadow: var(--shadow-sm); animation: carPop 0.24s ease; }
+  .car-tab.single {
+    cursor: default;
+    background: white;
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+    animation: singleCarGlow 2.4s ease-in-out infinite;
+  }
+  .car-helper {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 12px;
+    margin-bottom: 24px;
+  }
+
+  @keyframes carPop {
+    0% { transform: scale(0.96); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes singleCarGlow {
+    0%, 100% { box-shadow: var(--shadow-sm); }
+    50% { box-shadow: 0 4px 16px rgba(37, 99, 235, 0.15); }
+  }
 
   /* ---- LEGEND ---- */
   .legend { display: flex; gap: 20px; justify-content: center; margin-top: 24px; font-size: 13px; color: var(--text-light); }
@@ -413,6 +438,7 @@
 
 <main id="app-main" style="display:none;">
   <div class="car-selector" id="car-selector" style="display:none;"></div>
+  <div class="car-helper" id="car-helper" style="display:none;"></div>
 
   <div class="month-nav">
     <button class="month-btn" onclick="prevMonth()">‹</button>
@@ -497,10 +523,29 @@ async function loadCars() {
 
 function renderCarSelector() {
   const el = document.getElementById('car-selector');
-  if (cars.length <= 1) { el.style.display = 'none'; return; }
+  const helper = document.getElementById('car-helper');
+
+  if (cars.length === 0) {
+    el.style.display = 'none';
+    helper.style.display = 'none';
+    helper.textContent = '';
+    return;
+  }
+
   el.style.display = 'flex';
+
+  if (cars.length === 1) {
+    const c = cars[0];
+    el.innerHTML = `<button class="car-tab active single" type="button" aria-label="Voiture active" disabled>${c.emoji} ${c.name}</button>`;
+    helper.style.display = 'block';
+    helper.textContent = 'Voiture active';
+    return;
+  }
+
+  helper.style.display = 'block';
+  helper.textContent = 'Choisissez la voiture à réserver';
   el.innerHTML = cars.map(c =>
-    `<button class="car-tab ${c.id === selectedCar ? 'active' : ''}" onclick="selectCar('${c.id}')">${c.emoji} ${c.name}</button>`
+    `<button class="car-tab ${c.id === selectedCar ? 'active' : ''}" type="button" onclick="selectCar('${c.id}')">${c.emoji} ${c.name}</button>`
   ).join('');
 }
 
