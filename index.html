@@ -11,27 +11,489 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
-:root{--bg:#fff;--text:#1a1a1a;--text-light:#888;--border:#e8e8e8;--accent:#2563eb;--accent-light:#eff4ff;--danger:#ef4444;--danger-light:#fef2f2;--shadow-sm:0 1px 3px rgba(0,0,0,.04);--shadow-md:0 4px 20px rgba(0,0,0,.06);--shadow-lg:0 12px 40px rgba(0,0,0,.1)}*{margin:0;padding:0;box-sizing:border-box}body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
-header{display:flex;align-items:center;justify-content:space-between;padding:20px 28px;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);z-index:100}
-.logo{font-family:'Fraunces',serif;font-weight:700;font-size:22px;letter-spacing:-.5px;display:flex;align-items:center;gap:10px}.logo-icon{width:32px;height:32px;background:var(--text);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
-.user-pill{display:flex;align-items:center;gap:10px;padding:6px 14px 6px 6px;border-radius:100px;border:1px solid var(--border);cursor:pointer;transition:all .2s;background:#fff;font-size:14px;font-weight:500}.user-pill:hover{border-color:#ccc;box-shadow:var(--shadow-sm)}.user-pill .avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;overflow:hidden}.user-pill .avatar img{width:100%;height:100%;object-fit:cover}
-main{max-width:520px;margin:0 auto;padding:32px 20px 100px}
-.month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:10px}.month-center{flex:1;text-align:center;min-width:0}.month-title{font-family:'Fraunces',serif;font-size:26px;font-weight:500;letter-spacing:-.5px;text-transform:capitalize}.month-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all .15s;color:var(--text)}.month-btn:hover{background:#f5f5f5}
-.cal-header{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:12px;font-weight:500;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding:0 2px}.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.cal-day{height:56px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:8px;padding-bottom:20px;font-size:15px;font-weight:400;cursor:pointer;transition:all .15s;position:relative;border:2px solid transparent;overflow:hidden}.cal-day:hover:not(.empty):not(.past){background:#f7f7f7}.cal-day.empty{cursor:default}.cal-day.today{font-weight:600;border-color:var(--text)}.cal-day.past{color:#ccc;cursor:default}.cal-day.booked{background:var(--accent-light);border-color:var(--accent);cursor:pointer}.cal-day.mine{background:var(--accent);color:#fff;border-color:var(--accent)}
-.cal-day .booking-avatar{position:absolute;bottom:3px;width:18px;height:18px;min-width:18px;max-width:18px;min-height:18px;max-height:18px;border-radius:50%;background:var(--accent);color:#fff;font-size:7px;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden}.cal-day .booking-avatar img{width:100%;height:100%;object-fit:cover;display:block}.cal-day.mine .booking-avatar{background:rgba(255,255,255,.35)}
-.day-num{line-height:1;position:relative;z-index:2}.cal-day.weekend{background:#fafafa}.cal-day.weekend.booked{background:var(--accent-light)}.cal-day.weekend.mine{background:var(--accent)}
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:200;opacity:0;visibility:hidden;transition:all .25s}.overlay.open{opacity:1;visibility:visible}.sheet{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;padding:28px 24px 40px;z-index:201;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);max-width:520px;margin:0 auto;max-height:85vh;overflow-y:auto}.overlay.open .sheet{transform:translateY(0)}.sheet-handle{width:36px;height:4px;background:#ddd;border-radius:4px;margin:0 auto 20px}.sheet-date{font-family:'Fraunces',serif;font-size:22px;font-weight:500;margin-bottom:6px;text-transform:capitalize}.sheet-status{font-size:14px;color:var(--text-light);margin-bottom:24px}.sheet-status .booked-by{display:flex;align-items:center;gap:10px;margin-top:12px;padding:12px;background:#f8f8f8;border-radius:12px}.sheet-status .booked-by .avatar-lg{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;overflow:hidden;flex-shrink:0}.sheet-status .booked-by .avatar-lg img{width:100%;height:100%;object-fit:cover}.sheet-status .booked-by .info{font-size:15px;color:var(--text);font-weight:500}.sheet-status .booked-by .info small{display:block;font-weight:400;color:var(--text-light);font-size:13px}
-.btn{width:100%;padding:16px;border:none;border-radius:12px;font-size:16px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s}.btn-primary{background:var(--text);color:#fff}.btn-primary:hover{background:#333}.btn-danger{background:var(--danger-light);color:var(--danger)}.btn-danger:hover{background:#fee2e2}.btn+.btn{margin-top:10px}
-.login-sheet{text-align:center}.login-sheet h2{font-family:'Fraunces',serif;font-size:24px;font-weight:500;margin-bottom:6px}.login-sheet p{color:var(--text-light);font-size:14px;margin-bottom:28px}.input-group{margin-bottom:14px;text-align:left}.input-group label{display:block;font-size:13px;font-weight:500;color:var(--text-light);margin-bottom:6px}.input-group input,.input-group select{width:100%;padding:14px 16px;border:1px solid var(--border);border-radius:12px;font-size:16px;font-family:'DM Sans',sans-serif;outline:none;transition:border .15s;background:#fff}.input-group input:focus,.input-group select:focus{border-color:var(--accent)}.photo-upload{display:flex;align-items:center;gap:14px;margin-bottom:24px;margin-top:4px}.photo-preview{width:56px;height:56px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:20px;color:#bbb;overflow:hidden;flex-shrink:0;border:2px dashed #ddd;cursor:pointer;transition:all .15s}.photo-preview:hover{border-color:var(--accent)}.photo-preview img{width:100%;height:100%;object-fit:cover}.photo-preview.has-photo{border-style:solid;border-color:var(--accent)}.photo-label{font-size:14px;color:var(--text-light);cursor:pointer}.photo-label:hover{color:var(--accent)}#photo-input{display:none}
-.kpi-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:22px}.kpi-card{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff;box-shadow:var(--shadow-sm)}.kpi-label{font-size:12px;color:var(--text-light);margin-bottom:6px}.kpi-value{font-size:20px;font-weight:600;letter-spacing:-.2px}.kpi-sub{font-size:11px;color:var(--text-light);margin-top:4px}
-.car-selector{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;padding:4px;background:#f5f5f5;border-radius:12px}.car-tab{flex:1;padding:10px 16px;border-radius:10px;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;color:var(--text-light)}.car-tab:hover:not(.active):not(.single){color:var(--text)}.car-tab.active{background:#fff;color:var(--text);box-shadow:var(--shadow-sm)}.car-tab.single{cursor:default;background:#fff;color:var(--text);box-shadow:var(--shadow-sm)}.car-helper{text-align:center;color:var(--text-light);font-size:12px;margin-bottom:24px}
-.legend{display:flex;gap:20px;justify-content:center;margin-top:24px;font-size:13px;color:var(--text-light)}.legend span{display:flex;align-items:center;gap:6px}.legend-dot{width:10px;height:10px;border-radius:50%}
-.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:#fff;padding:14px 24px;border-radius:14px;font-size:15px;font-weight:500;z-index:300;transition:transform .3s cubic-bezier(.32,.72,0,1);box-shadow:var(--shadow-lg);white-space:nowrap}.toast.show{transform:translateX(-50%) translateY(0)}
-.lock-screen{position:fixed;inset:0;background:#fff;z-index:500;display:flex;align-items:center;justify-content:center;transition:opacity .4s,visibility .4s}.lock-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}.lock-box{text-align:center;padding:24px;width:100%;max-width:320px}.lock-box .lock-icon{width:64px;height:64px;background:#f5f5f5;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 24px}.lock-box h1{font-family:'Fraunces',serif;font-size:26px;font-weight:500;margin-bottom:6px}.lock-box p{color:var(--text-light);font-size:15px;margin-bottom:32px}.pin-input{display:flex;gap:12px;justify-content:center;margin-bottom:28px}.pin-input input{width:52px;height:60px;text-align:center;font-size:24px;font-weight:600;font-family:'DM Sans',sans-serif;border:2px solid var(--border);border-radius:14px;outline:none;transition:border .15s;background:#fafafa;-moz-appearance:textfield}.pin-input input::-webkit-outer-spin-button,.pin-input input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}.pin-input input:focus{border-color:var(--text);background:#fff}.pin-input input.error{border-color:var(--danger);animation:shake .4s ease}@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}.lock-error{color:var(--danger);font-size:14px;margin-top:-16px;margin-bottom:16px;min-height:20px}
-.member-select{text-align:center;padding:60px 20px 40px;max-width:520px;margin:0 auto}.member-select h2{font-family:'Fraunces',serif;font-size:26px;font-weight:500;margin-bottom:8px}.member-select p{color:var(--text-light);font-size:15px;margin-bottom:36px}.member-grid{display:flex;flex-wrap:wrap;gap:24px;justify-content:center;margin-bottom:32px}.member-card{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:all .15s;width:80px}.member-card:hover{transform:scale(1.08)}.member-card .m-avatar{width:64px;height:64px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;overflow:hidden;border:3px solid transparent;transition:border .15s}.member-card:hover .m-avatar{border-color:var(--accent)}.member-card .m-avatar img{width:100%;height:100%;object-fit:cover}.member-card .m-name{font-size:13px;font-weight:500;color:var(--text)}.add-member-card .m-avatar{background:#f0f0f0;color:var(--text-light);font-size:28px;border:2px dashed #ddd}.add-member-card:hover .m-avatar{border-color:var(--accent);color:var(--accent)}
-.loading{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--text-light);font-size:15px}@keyframes spin{to{transform:rotate(360deg)}}.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin .6s linear infinite;margin-right:10px}
-@media(max-width:480px){header{padding:16px 18px}main{padding:24px 14px 100px}.month-title{font-size:22px}.cal-day{font-size:13px;border-radius:10px;height:48px;padding-top:7px;padding-bottom:18px}.member-select{padding:40px 16px 40px}.member-grid{gap:16px}.member-card .m-avatar{width:56px;height:56px;font-size:18px}}
+  :root {
+    --bg: #ffffff;
+    --text: #1a1a1a;
+    --text-light: #888888;
+    --border: #e8e8e8;
+    --accent: #2563eb;
+    --accent-light: #eff4ff;
+    --danger: #ef4444;
+    --danger-light: #fef2f2;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.06);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- HEADER ---- */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(16px);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--text); border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 16px;
+  }
+
+  .user-pill {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 14px 6px 6px; border-radius: 100px;
+    border: 1px solid var(--border); cursor: pointer;
+    transition: all 0.2s; background: white;
+    font-size: 14px; font-weight: 500;
+  }
+  .user-pill:hover { border-color: #ccc; box-shadow: var(--shadow-sm); }
+
+  .user-pill .avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; overflow: hidden;
+  }
+  .user-pill .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* ---- MAIN ---- */
+  main { max-width: 520px; margin: 0 auto; padding: 32px 20px 100px; }
+
+  /* ---- MONTH NAV ---- */
+  .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; gap: 10px; }
+
+  .month-center { flex: 1; text-align: center; min-width: 0; }
+
+  .month-title {
+    font-family: 'Fraunces', serif; font-size: 26px;
+    font-weight: 500; letter-spacing: -0.5px; text-transform: capitalize;
+  }
+
+  .active-car-badge {
+    margin: 7px auto 0;
+    border: 1px solid var(--border);
+    background: #fff;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+  .active-car-badge:disabled { opacity: 0.85; cursor: default; }
+
+  .month-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid var(--border); background: white;
+    cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: 18px;
+    transition: all 0.15s; color: var(--text);
+  }
+  .month-btn:hover { background: #f5f5f5; }
+  .month-btn.today-btn {
+    width: auto;
+    border-radius: 999px;
+    padding: 0 12px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+
+  /* ---- CALENDAR GRID ---- */
+  .cal-header {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    text-align: center; font-size: 12px; font-weight: 500;
+    color: var(--text-light); text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 8px; padding: 0 2px;
+  }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+
+  /* FIXED HEIGHT — no aspect-ratio */
+  .cal-day {
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 8px;
+    padding-bottom: 20px;
+    font-size: 15px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    border: 2px solid transparent;
+    overflow: hidden;
+  }
+
+  .cal-day:hover:not(.empty):not(.past) { background: #f7f7f7; }
+  .cal-day.empty { cursor: default; }
+  .cal-day.today { font-weight: 600; border-color: var(--text); }
+  .cal-day.past { color: #ccc; cursor: default; }
+
+  .cal-day.booked { background: var(--accent-light); border-color: var(--accent); cursor: pointer; }
+  .cal-day.mine { background: var(--accent); color: white; border-color: var(--accent); }
+
+  /* AVATAR — position absolute, never changes cell size */
+  .cal-day .booking-avatar {
+    position: absolute;
+    bottom: 3px;
+    width: 18px; height: 18px;
+    min-width: 18px; max-width: 18px;
+    min-height: 18px; max-height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-size: 7px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+
+  .cal-day .booking-avatar img {
+    width: 100%; height: 100%;
+    object-fit: cover; display: block;
+  }
+
+  .cal-day.mine .booking-avatar { background: rgba(255,255,255,0.35); }
+
+  .day-num {
+    line-height: 1;
+    position: relative;
+    z-index: 2;
+  }
+
+  .cal-day.weekend { background: #fafafa; }
+  .cal-day.weekend.booked { background: var(--accent-light); }
+  .cal-day.weekend.mine { background: var(--accent); }
+
+  /* ---- MODAL / BOTTOM SHEET ---- */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.3);
+    z-index: 200; opacity: 0; visibility: hidden; transition: all 0.25s;
+  }
+  .overlay.open { opacity: 1; visibility: visible; }
+
+  .sheet {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: white; border-radius: 20px 20px 0 0;
+    padding: 28px 24px 40px; z-index: 201;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    max-width: 520px; margin: 0 auto;
+    max-height: 85vh; overflow-y: auto;
+  }
+  .overlay.open .sheet { transform: translateY(0); }
+
+  .sheet-handle { width: 36px; height: 4px; background: #ddd; border-radius: 4px; margin: 0 auto 20px; }
+
+  .sheet-date {
+    font-family: 'Fraunces', serif; font-size: 22px;
+    font-weight: 500; margin-bottom: 6px; text-transform: capitalize;
+  }
+
+  .sheet-status { font-size: 14px; color: var(--text-light); margin-bottom: 24px; }
+
+  .sheet-status .booked-by {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 12px; padding: 12px; background: #f8f8f8; border-radius: 12px;
+  }
+
+  .sheet-status .booked-by .avatar-lg {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 600; overflow: hidden; flex-shrink: 0;
+  }
+  .sheet-status .booked-by .avatar-lg img { width: 100%; height: 100%; object-fit: cover; }
+
+  .sheet-status .booked-by .info { font-size: 15px; color: var(--text); font-weight: 500; }
+  .sheet-status .booked-by .info small { display: block; font-weight: 400; color: var(--text-light); font-size: 13px; }
+
+  .btn {
+    width: 100%; padding: 16px; border: none; border-radius: 12px;
+    font-size: 16px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-primary { background: var(--text); color: white; }
+  .btn-primary:hover { background: #333; }
+  .btn-danger { background: var(--danger-light); color: var(--danger); }
+  .btn-danger:hover { background: #fee2e2; }
+  .btn + .btn { margin-top: 10px; }
+
+  /* ---- LOGIN / SIGNUP SHEET ---- */
+  .login-sheet { text-align: center; }
+  .login-sheet h2 { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 500; margin-bottom: 6px; }
+  .login-sheet p { color: var(--text-light); font-size: 14px; margin-bottom: 28px; }
+
+  .input-group { margin-bottom: 14px; text-align: left; }
+  .input-group label { display: block; font-size: 13px; font-weight: 500; color: var(--text-light); margin-bottom: 6px; }
+  .input-group input, .input-group select {
+    width: 100%; padding: 14px 16px; border: 1px solid var(--border);
+    border-radius: 12px; font-size: 16px; font-family: 'DM Sans', sans-serif;
+    outline: none; transition: border 0.15s; background: white;
+  }
+  .input-group input:focus, .input-group select:focus { border-color: var(--accent); }
+
+  .photo-upload { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; margin-top: 4px; }
+
+  .photo-preview {
+    width: 56px; height: 56px; border-radius: 50%; background: #f0f0f0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: #bbb; overflow: hidden; flex-shrink: 0;
+    border: 2px dashed #ddd; cursor: pointer; transition: all 0.15s;
+  }
+  .photo-preview:hover { border-color: var(--accent); }
+  .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-preview.has-photo { border-style: solid; border-color: var(--accent); }
+
+  .photo-label { font-size: 14px; color: var(--text-light); cursor: pointer; }
+  .photo-label:hover { color: var(--accent); }
+  #photo-input { display: none; }
+
+
+  /* ---- KPI ---- */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .kpi-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+  }
+  .kpi-label {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-bottom: 6px;
+  }
+  .kpi-value {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+  }
+  .kpi-sub {
+    font-size: 11px;
+    color: var(--text-light);
+    margin-top: 4px;
+  }
+
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    background: #fff;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 12px;
+  }
+  .card-title { font-size: 13px; color: var(--text-light); margin-bottom: 6px; }
+  .card-value { font-size: 18px; font-weight: 600; }
+
+  .status-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .status-pill { padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #f5f5f5; }
+  .status-pill.ok { background: #ecfdf3; color: #047857; }
+  .status-pill.warn { background: #fff7ed; color: #c2410c; }
+
+  .mini-list { display: flex; flex-direction: column; gap: 8px; }
+  .mini-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; border-radius: 10px; background: #f8f8f8; font-size: 13px;
+  }
+  .mini-item strong { font-size: 14px; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .bottom-nav {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: 12px; width: calc(100% - 24px); max-width: 520px;
+    background: rgba(255,255,255,0.96); backdrop-filter: blur(10px);
+    border: 1px solid var(--border); border-radius: 14px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+    padding: 6px; z-index: 120;
+  }
+  .bottom-nav button {
+    border: none; background: transparent; border-radius: 10px; padding: 10px 6px;
+    font-size: 12px; color: var(--text-light); font-weight: 600; cursor: pointer;
+  }
+  .bottom-nav button.active { background: var(--accent-light); color: var(--accent); }
+
+  .calendar-hint {
+    margin: -6px 0 10px;
+    text-align: center;
+    color: var(--text-light);
+    font-size: 12px;
+  }
+
+  .profile-row {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+    margin:20px 0 28px;
+    max-width:100%;
+  }
+  .profile-avatar {
+    width:48px;height:48px;border-radius:50%;background:var(--accent);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;overflow:hidden;
+    flex-shrink:0;
+  }
+  .profile-avatar img { width:100%; height:100%; object-fit:cover; }
+  .profile-meta { text-align:left; min-width:0; }
+  .profile-meta .name { font-size:18px; font-weight:600; line-height:1.2; }
+  .profile-meta .email { font-size:14px; color:var(--text-light); overflow-wrap:anywhere; }
+
+  /* ---- LEGEND ---- */
+  .legend { display: flex; gap: 20px; justify-content: center; margin-top: 24px; font-size: 13px; color: var(--text-light); }
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* ---- TOAST ---- */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--text); color: white; padding: 14px 24px;
+    border-radius: 14px; font-size: 15px; font-weight: 500;
+    z-index: 300; transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: var(--shadow-lg); white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ---- LOCK SCREEN ---- */
+  .lock-screen {
+    position: fixed; inset: 0; background: white; z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 0.4s, visibility 0.4s;
+  }
+  .lock-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+  .lock-box { text-align: center; padding: 24px; width: 100%; max-width: 320px; }
+
+  .lock-box .lock-icon {
+    width: 64px; height: 64px; background: #f5f5f5; border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; margin: 0 auto 24px;
+  }
+  .lock-box h1 { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 500; margin-bottom: 6px; }
+  .lock-box p { color: var(--text-light); font-size: 15px; margin-bottom: 32px; }
+
+  .pin-input { display: flex; gap: 12px; justify-content: center; margin-bottom: 28px; }
+
+  .pin-input input {
+    width: 52px; height: 60px; text-align: center;
+    font-size: 24px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+    border: 2px solid var(--border); border-radius: 14px;
+    outline: none; transition: border 0.15s; background: #fafafa;
+    -moz-appearance: textfield;
+  }
+  .pin-input input::-webkit-outer-spin-button,
+  .pin-input input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .pin-input input:focus { border-color: var(--text); background: white; }
+  .pin-input input.error { border-color: var(--danger); animation: shake 0.4s ease; }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+  }
+
+  .lock-error { color: var(--danger); font-size: 14px; margin-top: -16px; margin-bottom: 16px; min-height: 20px; }
+
+  /* ---- MEMBER SELECT SCREEN ---- */
+  .member-select { text-align: center; padding: 60px 20px 40px; max-width: 520px; margin: 0 auto; }
+  .member-select h2 { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 500; margin-bottom: 8px; }
+  .member-select p { color: var(--text-light); font-size: 15px; margin-bottom: 36px; }
+
+  .member-grid { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; margin-bottom: 32px; }
+
+  .member-card {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; cursor: pointer; transition: all 0.15s; width: 80px;
+  }
+  .member-card:hover { transform: scale(1.08); }
+
+  .member-card .m-avatar {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--accent); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 600; overflow: hidden;
+    border: 3px solid transparent; transition: border 0.15s;
+  }
+  .member-card:hover .m-avatar { border-color: var(--accent); }
+  .member-card .m-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  .member-card .m-name { font-size: 13px; font-weight: 500; color: var(--text); }
+
+  .add-member-card .m-avatar {
+    background: #f0f0f0; color: var(--text-light);
+    font-size: 28px; border: 2px dashed #ddd;
+  }
+  .add-member-card:hover .m-avatar { border-color: var(--accent); color: var(--accent); }
+
+  /* ---- LOADING ---- */
+  .loading {
+    display: flex; align-items: center; justify-content: center;
+    padding: 60px; color: var(--text-light); font-size: 15px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 20px; height: 20px; border: 2px solid var(--border);
+    border-top-color: var(--text); border-radius: 50%;
+    animation: spin 0.6s linear infinite; margin-right: 10px;
+  }
+
+  /* ---- RESPONSIVE ---- */
+  @media (max-width: 480px) {
+    header { padding: 16px 18px; }
+    main { padding: 24px 14px 100px; }
+    .month-title { font-size: 22px; }
+    .active-car-badge { max-width: 170px; font-size: 11px; padding: 5px 10px; }
+    .month-btn.today-btn { padding: 0 10px; font-size: 12px; }
+    .cal-day { font-size: 13px; border-radius: 10px; height: 48px; padding-top: 7px; padding-bottom: 18px; }
+    .member-select { padding: 40px 16px 40px; }
+    .member-grid { gap: 16px; }
+    .member-card .m-avatar { width: 56px; height: 56px; font-size: 18px; }
+  }
 </style>
 </head>
 <body>
@@ -39,55 +501,852 @@ main{max-width:520px;margin:0 auto;padding:32px 20px 100px}
 <div class="member-select" id="member-select" style="display:none;"><h2>Qui conduit ?</h2><p>Sélectionnez votre profil</p><div class="member-grid" id="member-grid"></div></div>
 <header id="app-header" style="display:none;"><div class="logo"><div class="logo-icon">🚗</div> FamCar</div><div class="user-pill" id="user-pill" onclick="showProfile()"><div class="avatar" id="header-avatar">?</div><span id="header-name">Se connecter</span></div></header>
 <main id="app-main" style="display:none;">
-  <div class="car-selector" id="car-selector" style="display:none;"></div>
-  <div class="car-helper" id="car-helper" style="display:none;"></div>
-  <section class="kpi-grid"><article class="kpi-card"><div class="kpi-label">Réservations (mois)</div><div class="kpi-value" id="kpi-bookings">0</div><div class="kpi-sub" id="kpi-bookings-sub">Tous conducteurs</div></article><article class="kpi-card"><div class="kpi-label">Taux d'occupation</div><div class="kpi-value" id="kpi-occupancy">0%</div><div class="kpi-sub" id="kpi-occupancy-sub">Sur le mois affiché</div></article></section>
-  <div class="month-nav"><button class="month-btn" onclick="prevMonth()">‹</button><div class="month-center"><div class="month-title" id="month-title"></div></div><button class="month-btn" onclick="nextMonth()">›</button></div>
-  <div class="cal-header"><div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div></div>
-  <div class="cal-grid" id="cal-grid"><div class="loading"><div class="spinner"></div> Chargement...</div></div>
-  <div class="legend"><span><span class="legend-dot" style="background:var(--accent)"></span> Ma résa</span><span><span class="legend-dot" style="background:var(--accent-light);border:1px solid var(--accent)"></span> Réservé</span><span><span class="legend-dot" style="background:#f0f0f0"></span> Dispo</span></div>
+  <section class="tab-panel active" id="tab-dashboard">
+    <article class="card" id="car-status-card">
+      <div class="card-title">État de la voiture</div>
+      <div class="status-row">
+        <div>
+          <div class="card-value" id="car-status-main">Disponible aujourd’hui</div>
+          <div style="font-size:13px;color:var(--text-light);margin-top:4px" id="car-status-sub">Aucune réservation en cours</div>
+        </div>
+        <span class="status-pill ok" id="car-status-pill">OK</span>
+      </div>
+    </article>
+
+    <section class="kpi-grid" aria-label="Indicateurs mensuels">
+      <article class="kpi-card">
+        <div class="kpi-label">Réservations (mois)</div>
+        <div class="kpi-value" id="kpi-bookings">0</div>
+        <div class="kpi-sub" id="kpi-bookings-sub">Tous conducteurs</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">Taux d'occupation</div>
+        <div class="kpi-value" id="kpi-occupancy">0%</div>
+        <div class="kpi-sub" id="kpi-occupancy-sub">Sur le mois affiché</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">Km estimés</div>
+        <div class="kpi-value" id="kpi-km">0 km</div>
+        <div class="kpi-sub">Distance saisie à la réservation</div>
+      </article>
+      <article class="kpi-card">
+        <div class="kpi-label">CO₂ estimé</div>
+        <div class="kpi-value" id="kpi-co2">0 kg</div>
+        <div class="kpi-sub">Base 120 g CO₂ / km</div>
+      </article>
+    </section>
+
+    <article class="card">
+      <div class="status-row" style="margin-bottom:8px">
+        <div class="card-title" style="margin-bottom:0">Leaderboard (mois)</div>
+        <button type="button" style="border:none;background:transparent;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer" onclick="switchTab('leaderboard')">Voir tout</button>
+      </div>
+      <div class="mini-list" id="leaderboard-preview"></div>
+    </article>
+
+    <article class="card" style="margin-bottom:80px">
+      <div class="status-row" style="margin-bottom:8px">
+        <div class="card-title" style="margin-bottom:0">Historique récent</div>
+        <button type="button" style="border:none;background:transparent;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer" onclick="switchTab('history')">Voir tout</button>
+      </div>
+      <div class="mini-list" id="history-preview"></div>
+    </article>
+  </section>
+
+  <section class="tab-panel" id="tab-calendar">
+    <div class="month-nav">
+      <button class="month-btn" onclick="prevMonth()">‹</button>
+      <div class="month-center">
+        <div class="month-title" id="month-title"></div>
+        <button class="active-car-badge" id="active-car-badge" type="button" onclick="cycleCar()">🚗 Voiture active</button>
+      </div>
+      <button class="month-btn" onclick="nextMonth()">›</button>
+      <button class="month-btn today-btn" type="button" onclick="goToToday()">Aujourd’hui</button>
+    </div>
+
+    <div class="calendar-hint">Touchez un jour futur pour réserver.</div>
+
+    <div class="cal-header">
+      <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
+    </div>
+
+    <div class="cal-grid" id="cal-grid">
+      <div class="loading"><div class="spinner"></div> Chargement...</div>
+    </div>
+
+    <div class="legend" style="margin-bottom:80px">
+      <span><span class="legend-dot" style="background:var(--accent)"></span> Ma résa</span>
+      <span><span class="legend-dot" style="background:var(--accent-light);border:1px solid var(--accent)"></span> Réservé</span>
+      <span><span class="legend-dot" style="background:#f0f0f0"></span> Dispo</span>
+    </div>
+  </section>
+
+  <section class="tab-panel" id="tab-leaderboard" style="margin-bottom:80px">
+    <article class="card">
+      <div class="card-title">Classement familial</div>
+      <div class="mini-list" id="leaderboard-full"></div>
+    </article>
+  </section>
+
+  <section class="tab-panel" id="tab-history" style="margin-bottom:80px">
+    <article class="card">
+      <div class="card-title">Historique des trajets</div>
+      <div class="mini-list" id="history-full"></div>
+    </article>
+  </section>
+
+  <nav class="bottom-nav" aria-label="Navigation principale">
+    <button type="button" id="nav-dashboard" class="active" onclick="switchTab('dashboard')">🏠 Dashboard</button>
+    <button type="button" id="nav-calendar" onclick="switchTab('calendar')">📅 Calendrier</button>
+    <button type="button" id="nav-leaderboard" onclick="switchTab('leaderboard')">🏆 Classement</button>
+    <button type="button" id="nav-history" onclick="switchTab('history')">🕓 Historique</button>
+  </nav>
 </main>
 <div class="overlay" id="overlay" onclick="closeSheet()"><div class="sheet" id="sheet" onclick="event.stopPropagation()"><div class="sheet-handle"></div><div id="sheet-content"></div></div></div>
 <div class="toast" id="toast"></div>
 <script>
-const firebaseConfig={apiKey:"REDACTED_API_KEY",authDomain:"REDACTED_PROJECT_ID.firebaseapp.com",projectId:"REDACTED_PROJECT_ID",storageBucket:"REDACTED_PROJECT_ID.firebasestorage.app",messagingSenderId:"REDACTED_SENDER_ID",appId:"REDACTED_APP_ID",measurementId:"REDACTED_MEASUREMENT_ID"};
-firebase.initializeApp(firebaseConfig);const db=firebase.firestore();
-let currentUser=JSON.parse(localStorage.getItem('famcar_user')||'null'),currentMonth=new Date().getMonth(),currentYear=new Date().getFullYear(),bookings={},cars=[],selectedCar=null,unsubscribe=null,tempPhoto=null;
-async function loadCars(){try{const snap=await db.collection('cars').orderBy('name').get();cars=[];snap.forEach(doc=>cars.push({id:doc.id,...doc.data()}));if(cars.length===0){const ref=await db.collection('cars').add({name:'Voiture familiale',emoji:'🚗'});cars=[{id:ref.id,name:'Voiture familiale',emoji:'🚗'}]}selectedCar=cars[0].id;renderCarSelector();subscribeBookings()}catch(e){console.error('Firebase error:',e);document.getElementById('cal-grid').innerHTML='<div class="loading" style="flex-direction:column;gap:8px;color:var(--danger)">⚠️ Connexion impossible<br><small style="color:var(--text-light)">Vérifiez votre connexion ou Firebase.</small></div>'}}
-function renderCarSelector(){const el=document.getElementById('car-selector'),helper=document.getElementById('car-helper');if(!cars.length){el.style.display='none';helper.style.display='none';return}el.style.display='flex';if(cars.length===1){el.innerHTML=`<button class="car-tab active single" type="button" disabled>${cars[0].emoji} ${cars[0].name}</button>`;helper.style.display='block';helper.textContent='Voiture active';return}helper.style.display='block';helper.textContent='Choisissez la voiture à réserver';el.innerHTML=cars.map(c=>`<button class="car-tab ${c.id===selectedCar?'active':''}" type="button" onclick="selectCar('${c.id}')">${c.emoji} ${c.name}</button>`).join('')}
-function selectCar(id){selectedCar=id;renderCarSelector();subscribeBookings()}
-function subscribeBookings(){if(unsubscribe)unsubscribe();unsubscribe=db.collection('bookings').where('carId','==',selectedCar).onSnapshot(snap=>{bookings={};snap.forEach(doc=>{const d=doc.data();bookings[d.date]={id:doc.id,...d}});renderCalendar()})}
-function renderCalendar(){const grid=document.getElementById('cal-grid'),titleEl=document.getElementById('month-title'),date=new Date(currentYear,currentMonth,1);titleEl.textContent=date.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});let firstDay=date.getDay()-1;if(firstDay<0)firstDay=6;const daysInMonth=new Date(currentYear,currentMonth+1,0).getDate(),today=new Date();today.setHours(0,0,0,0);let html='';for(let i=0;i<firstDay;i++)html+='<div class="cal-day empty"></div>';for(let d=1;d<=daysInMonth;d++){const dateStr=`${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`,cellDate=new Date(currentYear,currentMonth,d),dayOfWeek=cellDate.getDay(),isWeekend=dayOfWeek===0||dayOfWeek===6,isToday=cellDate.getTime()===today.getTime(),isPast=cellDate<today,booking=bookings[dateStr],isMine=booking&&currentUser&&booking.userId===currentUser.id;let classes=['cal-day'];if(isWeekend)classes.push('weekend');if(isToday)classes.push('today');if(isPast)classes.push('past');if(booking&&isMine)classes.push('mine');else if(booking)classes.push('booked');let avatarHtml='';if(booking){avatarHtml=booking.photo?`<div class="booking-avatar"><img src="${booking.photo}" alt=""></div>`:`<div class="booking-avatar">${getInitials(booking.userName)}</div>`}html+=`<div class="${classes.join(' ')}" onclick="onDayClick('${dateStr}',${isPast})"><span class="day-num">${d}</span>${avatarHtml}</div>`}const totalCells=firstDay+daysInMonth;for(let i=totalCells;i<42;i++)html+='<div class="cal-day empty"></div>';grid.innerHTML=html;renderKpis(daysInMonth)}
-function renderKpis(daysInMonth){const monthPrefix=`${currentYear}-${String(currentMonth+1).padStart(2,'0')}-`,monthDates=Object.keys(bookings).filter(d=>d.startsWith(monthPrefix)),totalBookings=monthDates.length,myBookings=monthDates.filter(d=>currentUser&&bookings[d]?.userId===currentUser.id).length,occupancy=daysInMonth?Math.round(totalBookings/daysInMonth*100):0;document.getElementById('kpi-bookings').textContent=String(totalBookings);document.getElementById('kpi-bookings-sub').textContent=currentUser?`Dont ${myBookings} pour ${currentUser.name}`:'Tous conducteurs';document.getElementById('kpi-occupancy').textContent=`${occupancy}%`;document.getElementById('kpi-occupancy-sub').textContent=`${totalBookings} jour${totalBookings>1?'s':''} réservé${totalBookings>1?'s':''}`}
-function prevMonth(){currentMonth--;if(currentMonth<0){currentMonth=11;currentYear--}renderCalendar()}function nextMonth(){currentMonth++;if(currentMonth>11){currentMonth=0;currentYear++}renderCalendar()}
-function onDayClick(dateStr,isPast){if(isPast)return;if(!currentUser){showMemberSelect();return}const booking=bookings[dateStr],date=new Date(dateStr+'T00:00:00'),prettyDate=date.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});let html='';if(booking){const isMine=currentUser&&booking.userId===currentUser.id,avatarContent=booking.photo?`<img src="${booking.photo}" alt="">`:getInitials(booking.userName);html=`<div class="sheet-date">${prettyDate}</div><div class="sheet-status"><div class="booked-by"><div class="avatar-lg">${avatarContent}</div><div class="info">${booking.userName}<small>${isMine?'Votre réservation':'A réservé ce jour'}</small></div></div></div>${isMine?`<button class="btn btn-danger" onclick="cancelBooking('${booking.id}')">Annuler ma réservation</button>`:''}<button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Fermer</button>`}else{html=`<div class="sheet-date">${prettyDate}</div><div class="sheet-status">✅ Jour disponible</div><button class="btn btn-primary" onclick="book('${dateStr}')">Réserver ce jour</button><button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Annuler</button>`}document.getElementById('sheet-content').innerHTML=html;document.getElementById('overlay').classList.add('open')}
-async function book(dateStr){if(!currentUser)return;try{const existing=await db.collection('bookings').where('carId','==',selectedCar).where('date','==',dateStr).get();if(!existing.empty){closeSheet();showToast("Ce jour vient d'être réservé");return}await db.collection('bookings').add({carId:selectedCar,date:dateStr,userId:currentUser.id,userName:currentUser.name,photo:currentUser.photo||null,createdAt:firebase.firestore.FieldValue.serverTimestamp()});closeSheet();showToast('Réservation confirmée ✓')}catch(e){showToast('Erreur — réessayez')}}
-async function cancelBooking(bookingId){try{await db.collection('bookings').doc(bookingId).delete();closeSheet();showToast('Réservation annulée')}catch(e){showToast('Erreur — réessayez')}}
-async function showMemberSelect(){document.getElementById('app-header').style.display='none';document.getElementById('app-main').style.display='none';document.getElementById('member-select').style.display='block';const snap=await db.collection('users').orderBy('name').get(),members=[];snap.forEach(doc=>members.push({id:doc.id,...doc.data()}));const grid=document.getElementById('member-grid');let html=members.map(m=>{const av=m.photo?`<img src="${m.photo}" alt="">`:getInitials(m.name),safeName=m.name.replace(/'/g,"\\'"),safePhoto=(m.photo||'').replace(/'/g,"\\'");return`<div class="member-card" onclick="askMemberPin('${m.id}','${safeName}','${safePhoto}')"><div class="m-avatar">${av}</div><div class="m-name">${m.name}</div></div>`}).join('');html+=`<div class="member-card add-member-card" onclick="showSignupForm()"><div class="m-avatar">+</div><div class="m-name">Nouveau</div></div>`;grid.innerHTML=html;if(!members.length)showSignupForm()}
-function askMemberPin(userId,name,photo){const av=photo?`<img src="${photo}" alt="" style="width:100%;height:100%;object-fit:cover">`:getInitials(name);document.getElementById('sheet-content').innerHTML=`<div class="login-sheet"><div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:24px"><div style="width:64px;height:64px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;overflow:hidden">${av}</div><div style="font-size:18px;font-weight:600">${name}</div></div><p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Entrez votre code personnel</p><div class="pin-input" id="member-pin-input"><input type="tel" maxlength="1" inputmode="numeric" autocomplete="off"><input type="tel" maxlength="1" inputmode="numeric" autocomplete="off"><input type="tel" maxlength="1" inputmode="numeric" autocomplete="off"><input type="tel" maxlength="1" inputmode="numeric" autocomplete="off"></div><div class="lock-error" id="member-pin-error"></div><button class="btn btn-primary" onclick="verifyMemberPin('${userId}')">Valider</button><button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Retour</button></div>`;document.getElementById('overlay').classList.add('open');const inputs=document.querySelectorAll('#member-pin-input input');setTimeout(()=>inputs[0].focus(),300);setupPinInputs(inputs,()=>verifyMemberPin(userId))}
-async function verifyMemberPin(userId){const inputs=document.querySelectorAll('#member-pin-input input'),pin=Array.from(inputs).map(i=>i.value.replace(/\D/g,'')).join('');if(pin.length<4){document.getElementById('member-pin-error').textContent='Entrez les 4 chiffres';return}try{const doc=await db.collection('users').doc(userId).get();if(!doc.exists){document.getElementById('member-pin-error').textContent='Utilisateur introuvable';return}const data=doc.data();if(String(data.pin)===pin){currentUser={id:userId,name:data.name,email:data.email,photo:data.photo};localStorage.setItem('famcar_user',JSON.stringify(currentUser));closeSheet();enterApp();showToast(`Bonjour ${currentUser.name} !`)}else{document.getElementById('member-pin-error').textContent='Code incorrect';inputs.forEach(i=>{i.value='';i.classList.add('error')});inputs[0].focus();setTimeout(()=>inputs.forEach(i=>i.classList.remove('error')),600)}}catch(e){document.getElementById('member-pin-error').textContent='Erreur de connexion'}}
-function showSignupForm(){tempPhoto=null;document.getElementById('sheet-content').innerHTML=`<div class="login-sheet"><h2>Nouveau membre</h2><p>Créez votre profil</p><div class="input-group"><label>Prénom</label><input type="text" id="signup-name" placeholder="Votre prénom" autocomplete="given-name"></div><div class="input-group"><label>Email</label><input type="email" id="signup-email" placeholder="votre@email.com" autocomplete="email"></div><div class="input-group"><label>Photo (optionnel)</label><div class="photo-upload"><div class="photo-preview" id="photo-preview" onclick="document.getElementById('photo-input').click()">📷</div><span class="photo-label" onclick="document.getElementById('photo-input').click()">Ajouter une photo</span><input type="file" id="photo-input" accept="image/*" onchange="handlePhoto(this)"></div></div><div class="input-group"><label>Code personnel (4 chiffres)</label><div class="pin-input" id="signup-pin" style="justify-content:flex-start;margin-top:8px"><input type="tel" maxlength="1" inputmode="numeric" autocomplete="off"><input type="tel" maxlength="1" inputmode="numeric" autocomplete="off"><input type="tel" maxlength="1" inputmode="numeric" autocomplete="off"><input type="tel" maxlength="1" inputmode="numeric" autocomplete="off"></div></div><button class="btn btn-primary" onclick="signup()">C'est parti !</button><button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Retour</button></div>`;document.getElementById('overlay').classList.add('open');setupPinInputs(document.querySelectorAll('#signup-pin input'));setTimeout(()=>document.getElementById('signup-name')?.focus(),300)}
-async function signup(){const name=document.getElementById('signup-name').value.trim(),email=document.getElementById('signup-email').value.trim(),pin=Array.from(document.querySelectorAll('#signup-pin input')).map(i=>i.value.replace(/\D/g,'')).join('');if(!name||!email){showToast('Prénom et email requis');return}if(pin.length<4){showToast('Code à 4 chiffres requis');return}const existing=await db.collection('users').where('email','==',email).get();if(!existing.empty){showToast('Cet email est déjà utilisé');return}try{const ref=await db.collection('users').add({name,email,photo:tempPhoto||null,pin,createdAt:firebase.firestore.FieldValue.serverTimestamp()});currentUser={id:ref.id,name,email,photo:tempPhoto};localStorage.setItem('famcar_user',JSON.stringify(currentUser));closeSheet();enterApp();showToast(`Bienvenue ${name} !`)}catch(e){showToast('Erreur — réessayez')}}
-function handlePhoto(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{const img=new Image();img.onload=()=>{const canvas=document.createElement('canvas'),size=120;canvas.width=size;canvas.height=size;const ctx=canvas.getContext('2d'),min=Math.min(img.width,img.height);ctx.drawImage(img,(img.width-min)/2,(img.height-min)/2,min,min,0,0,size,size);tempPhoto=canvas.toDataURL('image/jpeg',.6);const preview=document.getElementById('photo-preview');preview.innerHTML=`<img src="${tempPhoto}" alt="">`;preview.classList.add('has-photo')};img.src=e.target.result};reader.readAsDataURL(file)}
-function showProfile(){if(!currentUser){showMemberSelect();return}const av=currentUser.photo?`<img src="${currentUser.photo}" alt="">`:getInitials(currentUser.name);document.getElementById('sheet-content').innerHTML=`<div class="login-sheet"><h2>Mon profil</h2><div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:20px 0 28px"><div style="width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;overflow:hidden">${av}</div><div style="text-align:left"><div style="font-size:18px;font-weight:600">${currentUser.name}</div><div style="font-size:14px;color:var(--text-light)">${currentUser.email}</div></div></div><button class="btn" style="background:var(--accent-light);color:var(--accent)" onclick="showChangePin()">Changer mon code</button><button class="btn btn-danger" style="margin-top:10px" onclick="logout()">Se déconnecter</button><button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button></div>`;document.getElementById('overlay').classList.add('open')}
-function showChangePin(){document.getElementById('sheet-content').innerHTML=`<div class="login-sheet"><h2>Nouveau code</h2><p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Choisissez un nouveau code à 4 chiffres</p><div class="pin-input" id="change-pin-input"><input type="tel" maxlength="1" inputmode="numeric" autocomplete="off"><input type="tel" maxlength="1" inputmode="numeric" autocomplete="off"><input type="tel" maxlength="1" inputmode="numeric" autocomplete="off"><input type="tel" maxlength="1" inputmode="numeric" autocomplete="off"></div><div class="lock-error" id="change-pin-error"></div><button class="btn btn-primary" onclick="saveNewPin()">Enregistrer</button><button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="showProfile()">Retour</button></div>`;const inputs=document.querySelectorAll('#change-pin-input input');setTimeout(()=>inputs[0].focus(),100);setupPinInputs(inputs)}
-async function saveNewPin(){const pin=Array.from(document.querySelectorAll('#change-pin-input input')).map(i=>i.value.replace(/\D/g,'')).join('');if(pin.length<4){document.getElementById('change-pin-error').textContent='Entrez 4 chiffres';return}try{await db.collection('users').doc(currentUser.id).update({pin});closeSheet();showToast('Code mis à jour ✓')}catch(e){document.getElementById('change-pin-error').textContent='Erreur — réessayez'}}
-function logout(){currentUser=null;localStorage.removeItem('famcar_user');closeSheet();showMemberSelect();showToast('Déconnecté')}
-function enterApp(){document.getElementById('member-select').style.display='none';document.getElementById('app-header').style.display='flex';document.getElementById('app-main').style.display='block';updateUserPill();renderCalendar()}
-function updateUserPill(){const avatar=document.getElementById('header-avatar'),name=document.getElementById('header-name');if(currentUser){name.textContent=currentUser.name;avatar.innerHTML=currentUser.photo?`<img src="${currentUser.photo}" alt="">`:getInitials(currentUser.name)}else{avatar.innerHTML='?';name.textContent='Se connecter'}}
-let isUnlocked=localStorage.getItem('famcar_unlocked')==='true';
-function initLockScreen(){if(isUnlocked){document.getElementById('lock-screen').classList.add('hidden');return}const inputs=document.querySelectorAll('#pin-input input');inputs[0].focus();setupPinInputs(inputs,checkPin)}
-async function checkPin(){const inputs=document.querySelectorAll('#pin-input input'),pin=Array.from(inputs).map(i=>i.value.replace(/\D/g,'')).join('');if(pin.length<4){showPinError('Entrez les 4 chiffres');return}try{const doc=await db.collection('config').doc('access').get();if(!doc.exists){try{await db.collection('config').doc('access').set({pin})}catch(e){}unlockApp();return}if(pin===String(doc.data().pin)){unlockApp()}else{showPinError('Code incorrect');inputs.forEach(i=>{i.value='';i.classList.add('error')});inputs[0].focus();setTimeout(()=>inputs.forEach(i=>i.classList.remove('error')),600)}}catch(e){console.error('PIN check error:',e);showPinError('Erreur de connexion — vérifiez Firestore')}}
-function showPinError(msg){document.getElementById('lock-error').textContent=msg}
-function unlockApp(){isUnlocked=true;localStorage.setItem('famcar_unlocked','true');document.getElementById('lock-screen').classList.add('hidden');if(currentUser)enterApp();else showMemberSelect()}
-function getInitials(name){return name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
-function closeSheet(){document.getElementById('overlay').classList.remove('open')}
-function showToast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2500)}
-function setupPinInputs(inputs,onComplete){inputs.forEach((input,i)=>{input.addEventListener('input',e=>{const val=e.target.value;if(val.length>1)e.target.value=val.slice(-1);if(val&&i<inputs.length-1)inputs[i+1].focus();if(i===inputs.length-1&&val&&onComplete)onComplete()});input.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!e.target.value&&i>0)inputs[i-1].focus();if(e.key==='Enter'&&onComplete)onComplete()})})}
-let touchStartX=0;document.addEventListener('DOMContentLoaded',()=>{const grid=document.getElementById('cal-grid');grid.addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX},{passive:true});grid.addEventListener('touchend',e=>{const diff=e.changedTouches[0].clientX-touchStartX;if(Math.abs(diff)>60){diff>0?prevMonth():nextMonth()}},{passive:true})});
-initLockScreen();loadCars();
-if(isUnlocked&&currentUser){document.getElementById('lock-screen').classList.add('hidden');enterApp()}
-else if(isUnlocked&&!currentUser){document.getElementById('lock-screen').classList.add('hidden');showMemberSelect()}
+// ==========================================
+// FIREBASE CONFIG
+// ==========================================
+const firebaseConfig = {
+  apiKey: "REDACTED_API_KEY",
+  authDomain: "REDACTED_PROJECT_ID.firebaseapp.com",
+  projectId: "REDACTED_PROJECT_ID",
+  storageBucket: "REDACTED_PROJECT_ID.firebasestorage.app",
+  messagingSenderId: "REDACTED_SENDER_ID",
+  appId: "REDACTED_APP_ID",
+  measurementId: "REDACTED_MEASUREMENT_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ==========================================
+// STATE
+// ==========================================
+let currentUser = JSON.parse(localStorage.getItem('famcar_user') || 'null');
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+let bookings = {};
+let cars = [];
+let selectedCar = null;
+let unsubscribe = null;
+let tempPhoto = null;
+let activeTab = 'dashboard';
+
+// ==========================================
+// CARS
+// ==========================================
+async function loadCars() {
+  try {
+    const snap = await db.collection('cars').orderBy('name').get();
+    cars = [];
+    snap.forEach(doc => cars.push({ id: doc.id, ...doc.data() }));
+    if (cars.length === 0) {
+      const ref = await db.collection('cars').add({ name: 'Voiture familiale', emoji: '🚗' });
+      cars = [{ id: ref.id, name: 'Voiture familiale', emoji: '🚗' }];
+    }
+    selectedCar = cars[0].id;
+    renderCarSelector();
+    subscribeBookings();
+  } catch (e) {
+    console.error('Firebase error:', e);
+    document.getElementById('cal-grid').innerHTML =
+      '<div class="loading" style="flex-direction:column;gap:8px;color:var(--danger)">⚠️ Connexion impossible<br><small style="color:var(--text-light)">Vérifiez votre connexion ou Firebase.</small></div>';
+  }
+}
+
+function renderCarSelector() {
+  const badge = document.getElementById('active-car-badge');
+  if (!badge) return;
+
+  if (cars.length === 0 || !selectedCar) {
+    badge.textContent = '🚗 Aucune voiture';
+    badge.disabled = true;
+    return;
+  }
+
+  const active = cars.find(c => c.id === selectedCar) || cars[0];
+  badge.textContent = `${active.emoji || '🚗'} ${active.name}`;
+  badge.disabled = cars.length <= 1;
+}
+
+function selectCar(id) { selectedCar = id; renderCarSelector(); subscribeBookings(); }
+
+function cycleCar() {
+  if (cars.length <= 1) return;
+  const currentIndex = cars.findIndex(c => c.id === selectedCar);
+  const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % cars.length : 0;
+  selectCar(cars[nextIndex].id);
+  showToast(`Voiture active : ${cars[nextIndex].name}`);
+}
+
+// ==========================================
+// BOOKINGS (REAL-TIME)
+// ==========================================
+function subscribeBookings() {
+  if (unsubscribe) unsubscribe();
+  unsubscribe = db.collection('bookings')
+    .where('carId', '==', selectedCar)
+    .onSnapshot(snap => {
+      bookings = {};
+      snap.forEach(doc => {
+        const d = doc.data();
+        bookings[d.date] = { id: doc.id, ...d };
+      });
+      renderCalendar();
+    });
+}
+
+function switchTab(tab) {
+  activeTab = tab;
+  ['dashboard', 'calendar', 'leaderboard', 'history'].forEach(name => {
+    document.getElementById(`tab-${name}`)?.classList.toggle('active', name === tab);
+    document.getElementById(`nav-${name}`)?.classList.toggle('active', name === tab);
+  });
+  if (tab === 'leaderboard' || tab === 'history' || tab === 'dashboard') renderExperiencePanels();
+}
+
+function getMonthBookingEntries() {
+  const monthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-`;
+  return Object.values(bookings).filter(b => (b.date || '').startsWith(monthPrefix));
+}
+
+function renderExperiencePanels() {
+  const monthEntries = getMonthBookingEntries();
+  const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
+  const todayBooking = bookings[todayStr];
+
+  const statusMain = document.getElementById('car-status-main');
+  const statusSub = document.getElementById('car-status-sub');
+  const statusPill = document.getElementById('car-status-pill');
+  if (statusMain && statusSub && statusPill) {
+    if (todayBooking) {
+      statusMain.textContent = `Utilisée aujourd’hui par ${todayBooking.userName}`;
+      statusSub.textContent = todayBooking.destination ? `Destination: ${todayBooking.destination}` : 'Trajet prévu aujourd’hui';
+      statusPill.textContent = 'Occupée';
+      statusPill.className = 'status-pill warn';
+    } else {
+      statusMain.textContent = 'Disponible aujourd’hui';
+      statusSub.textContent = 'Aucune réservation en cours';
+      statusPill.textContent = 'OK';
+      statusPill.className = 'status-pill ok';
+    }
+  }
+
+  const points = {};
+  monthEntries.forEach(b => {
+    const key = b.userId || b.userName || 'inconnu';
+    const label = b.userName || 'Utilisateur';
+    if (!points[key]) points[key] = { label, score: 0, rides: 0 };
+    const km = estimateDistanceForBooking(b);
+    points[key].score += 20 + Math.round(km / 25);
+    points[key].rides += 1;
+  });
+  const ranking = Object.values(points).sort((a,b)=>b.score-a.score);
+
+  function fillList(id, maxItems = null) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const list = typeof maxItems === 'number' ? ranking.slice(0, maxItems) : ranking;
+    if (!list.length) { el.innerHTML = '<div class="mini-item">Aucune donnée pour ce mois.</div>'; return; }
+    el.innerHTML = list.map((r,i)=>`<div class="mini-item"><span><strong>#${i+1} ${r.label}</strong><br><small style="color:var(--text-light)">${r.rides} trajet${r.rides>1?'s':''}</small></span><span>${r.score} pts</span></div>`).join('');
+  }
+  fillList('leaderboard-preview', 3);
+  fillList('leaderboard-full');
+
+  const history = Object.values(bookings).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  function fillHistory(id, maxItems = null) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const list = typeof maxItems === 'number' ? history.slice(0, maxItems) : history;
+    if (!list.length) { el.innerHTML = '<div class="mini-item">Aucun trajet enregistré.</div>'; return; }
+    el.innerHTML = list.map(h=>`<div class="mini-item"><span><strong>${h.userName || 'Conducteur'}</strong><br><small style="color:var(--text-light)">${h.date || ''} · ${h.destination || 'Destination non précisée'}</small></span><span>${estimateDistanceForBooking(h)} km</span></div>`).join('');
+  }
+  fillHistory('history-preview', 4);
+  fillHistory('history-full');
+}
+
+// ==========================================
+// CALENDAR RENDER (fixed 6 rows)
+// ==========================================
+function renderCalendar() {
+  const grid = document.getElementById('cal-grid');
+  const titleEl = document.getElementById('month-title');
+  const date = new Date(currentYear, currentMonth, 1);
+  titleEl.textContent = date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+
+  let firstDay = date.getDay() - 1;
+  if (firstDay < 0) firstDay = 6;
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  let html = '';
+
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) html += '<div class="cal-day empty"></div>';
+
+  // Day cells
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const cellDate = new Date(currentYear, currentMonth, d);
+    const dayOfWeek = cellDate.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isToday = cellDate.getTime() === today.getTime();
+    const isPast = cellDate < today;
+    const booking = bookings[dateStr];
+    const isMine = booking && currentUser && booking.userId === currentUser.id;
+
+    let classes = ['cal-day'];
+    if (isWeekend) classes.push('weekend');
+    if (isToday) classes.push('today');
+    if (isPast) classes.push('past');
+    if (booking && isMine) classes.push('mine');
+    else if (booking) classes.push('booked');
+
+    let avatarHtml = '';
+    if (booking) {
+      if (booking.photo) {
+        avatarHtml = `<div class="booking-avatar"><img src="${booking.photo}" alt=""></div>`;
+      } else {
+        avatarHtml = `<div class="booking-avatar">${getInitials(booking.userName)}</div>`;
+      }
+    }
+
+    html += `<div class="${classes.join(' ')}" onclick="onDayClick('${dateStr}', ${isPast})">
+      <span class="day-num">${d}</span>
+      ${avatarHtml}
+    </div>`;
+  }
+
+  // Pad to 42 cells (6 rows) for consistent height
+  const totalCells = firstDay + daysInMonth;
+  for (let i = totalCells; i < 42; i++) html += '<div class="cal-day empty"></div>';
+
+  grid.innerHTML = html;
+  renderKpis(daysInMonth);
+  renderExperiencePanels();
+}
+
+function renderKpis(daysInMonth) {
+  const monthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-`;
+  const monthDates = Object.keys(bookings).filter(d => d.startsWith(monthPrefix));
+  const totalBookings = monthDates.length;
+  const myBookings = monthDates.filter(d => currentUser && bookings[d]?.userId === currentUser.id).length;
+  const occupancy = daysInMonth ? Math.round((totalBookings / daysInMonth) * 100) : 0;
+
+  // Base réelle: destination + distance saisie à la réservation
+  const estimatedKm = monthDates.reduce((sum, d) => sum + estimateDistanceForBooking(bookings[d]), 0);
+  const co2KgPerKm = 0.12; // 120g/km
+  const estimatedCo2 = (estimatedKm * co2KgPerKm).toFixed(1);
+
+  document.getElementById('kpi-bookings').textContent = String(totalBookings);
+  document.getElementById('kpi-bookings-sub').textContent = currentUser
+    ? `Dont ${myBookings} pour ${currentUser.name}`
+    : 'Tous conducteurs';
+  document.getElementById('kpi-occupancy').textContent = `${occupancy}%`;
+  document.getElementById('kpi-occupancy-sub').textContent = `${totalBookings} jour${totalBookings > 1 ? 's' : ''} réservé${totalBookings > 1 ? 's' : ''}`;
+  document.getElementById('kpi-km').textContent = `${estimatedKm} km`;
+  document.getElementById('kpi-co2').textContent = `${estimatedCo2} kg`;
+}
+
+function prevMonth() { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(); }
+function nextMonth() { currentMonth++; if (currentMonth > 11) { currentMonth = 0; currentYear++; } renderCalendar(); }
+function goToToday() {
+  const now = new Date();
+  currentMonth = now.getMonth();
+  currentYear = now.getFullYear();
+  switchTab('calendar');
+  renderCalendar();
+  showToast("Retour à aujourd’hui");
+}
+
+
+function estimateRoundTripKm(destination) {
+  const map = {
+    'Paris intra-muros': 12,
+    'Versailles': 46,
+    'Roissy CDG': 66,
+    'Orly': 38,
+    'Lille': 450,
+    'Reims': 290,
+    'Orléans': 268,
+    'Rouen': 272,
+    'Lyon': 930,
+    'Nantes': 770,
+    'Bordeaux': 1170,
+    'Marseille': 1540
+  };
+  return map[destination] || null;
+}
+
+function estimateDistanceForBooking(booking) {
+  if (typeof booking.distanceKm === 'number' && booking.distanceKm > 0) return booking.distanceKm;
+  if (booking.destination) {
+    const estimated = estimateRoundTripKm(booking.destination);
+    if (estimated) return estimated;
+  }
+  return 0;
+}
+
+function updateDistanceFromDestination() {
+  const destination = document.getElementById('booking-destination')?.value || '';
+  const kmInput = document.getElementById('booking-km');
+  if (!kmInput) return;
+  const estimated = estimateRoundTripKm(destination);
+  if (estimated) kmInput.value = estimated;
+}
+
+// ==========================================
+// DAY CLICK
+// ==========================================
+function onDayClick(dateStr, isPast) {
+  if (isPast) return;
+  if (!currentUser) { showMemberSelect(); return; }
+
+  const booking = bookings[dateStr];
+  const date = new Date(dateStr + 'T00:00:00');
+  const prettyDate = date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  let html = '';
+  if (booking) {
+    const isMine = currentUser && booking.userId === currentUser.id;
+    const avatarContent = booking.photo ? `<img src="${booking.photo}" alt="">` : getInitials(booking.userName);
+    html = `
+      <div class="sheet-date">${prettyDate}</div>
+      <div class="sheet-status">
+        <div class="booked-by">
+          <div class="avatar-lg">${avatarContent}</div>
+          <div class="info">${booking.userName}<small>${isMine ? 'Votre réservation' : 'A réservé ce jour'}</small></div>
+        </div>
+      </div>
+      ${isMine ? `<button class="btn btn-danger" onclick="cancelBooking('${booking.id}')">Annuler ma réservation</button>` : ''}
+      <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Fermer</button>`;
+  } else {
+    html = `
+      <div class="sheet-date">${prettyDate}</div>
+      <div class="sheet-status">✅ Jour disponible</div>
+      <div class="input-group">
+        <label>Destination</label>
+        <select id="booking-destination" onchange="updateDistanceFromDestination()">
+          <option value="">Choisir une destination</option>
+          <option>Paris intra-muros</option><option>Versailles</option><option>Roissy CDG</option><option>Orly</option>
+          <option>Lille</option><option>Reims</option><option>Orléans</option><option>Rouen</option>
+          <option>Lyon</option><option>Nantes</option><option>Bordeaux</option><option>Marseille</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Distance aller-retour (km)</label>
+        <input type="number" id="booking-km" min="1" step="1" placeholder="Ex: 120">
+      </div>
+      <button class="btn btn-primary" onclick="book('${dateStr}')">Réserver ce jour</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Annuler</button>`;
+  }
+
+  document.getElementById('sheet-content').innerHTML = html;
+  document.getElementById('overlay').classList.add('open');
+}
+
+// ==========================================
+// BOOK / CANCEL
+// ==========================================
+async function book(dateStr) {
+  if (!currentUser) return;
+  try {
+    // Check for existing booking (prevent double-booking)
+    const existing = await db.collection('bookings').where('carId', '==', selectedCar).where('date', '==', dateStr).get();
+    if (!existing.empty) { closeSheet(); showToast("Ce jour vient d'être réservé"); return; }
+
+    const destination = (document.getElementById('booking-destination')?.value || '').trim();
+    const distanceKm = Number(document.getElementById('booking-km')?.value || 0);
+    if (!destination) { showToast('Choisissez une destination'); return; }
+    if (!distanceKm || distanceKm <= 0) { showToast('Ajoutez une distance valide (km)'); return; }
+
+    await db.collection('bookings').add({
+      carId: selectedCar, date: dateStr,
+      userId: currentUser.id, userName: currentUser.name,
+      photo: currentUser.photo || null,
+      destination,
+      distanceKm,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    closeSheet();
+    showToast('Réservation confirmée ✓');
+  } catch (e) { showToast('Erreur — réessayez'); }
+}
+
+async function cancelBooking(bookingId) {
+  try {
+    await db.collection('bookings').doc(bookingId).delete();
+    closeSheet();
+    showToast('Réservation annulée');
+  } catch (e) { showToast('Erreur — réessayez'); }
+}
+
+// ==========================================
+// MEMBER SELECT (Netflix-style)
+// ==========================================
+async function showMemberSelect() {
+  document.getElementById('app-header').style.display = 'none';
+  // Garde le planning/KPI visibles en mode consultation
+  document.getElementById('app-main').style.display = 'block';
+  document.getElementById('member-select').style.display = 'block';
+  switchTab('dashboard');
+
+  const snap = await db.collection('users').orderBy('name').get();
+  const members = [];
+  snap.forEach(doc => members.push({ id: doc.id, ...doc.data() }));
+
+  const grid = document.getElementById('member-grid');
+
+  let html = members.map(m => {
+    const av = m.photo ? `<img src="${m.photo}" alt="">` : getInitials(m.name);
+    const safeId = m.id;
+    const safeName = m.name.replace(/'/g, "\\'");
+    const safePhoto = (m.photo || '').replace(/'/g, "\\'");
+    return `<div class="member-card" onclick="askMemberPin('${safeId}', '${safeName}', '${safePhoto}')">
+      <div class="m-avatar">${av}</div>
+      <div class="m-name">${m.name}</div>
+    </div>`;
+  }).join('');
+
+  html += `<div class="member-card add-member-card" onclick="showSignupForm()">
+    <div class="m-avatar">+</div>
+    <div class="m-name">Nouveau</div>
+  </div>`;
+
+  grid.innerHTML = html;
+
+  if (members.length === 0) showSignupForm();
+}
+
+// ==========================================
+// ASK MEMBER PIN
+// ==========================================
+function askMemberPin(userId, name, photo) {
+  const av = photo ? `<img src="${photo}" alt="" style="width:100%;height:100%;object-fit:cover">` : getInitials(name);
+  document.getElementById('sheet-content').innerHTML = `
+    <div class="login-sheet">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:24px">
+        <div style="width:64px;height:64px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;overflow:hidden">${av}</div>
+        <div style="font-size:18px;font-weight:600">${name}</div>
+      </div>
+      <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Entrez votre code personnel</p>
+      <div class="pin-input" id="member-pin-input">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="lock-error" id="member-pin-error"></div>
+      <button class="btn btn-primary" onclick="verifyMemberPin('${userId}')">Valider</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Retour</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+
+  const inputs = document.querySelectorAll('#member-pin-input input');
+  setTimeout(() => inputs[0].focus(), 300);
+  setupPinInputs(inputs, () => verifyMemberPin(userId));
+}
+
+async function verifyMemberPin(userId) {
+  const inputs = document.querySelectorAll('#member-pin-input input');
+  const pin = Array.from(inputs).map(i => i.value.replace(/\D/g, '')).join('');
+  if (pin.length < 4) { document.getElementById('member-pin-error').textContent = 'Entrez les 4 chiffres'; return; }
+
+  try {
+    const doc = await db.collection('users').doc(userId).get();
+    if (!doc.exists) { document.getElementById('member-pin-error').textContent = 'Utilisateur introuvable'; return; }
+
+    const data = doc.data();
+    if (String(data.pin) === pin) {
+      currentUser = { id: userId, name: data.name, email: data.email, photo: data.photo };
+      localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+      closeSheet();
+      enterApp();
+      showToast(`Bonjour ${currentUser.name} !`);
+    } else {
+      document.getElementById('member-pin-error').textContent = 'Code incorrect';
+      inputs.forEach(i => { i.value = ''; i.classList.add('error'); });
+      inputs[0].focus();
+      setTimeout(() => inputs.forEach(i => i.classList.remove('error')), 600);
+    }
+  } catch (e) { document.getElementById('member-pin-error').textContent = 'Erreur de connexion'; }
+}
+
+// ==========================================
+// SIGNUP (new member)
+// ==========================================
+function showSignupForm() {
+  tempPhoto = null;
+  document.getElementById('sheet-content').innerHTML = `
+    <div class="login-sheet">
+      <h2>Nouveau membre</h2>
+      <p>Créez votre profil</p>
+      <div class="input-group">
+        <label>Prénom</label>
+        <input type="text" id="signup-name" placeholder="Votre prénom" autocomplete="given-name">
+      </div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="signup-email" placeholder="votre@email.com" autocomplete="email">
+      </div>
+      <div class="input-group">
+        <label>Photo (optionnel)</label>
+        <div class="photo-upload">
+          <div class="photo-preview" id="photo-preview" onclick="document.getElementById('photo-input').click()">📷</div>
+          <span class="photo-label" onclick="document.getElementById('photo-input').click()">Ajouter une photo</span>
+          <input type="file" id="photo-input" accept="image/*" onchange="handlePhoto(this)">
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Code personnel (4 chiffres)</label>
+        <div class="pin-input" id="signup-pin" style="justify-content:flex-start;margin-top:8px">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="signup()">C'est parti !</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Retour</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+
+  const pins = document.querySelectorAll('#signup-pin input');
+  setupPinInputs(pins);
+  setTimeout(() => document.getElementById('signup-name')?.focus(), 300);
+}
+
+async function signup() {
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const pin = Array.from(document.querySelectorAll('#signup-pin input')).map(i => i.value.replace(/\D/g, '')).join('');
+
+  if (!name || !email) { showToast('Prénom et email requis'); return; }
+  if (pin.length < 4) { showToast('Code à 4 chiffres requis'); return; }
+
+  const existing = await db.collection('users').where('email', '==', email).get();
+  if (!existing.empty) { showToast('Cet email est déjà utilisé'); return; }
+
+  try {
+    const ref = await db.collection('users').add({
+      name, email, photo: tempPhoto || null, pin,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    currentUser = { id: ref.id, name, email, photo: tempPhoto };
+    localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+    closeSheet();
+    enterApp();
+    showToast(`Bienvenue ${name} !`);
+  } catch (e) { showToast('Erreur — réessayez'); }
+}
+
+// ==========================================
+// PHOTO HANDLER
+// ==========================================
+function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const size = 120; canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const min = Math.min(img.width, img.height);
+      ctx.drawImage(img, (img.width - min)/2, (img.height - min)/2, min, min, 0, 0, size, size);
+      tempPhoto = canvas.toDataURL('image/jpeg', 0.6);
+      const preview = document.getElementById('photo-preview');
+      preview.innerHTML = `<img src="${tempPhoto}" alt="">`;
+      preview.classList.add('has-photo');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ==========================================
+// PROFILE / LOGOUT / CHANGE PIN
+// ==========================================
+function showProfile() {
+  if (!currentUser) { showMemberSelect(); return; }
+  const av = currentUser.photo ? `<img src="${currentUser.photo}" alt="">` : getInitials(currentUser.name);
+  document.getElementById('sheet-content').innerHTML = `
+    <div class="login-sheet">
+      <h2>Mon profil</h2>
+      <div class="profile-row">
+        <div class="profile-avatar">${av}</div>
+        <div class="profile-meta">
+          <div class="name">${currentUser.name}</div>
+          <div class="email">${currentUser.email}</div>
+        </div>
+      </div>
+      <button class="btn" style="background:var(--accent-light);color:var(--accent)" onclick="showChangePin()">Changer mon code</button>
+      <button class="btn btn-danger" style="margin-top:10px" onclick="logout()">Se déconnecter</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function showChangePin() {
+  document.getElementById('sheet-content').innerHTML = `
+    <div class="login-sheet">
+      <h2>Nouveau code</h2>
+      <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Choisissez un nouveau code à 4 chiffres</p>
+      <div class="pin-input" id="change-pin-input">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="lock-error" id="change-pin-error"></div>
+      <button class="btn btn-primary" onclick="saveNewPin()">Enregistrer</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="showProfile()">Retour</button>
+    </div>`;
+  const inputs = document.querySelectorAll('#change-pin-input input');
+  setTimeout(() => inputs[0].focus(), 100);
+  setupPinInputs(inputs);
+}
+
+async function saveNewPin() {
+  const pin = Array.from(document.querySelectorAll('#change-pin-input input')).map(i => i.value.replace(/\D/g, '')).join('');
+  if (pin.length < 4) { document.getElementById('change-pin-error').textContent = 'Entrez 4 chiffres'; return; }
+  try {
+    await db.collection('users').doc(currentUser.id).update({ pin });
+    closeSheet();
+    showToast('Code personnel mis à jour ✓');
+  } catch (e) { document.getElementById('change-pin-error').textContent = 'Erreur — réessayez'; }
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('famcar_user');
+  closeSheet();
+  showMemberSelect();
+  showToast('Déconnecté');
+}
+
+function enterApp() {
+  document.getElementById('member-select').style.display = 'none';
+  document.getElementById('app-header').style.display = 'flex';
+  document.getElementById('app-main').style.display = 'block';
+  updateUserPill();
+  switchTab(activeTab || 'dashboard');
+  renderCalendar();
+}
+
+function updateUserPill() {
+  const avatar = document.getElementById('header-avatar');
+  const name = document.getElementById('header-name');
+  if (currentUser) {
+    name.textContent = currentUser.name;
+    avatar.innerHTML = currentUser.photo ? `<img src="${currentUser.photo}" alt="">` : getInitials(currentUser.name);
+  } else {
+    avatar.innerHTML = '?';
+    name.textContent = 'Se connecter';
+  }
+}
+
+// ==========================================
+// PIN LOCK (family code)
+// ==========================================
+let isUnlocked = localStorage.getItem('famcar_unlocked') === 'true';
+
+function initLockScreen() {
+  if (isUnlocked) { document.getElementById('lock-screen').classList.add('hidden'); return; }
+  const inputs = document.querySelectorAll('#pin-input input');
+  inputs[0].focus();
+  setupPinInputs(inputs, checkPin);
+}
+
+async function checkPin() {
+  const inputs = document.querySelectorAll('#pin-input input');
+  const pin = Array.from(inputs).map(i => i.value.replace(/\D/g, '')).join('');
+  if (pin.length < 4) { showPinError('Entrez les 4 chiffres'); return; }
+
+  try {
+    const doc = await db.collection('config').doc('access').get();
+    if (!doc.exists) {
+      try { await db.collection('config').doc('access').set({ pin }); } catch(e) {}
+      unlockApp();
+      return;
+    }
+    if (pin === String(doc.data().pin)) { unlockApp(); }
+    else {
+      showPinError('Code incorrect');
+      inputs.forEach(i => { i.value = ''; i.classList.add('error'); });
+      inputs[0].focus();
+      setTimeout(() => inputs.forEach(i => i.classList.remove('error')), 600);
+    }
+  } catch (e) {
+    console.error('PIN check error:', e);
+    showPinError('Erreur de connexion — vérifiez Firestore');
+  }
+}
+
+function showPinError(msg) { document.getElementById('lock-error').textContent = msg; }
+
+function unlockApp() {
+  isUnlocked = true;
+  localStorage.setItem('famcar_unlocked', 'true');
+  document.getElementById('lock-screen').classList.add('hidden');
+  if (currentUser) { enterApp(); }
+  else { showMemberSelect(); }
+}
+
+// ==========================================
+// HELPERS
+// ==========================================
+function getInitials(name) { return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2); }
+function closeSheet() { document.getElementById('overlay').classList.remove('open'); }
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// Reusable PIN input setup (auto-advance, backspace, auto-submit)
+function setupPinInputs(inputs, onComplete) {
+  inputs.forEach((input, i) => {
+    input.addEventListener('input', (e) => {
+      const val = e.target.value;
+      if (val.length > 1) e.target.value = val.slice(-1);
+      if (val && i < inputs.length - 1) inputs[i + 1].focus();
+      if (i === inputs.length - 1 && val && onComplete) onComplete();
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !e.target.value && i > 0) inputs[i - 1].focus();
+      if (e.key === 'Enter' && onComplete) onComplete();
+    });
+  });
+}
+
+// Swipe to change month
+let touchStartX = 0;
+document.addEventListener('DOMContentLoaded', () => {
+  const grid = document.getElementById('cal-grid');
+  grid.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  grid.addEventListener('touchend', e => {
+    const diff = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(diff) > 60) { diff > 0 ? prevMonth() : nextMonth(); }
+  }, { passive: true });
+});
+
+// ==========================================
+// INIT
+// ==========================================
+initLockScreen();
+loadCars();
+
+if (isUnlocked && currentUser) {
+  document.getElementById('lock-screen').classList.add('hidden');
+  enterApp();
+} else if (isUnlocked && !currentUser) {
+  document.getElementById('lock-screen').classList.add('hidden');
+  showMemberSelect();
+}
 </script>
 </body>
 </html>
