@@ -497,42 +497,9 @@
 </style>
 </head>
 <body>
-
-<!-- Lock Screen (PIN familial) -->
-<div class="lock-screen" id="lock-screen">
-  <div class="lock-box">
-    <div class="lock-icon">🔒</div>
-    <h1>FamCar</h1>
-    <p>Entrez le code familial</p>
-    <div class="pin-input" id="pin-input">
-      <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-      <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-      <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-      <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-    </div>
-    <div class="lock-error" id="lock-error"></div>
-    <button class="btn btn-primary" onclick="checkPin()">Entrer</button>
-  </div>
-</div>
-
-<!-- Member selection screen -->
-<div class="member-select" id="member-select" style="display:none;">
-  <h2>Qui conduit ?</h2>
-  <p>Sélectionnez votre profil</p>
-  <div class="member-grid" id="member-grid"></div>
-</div>
-
-<header id="app-header" style="display:none;">
-  <div class="logo">
-    <div class="logo-icon">🚗</div>
-    FamCar
-  </div>
-  <div class="user-pill" id="user-pill" onclick="showProfile()">
-    <div class="avatar" id="header-avatar">?</div>
-    <span id="header-name">Se connecter</span>
-  </div>
-</header>
-
+<div class="lock-screen" id="lock-screen"><div class="lock-box"><div class="lock-icon">🔒</div><h1>FamCar</h1><p>Entrez le code familial</p><div class="pin-input" id="pin-input"><input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off"><input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off"><input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off"><input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off"></div><div class="lock-error" id="lock-error"></div><button class="btn btn-primary" onclick="checkPin()">Entrer</button></div></div>
+<div class="member-select" id="member-select" style="display:none;"><h2>Qui conduit ?</h2><p>Sélectionnez votre profil</p><div class="member-grid" id="member-grid"></div></div>
+<header id="app-header" style="display:none;"><div class="logo"><div class="logo-icon">🚗</div> FamCar</div><div class="user-pill" id="user-pill" onclick="showProfile()"><div class="avatar" id="header-avatar">?</div><span id="header-name">Se connecter</span></div></header>
 <main id="app-main" style="display:none;">
   <section class="tab-panel active" id="tab-dashboard">
     <article class="card" id="car-status-card">
@@ -635,16 +602,8 @@
     <button type="button" id="nav-history" onclick="switchTab('history')">🕓 Historique</button>
   </nav>
 </main>
-
-<div class="overlay" id="overlay" onclick="closeSheet()">
-  <div class="sheet" id="sheet" onclick="event.stopPropagation()">
-    <div class="sheet-handle"></div>
-    <div id="sheet-content"></div>
-  </div>
-</div>
-
+<div class="overlay" id="overlay" onclick="closeSheet()"><div class="sheet" id="sheet" onclick="event.stopPropagation()"><div class="sheet-handle"></div><div id="sheet-content"></div></div></div>
 <div class="toast" id="toast"></div>
-
 <script>
 // ==========================================
 // FIREBASE CONFIG
