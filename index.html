@@ -7,6 +7,11 @@
 <meta name="description" content="Réservation de la voiture familiale — simple, rapide, gratuit.">
 <meta name="theme-color" content="#ffffff">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="FamCar">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,300&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -506,7 +511,7 @@
       <div class="card-title">État de la voiture</div>
       <div class="status-row">
         <div>
-          <div class="card-value" id="car-status-main">Disponible aujourd’hui</div>
+          <div class="card-value" id="car-status-main">Disponible aujourd'hui</div>
           <div style="font-size:13px;color:var(--text-light);margin-top:4px" id="car-status-sub">Aucune réservation en cours</div>
         </div>
         <span class="status-pill ok" id="car-status-pill">OK</span>
@@ -561,7 +566,7 @@
         <button class="active-car-badge" id="active-car-badge" type="button" onclick="cycleCar()">🚗 Voiture active</button>
       </div>
       <button class="month-btn" onclick="nextMonth()">›</button>
-      <button class="month-btn today-btn" type="button" onclick="goToToday()">Aujourd’hui</button>
+      <button class="month-btn today-btn" type="button" onclick="goToToday()">Aujourd'hui</button>
     </div>
 
     <div class="calendar-hint">Touchez un jour futur pour réserver.</div>
@@ -722,12 +727,12 @@ function renderExperiencePanels() {
   const statusPill = document.getElementById('car-status-pill');
   if (statusMain && statusSub && statusPill) {
     if (todayBooking) {
-      statusMain.textContent = `Utilisée aujourd’hui par ${todayBooking.userName}`;
-      statusSub.textContent = todayBooking.destination ? `Destination: ${todayBooking.destination}` : 'Trajet prévu aujourd’hui';
+      statusMain.textContent = `Utilisée aujourd'hui par ${todayBooking.userName}`;
+      statusSub.textContent = todayBooking.destination ? `Destination: ${todayBooking.destination}` : 'Trajet prévu aujourd\'hui';
       statusPill.textContent = 'Occupée';
       statusPill.className = 'status-pill warn';
     } else {
-      statusMain.textContent = 'Disponible aujourd’hui';
+      statusMain.textContent = 'Disponible aujourd\'hui';
       statusSub.textContent = 'Aucune réservation en cours';
       statusPill.textContent = 'OK';
       statusPill.className = 'status-pill ok';
@@ -858,7 +863,7 @@ function goToToday() {
   currentYear = now.getFullYear();
   switchTab('calendar');
   renderCalendar();
-  showToast("Retour à aujourd’hui");
+  showToast("Retour à aujourd'hui");
 }
 
 
