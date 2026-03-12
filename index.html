@@ -28,6 +28,8 @@
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
     --shadow-md: 0 4px 20px rgba(0,0,0,0.06);
     --shadow-lg: 0 12px 40px rgba(0,0,0,0.1);
+    --xp-color: #f59e0b;
+    --streak-color: #ef6c00;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -487,6 +489,162 @@
     animation: spin 0.6s linear infinite; margin-right: 10px;
   }
 
+  /* ---- GAMIFICATION ---- */
+  .xp-hero-card {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border-radius: 20px; padding: 20px; color: white; margin-bottom: 14px;
+  }
+  .xp-hero-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .xp-avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; flex-shrink: 0;
+    font-size: 16px; font-weight: 700; color: white;
+  }
+  .xp-info { flex: 1; min-width: 0; }
+  .xp-name { font-size: 17px; font-weight: 600; }
+  .xp-level-badge { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+  .xp-streak { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; white-space: nowrap; }
+  .xp-bar-label {
+    display: flex; justify-content: space-between;
+    font-size: 12px; opacity: 0.8; margin-bottom: 6px;
+  }
+  .xp-bar-track {
+    background: rgba(255,255,255,0.25); border-radius: 999px;
+    height: 8px; overflow: hidden;
+  }
+  .xp-bar-fill {
+    height: 100%; background: var(--xp-color); border-radius: 999px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 4px;
+  }
+  .car-status-inline {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--text-light);
+    margin-bottom: 14px; padding: 0 2px;
+  }
+  .dot-ok { width: 8px; height: 8px; border-radius: 50%; background: #10b981; flex-shrink: 0; }
+  .dot-warn { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); flex-shrink: 0; }
+  .quick-stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .quick-stat {
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px; text-align: center; background: #fff;
+  }
+  .quick-stat-value {
+    font-size: 26px; font-weight: 700; letter-spacing: -1px;
+    font-family: 'Fraunces', serif;
+  }
+  .quick-stat-label { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+
+  /* Leaderboard Podium */
+  .lb-header { text-align: center; margin-bottom: 20px; }
+  .lb-title { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 500; }
+  .podium {
+    display: flex; align-items: flex-end; justify-content: center;
+    gap: 8px; margin-bottom: 24px; padding: 0 4px;
+  }
+  .podium-slot {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 6px; max-width: 110px;
+  }
+  .podium-avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--accent); color: white; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; overflow: hidden;
+    border: 3px solid #e5e7eb;
+  }
+  .podium-slot.rank-1 .podium-avatar { width: 60px; height: 60px; border-color: #f59e0b; }
+  .podium-slot.rank-2 .podium-avatar { border-color: #94a3b8; }
+  .podium-slot.rank-3 .podium-avatar { border-color: #b45309; }
+  .podium-name { font-size: 12px; font-weight: 600; text-align: center; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .podium-score { font-size: 11px; color: var(--text-light); }
+  .podium-bar {
+    width: 100%; border-radius: 10px 10px 0 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; padding: 8px 0;
+  }
+  .podium-bar.rank-1 { background: linear-gradient(180deg, #fef9c3 0%, #fde68a 100%); }
+  .podium-bar.rank-2 { background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%); }
+  .podium-bar.rank-3 { background: linear-gradient(180deg, #fff7ed 0%, #fed7aa 100%); }
+  .podium-rank { font-size: 11px; font-weight: 700; color: var(--text-light); letter-spacing: 0.5px; }
+  .lb-rest { display: flex; flex-direction: column; gap: 8px; }
+  .lb-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; border: 1px solid var(--border);
+    border-radius: 12px; background: white;
+  }
+  .lb-row.is-me { background: var(--accent-light); border-color: var(--accent); }
+  .lb-rank-num { font-size: 16px; font-weight: 700; color: var(--text-light); width: 24px; text-align: center; }
+  .lb-avatar-sm {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--accent); color: white; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; overflow: hidden;
+  }
+  .lb-info { flex: 1; min-width: 0; }
+  .lb-info-name { font-size: 14px; font-weight: 600; }
+  .lb-info-sub { font-size: 12px; color: var(--text-light); }
+  .lb-pts { font-size: 15px; font-weight: 700; color: var(--accent); }
+
+  /* Celebration overlay */
+  .celebration {
+    position: fixed; inset: 0; z-index: 400;
+    background: rgba(37, 99, 235, 0.95);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+  }
+  .celebration-inner { text-align: center; color: white; z-index: 1; padding: 24px; }
+  .celebration-emoji { font-size: 64px; animation: cel-bounce 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  .celebration-title {
+    font-family: 'Fraunces', serif; font-size: 28px; font-weight: 700;
+    margin-top: 12px; letter-spacing: -0.5px;
+  }
+  .celebration-xp {
+    font-size: 24px; font-weight: 700; color: var(--xp-color);
+    margin-top: 8px;
+    animation: xp-pop 0.5s 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  .celebration-sub { font-size: 15px; opacity: 0.85; margin-top: 6px; }
+  .confetti-container { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .confetti-piece {
+    position: absolute; top: -30px; font-size: 22px;
+    animation: confetti-fall linear forwards;
+  }
+  @keyframes cel-bounce {
+    0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  @keyframes xp-pop {
+    0% { transform: scale(0.5) translateY(16px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  @keyframes confetti-fall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(540deg); opacity: 0; }
+  }
+
+  /* Fuel sheet */
+  .fuel-selector {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 8px; margin: 20px 0;
+  }
+  .fuel-btn {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 6px; padding: 10px 4px; border-radius: 12px;
+    border: 2px solid var(--border); background: white;
+    cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+  }
+  .fuel-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+  .fuel-btn.selected { border-color: var(--accent); background: var(--accent); color: white; }
+  .fuel-bar-wrap {
+    width: 24px; height: 32px; background: #f0f0f0; border-radius: 4px;
+    overflow: hidden; display: flex; align-items: flex-end;
+  }
+  .fuel-bar-fill { width: 100%; border-radius: 4px; transition: height 0.2s; }
+  .fuel-label { font-size: 10px; font-weight: 600; }
+
   /* ---- RESPONSIVE ---- */
   @media (max-width: 480px) {
     header { padding: 16px 18px; }
@@ -507,18 +665,45 @@
 <header id="app-header" style="display:none;"><div class="logo"><div class="logo-icon">🚗</div> FamCar</div><div class="user-pill" id="user-pill" onclick="showProfile()"><div class="avatar" id="header-avatar">?</div><span id="header-name">Se connecter</span></div></header>
 <main id="app-main" style="display:none;">
   <section class="tab-panel active" id="tab-dashboard">
-    <article class="card" id="car-status-card">
-      <div class="card-title">État de la voiture</div>
-      <div class="status-row">
-        <div>
-          <div class="card-value" id="car-status-main">Disponible aujourd'hui</div>
-          <div style="font-size:13px;color:var(--text-light);margin-top:4px" id="car-status-sub">Aucune réservation en cours</div>
+    <!-- XP Hero Card -->
+    <article class="xp-hero-card" id="xp-hero-card">
+      <div class="xp-hero-top">
+        <div class="xp-avatar" id="xp-avatar"></div>
+        <div class="xp-info">
+          <div class="xp-name" id="xp-name">—</div>
+          <div class="xp-level-badge" id="xp-level-badge">Niveau 1 · Apprenti</div>
         </div>
-        <span class="status-pill ok" id="car-status-pill">OK</span>
+        <div class="xp-streak" id="xp-streak">🔥 0</div>
+      </div>
+      <div class="xp-bar-label">
+        <span id="xp-current">0 XP</span>
+        <span id="xp-next">sur 100 XP</span>
+      </div>
+      <div class="xp-bar-track">
+        <div class="xp-bar-fill" id="xp-bar-fill" style="width:0%"></div>
       </div>
     </article>
 
-    <section class="kpi-grid" aria-label="Indicateurs mensuels">
+    <!-- Statut voiture inline -->
+    <div class="car-status-inline">
+      <span class="dot-ok" id="car-status-dot"></span>
+      <span id="car-status-text">Voiture disponible aujourd'hui</span>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="quick-stats-row">
+      <div class="quick-stat">
+        <div class="quick-stat-value" id="qs-rides">0</div>
+        <div class="quick-stat-label">mes trajets ce mois</div>
+      </div>
+      <div class="quick-stat">
+        <div class="quick-stat-value" id="qs-rank">#—</div>
+        <div class="quick-stat-label">mon classement</div>
+      </div>
+    </div>
+
+    <!-- KPI Grid (conservé) -->
+    <section class="kpi-grid" aria-label="Indicateurs mensuels" style="margin-bottom:80px">
       <article class="kpi-card">
         <div class="kpi-label">Réservations (mois)</div>
         <div class="kpi-value" id="kpi-bookings">0</div>
@@ -540,22 +725,6 @@
         <div class="kpi-sub">Base 120 g CO₂ / km</div>
       </article>
     </section>
-
-    <article class="card">
-      <div class="status-row" style="margin-bottom:8px">
-        <div class="card-title" style="margin-bottom:0">Leaderboard (mois)</div>
-        <button type="button" style="border:none;background:transparent;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer" onclick="switchTab('leaderboard')">Voir tout</button>
-      </div>
-      <div class="mini-list" id="leaderboard-preview"></div>
-    </article>
-
-    <article class="card" style="margin-bottom:80px">
-      <div class="status-row" style="margin-bottom:8px">
-        <div class="card-title" style="margin-bottom:0">Historique récent</div>
-        <button type="button" style="border:none;background:transparent;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer" onclick="switchTab('history')">Voir tout</button>
-      </div>
-      <div class="mini-list" id="history-preview"></div>
-    </article>
   </section>
 
   <section class="tab-panel" id="tab-calendar">
@@ -587,10 +756,11 @@
   </section>
 
   <section class="tab-panel" id="tab-leaderboard" style="margin-bottom:80px">
-    <article class="card">
-      <div class="card-title">Classement familial</div>
-      <div class="mini-list" id="leaderboard-full"></div>
-    </article>
+    <div class="lb-header">
+      <h2 class="lb-title">Classement du mois</h2>
+    </div>
+    <div class="podium" id="podium"></div>
+    <div class="lb-rest" id="lb-rest"></div>
   </section>
 
   <section class="tab-panel" id="tab-history" style="margin-bottom:80px">
@@ -609,6 +779,15 @@
 </main>
 <div class="overlay" id="overlay" onclick="closeSheet()"><div class="sheet" id="sheet" onclick="event.stopPropagation()"><div class="sheet-handle"></div><div id="sheet-content"></div></div></div>
 <div class="toast" id="toast"></div>
+<div id="celebration" class="celebration" style="display:none;" aria-live="polite">
+  <div class="celebration-inner">
+    <div class="celebration-emoji" id="cel-emoji">🎉</div>
+    <div class="celebration-title" id="cel-title">Réservation confirmée !</div>
+    <div class="celebration-xp" id="cel-xp">+20 XP</div>
+    <div class="celebration-sub" id="cel-sub">La voiture est à toi</div>
+  </div>
+  <div class="confetti-container" id="confetti-container"></div>
+</div>
 <script>
 // ==========================================
 // FIREBASE CONFIG
@@ -722,54 +901,52 @@ function renderExperiencePanels() {
   const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
   const todayBooking = bookings[todayStr];
 
-  const statusMain = document.getElementById('car-status-main');
-  const statusSub = document.getElementById('car-status-sub');
-  const statusPill = document.getElementById('car-status-pill');
-  if (statusMain && statusSub && statusPill) {
+  // Inline car status (new simplified format)
+  const statusDot = document.getElementById('car-status-dot');
+  const statusText = document.getElementById('car-status-text');
+  if (statusDot && statusText) {
     if (todayBooking) {
-      statusMain.textContent = `Utilisée aujourd'hui par ${todayBooking.userName}`;
-      statusSub.textContent = todayBooking.destination ? `Destination: ${todayBooking.destination}` : 'Trajet prévu aujourd\'hui';
-      statusPill.textContent = 'Occupée';
-      statusPill.className = 'status-pill warn';
+      statusDot.className = 'dot-warn';
+      statusText.textContent = `Utilisée par ${todayBooking.userName}${todayBooking.destination ? ' · ' + todayBooking.destination : ''}`;
     } else {
-      statusMain.textContent = 'Disponible aujourd\'hui';
-      statusSub.textContent = 'Aucune réservation en cours';
-      statusPill.textContent = 'OK';
-      statusPill.className = 'status-pill ok';
+      statusDot.className = 'dot-ok';
+      statusText.textContent = 'Voiture disponible aujourd\'hui';
     }
   }
 
+  // Points accumulator (with photo for podium avatars)
   const points = {};
   monthEntries.forEach(b => {
     const key = b.userId || b.userName || 'inconnu';
     const label = b.userName || 'Utilisateur';
-    if (!points[key]) points[key] = { label, score: 0, rides: 0 };
+    if (!points[key]) points[key] = { label, score: 0, rides: 0, photo: b.photo || null };
     const km = estimateDistanceForBooking(b);
     points[key].score += 20 + Math.round(km / 25);
     points[key].rides += 1;
   });
   const ranking = Object.values(points).sort((a,b)=>b.score-a.score);
 
-  function fillList(id, maxItems = null) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const list = typeof maxItems === 'number' ? ranking.slice(0, maxItems) : ranking;
-    if (!list.length) { el.innerHTML = '<div class="mini-item">Aucune donnée pour ce mois.</div>'; return; }
-    el.innerHTML = list.map((r,i)=>`<div class="mini-item"><span><strong>#${i+1} ${r.label}</strong><br><small style="color:var(--text-light)">${r.rides} trajet${r.rides>1?'s':''}</small></span><span>${r.score} pts</span></div>`).join('');
-  }
-  fillList('leaderboard-preview', 3);
-  fillList('leaderboard-full');
+  // Quick stats (my rides this month + my rank)
+  const myMonthRides = monthEntries.filter(b => currentUser && b.userId === currentUser.id).length;
+  const myRank = ranking.findIndex(r => currentUser && r.label === currentUser.name) + 1;
+  const qsRides = document.getElementById('qs-rides');
+  const qsRank = document.getElementById('qs-rank');
+  if (qsRides) qsRides.textContent = String(myMonthRides);
+  if (qsRank) qsRank.textContent = myRank > 0 ? `#${myRank}` : '#—';
 
+  // XP hero card
+  renderXpHeroCard();
+
+  // Leaderboard podium
+  renderLeaderboard(ranking);
+
+  // History (full list only — no more preview on dashboard)
   const history = Object.values(bookings).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  function fillHistory(id, maxItems = null) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const list = typeof maxItems === 'number' ? history.slice(0, maxItems) : history;
-    if (!list.length) { el.innerHTML = '<div class="mini-item">Aucun trajet enregistré.</div>'; return; }
-    el.innerHTML = list.map(h=>`<div class="mini-item"><span><strong>${h.userName || 'Conducteur'}</strong><br><small style="color:var(--text-light)">${h.date || ''} · ${h.destination || 'Destination non précisée'}</small></span><span>${estimateDistanceForBooking(h)} km</span></div>`).join('');
+  const historyEl = document.getElementById('history-full');
+  if (historyEl) {
+    if (!history.length) { historyEl.innerHTML = '<div class="mini-item">Aucun trajet enregistré.</div>'; }
+    else { historyEl.innerHTML = history.map(h=>`<div class="mini-item"><span><strong>${h.userName || 'Conducteur'}</strong><br><small style="color:var(--text-light)">${h.date || ''} · ${h.destination || 'Destination non précisée'}</small></span><span>${estimateDistanceForBooking(h)} km</span></div>`).join(''); }
   }
-  fillHistory('history-preview', 4);
-  fillHistory('history-full');
 }
 
 // ==========================================
@@ -894,6 +1071,232 @@ function estimateDistanceForBooking(booking) {
   return 0;
 }
 
+// ==========================================
+// XP / LEVEL / STREAK SYSTEM
+// ==========================================
+const LEVELS = [
+  { name: 'Apprenti',   min: 0,    max: 100,  color: '#6366f1' },
+  { name: 'Conducteur', min: 100,  max: 300,  color: '#0ea5e9' },
+  { name: 'Expert',     min: 300,  max: 600,  color: '#10b981' },
+  { name: 'Pilote',     min: 600,  max: 1000, color: '#f59e0b' },
+  { name: 'Légende',    min: 1000, max: 9999, color: '#f43f5e' },
+];
+
+function getXpForAllTime() {
+  if (!currentUser) return 0;
+  return Object.values(bookings)
+    .filter(b => b.userId === currentUser.id)
+    .reduce((sum, b) => sum + 20 + Math.round(estimateDistanceForBooking(b) / 25), 0);
+}
+
+function getLevelFromXp(xp) {
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (xp >= LEVELS[i].min) return { index: i, ...LEVELS[i] };
+  }
+  return { index: 0, ...LEVELS[0] };
+}
+
+function getMonthKey(dateStr) {
+  return dateStr ? dateStr.slice(0, 7) : '';
+}
+
+function computeStreak() {
+  if (!currentUser) return 0;
+  const myBookings = Object.values(bookings).filter(b => b.userId === currentUser.id);
+  const bookedMonths = new Set(myBookings.map(b => getMonthKey(b.date)));
+  const now = new Date();
+  let streak = 0;
+  for (let i = 0; i <= 24; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (bookedMonths.has(key)) {
+      streak++;
+    } else if (i === 0) {
+      continue; // current month not yet booked, check previous
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function renderXpHeroCard() {
+  if (!currentUser) {
+    const card = document.getElementById('xp-hero-card');
+    if (card) card.style.background = 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
+    const xpName = document.getElementById('xp-name');
+    if (xpName) xpName.textContent = 'Connecte-toi';
+    return;
+  }
+  const xp = getXpForAllTime();
+  const level = getLevelFromXp(xp);
+  const xpInLevel = xp - level.min;
+  const levelRange = level.max - level.min;
+  const pct = Math.min(100, Math.round((xpInLevel / levelRange) * 100));
+  const streak = computeStreak();
+
+  const avContent = currentUser.photo
+    ? `<img src="${currentUser.photo}" alt="" style="width:100%;height:100%;object-fit:cover">`
+    : getInitials(currentUser.name);
+  const avEl = document.getElementById('xp-avatar');
+  if (avEl) avEl.innerHTML = avContent;
+
+  const nameEl = document.getElementById('xp-name');
+  if (nameEl) nameEl.textContent = currentUser.name;
+
+  const badgeEl = document.getElementById('xp-level-badge');
+  if (badgeEl) badgeEl.textContent = `Niveau ${level.index + 1} · ${level.name}`;
+
+  const streakEl = document.getElementById('xp-streak');
+  if (streakEl) {
+    streakEl.textContent = `🔥 ${streak}`;
+    streakEl.style.textShadow = streak >= 3 ? '0 0 12px rgba(245,158,11,0.6)' : 'none';
+  }
+
+  const fillEl = document.getElementById('xp-bar-fill');
+  if (fillEl) fillEl.style.width = Math.max(2, pct) + '%';
+
+  const curEl = document.getElementById('xp-current');
+  if (curEl) curEl.textContent = `${xp} XP`;
+
+  const nextEl = document.getElementById('xp-next');
+  if (nextEl) nextEl.textContent = `sur ${level.max} XP`;
+
+  const card = document.getElementById('xp-hero-card');
+  if (card) card.style.background = `linear-gradient(135deg, ${level.color} 0%, ${level.color}cc 100%)`;
+}
+
+// ==========================================
+// LEADERBOARD PODIUM
+// ==========================================
+function renderLeaderboard(ranking) {
+  const podiumEl = document.getElementById('podium');
+  const restEl = document.getElementById('lb-rest');
+  if (!podiumEl || !restEl) return;
+
+  // Visual podium order: 2nd, 1st, 3rd
+  const podiumSlots = [
+    { player: ranking[1], rank: 2, height: 70, medal: '🥈' },
+    { player: ranking[0], rank: 1, height: 90, medal: '🥇' },
+    { player: ranking[2], rank: 3, height: 55, medal: '🥉' },
+  ];
+
+  podiumEl.innerHTML = podiumSlots.map(({ player, rank, height, medal }) => {
+    if (!player) return `<div class="podium-slot rank-${rank}"></div>`;
+    const av = player.photo
+      ? `<img src="${player.photo}" alt="" style="width:100%;height:100%;object-fit:cover">`
+      : getInitials(player.label);
+    return `<div class="podium-slot rank-${rank}">
+      <div class="podium-avatar">${av}</div>
+      <div class="podium-name">${player.label}</div>
+      <div class="podium-score">${player.score} pts · ${player.rides} trajet${player.rides > 1 ? 's' : ''}</div>
+      <div class="podium-bar rank-${rank}" style="height:${height}px">${medal}</div>
+      <div class="podium-rank">#${rank}</div>
+    </div>`;
+  }).join('');
+
+  if (ranking.length <= 3) { restEl.innerHTML = ''; return; }
+
+  restEl.innerHTML = ranking.slice(3).map((r, i) => {
+    const isMe = currentUser && r.label === currentUser.name;
+    const av = r.photo
+      ? `<img src="${r.photo}" alt="" style="width:100%;height:100%;object-fit:cover">`
+      : getInitials(r.label);
+    return `<div class="lb-row ${isMe ? 'is-me' : ''}">
+      <div class="lb-rank-num">${i + 4}</div>
+      <div class="lb-avatar-sm">${av}</div>
+      <div class="lb-info">
+        <div class="lb-info-name">${r.label}${isMe ? ' (moi)' : ''}</div>
+        <div class="lb-info-sub">${r.rides} trajet${r.rides > 1 ? 's' : ''}</div>
+      </div>
+      <div class="lb-pts">${r.score} pts</div>
+    </div>`;
+  }).join('');
+}
+
+// ==========================================
+// CELEBRATION OVERLAY
+// ==========================================
+function celebrate(emoji, title, xpText, subtitle) {
+  const emojis = ['🎉', '⭐', '🚗', '✨', '🏆', '💫', '🎊', '🌟'];
+  const container = document.getElementById('confetti-container');
+  if (container) {
+    container.innerHTML = '';
+    for (let i = 0; i < 14; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      piece.style.left = Math.random() * 100 + 'vw';
+      piece.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
+      piece.style.animationDelay = Math.random() * 0.8 + 's';
+      container.appendChild(piece);
+    }
+  }
+  const celEl = document.getElementById('celebration');
+  if (!celEl) return;
+  document.getElementById('cel-emoji').textContent = emoji || '🎉';
+  document.getElementById('cel-title').textContent = title || 'Super !';
+  document.getElementById('cel-xp').textContent = xpText || '';
+  document.getElementById('cel-sub').textContent = subtitle || '';
+  celEl.style.display = 'flex';
+  setTimeout(() => {
+    celEl.style.display = 'none';
+    renderXpHeroCard();
+  }, 2500);
+}
+
+// ==========================================
+// FUEL RETURN SHEET
+// ==========================================
+let selectedFuelLevel = null;
+
+function showFuelSheet() {
+  selectedFuelLevel = null;
+  const fuelLevels = [
+    { value: 0,   label: 'Vide',  color: '#ef4444', heightPct: 6   },
+    { value: 25,  label: '1/4',   color: '#f97316', heightPct: 30  },
+    { value: 50,  label: '1/2',   color: '#eab308', heightPct: 55  },
+    { value: 75,  label: '3/4',   color: '#84cc16', heightPct: 78  },
+    { value: 100, label: 'Plein', color: '#10b981', heightPct: 100 },
+  ];
+  const buttonsHtml = fuelLevels.map(f => `
+    <button class="fuel-btn" onclick="selectFuel(${f.value}, this)" type="button">
+      <div class="fuel-bar-wrap">
+        <div class="fuel-bar-fill" style="height:${f.heightPct}%;background:${f.color}"></div>
+      </div>
+      <div class="fuel-label">${f.label}</div>
+    </button>`).join('');
+  document.getElementById('sheet-content').innerHTML = `
+    <div style="text-align:center;padding-bottom:4px">
+      <div style="font-size:48px;margin-bottom:8px">⛽</div>
+      <h3 style="font-family:'Fraunces',serif;font-size:22px;font-weight:500;margin-bottom:6px">Niveau d'essence rendu ?</h3>
+      <p style="font-size:14px;color:var(--text-light)">Aidez la famille à planifier le prochain plein</p>
+    </div>
+    <div class="fuel-selector">${buttonsHtml}</div>
+    <button class="btn btn-primary" id="fuel-confirm-btn" onclick="confirmFuel()" disabled style="opacity:0.4">Confirmer</button>
+    <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Passer</button>`;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function selectFuel(value, btn) {
+  selectedFuelLevel = value;
+  document.querySelectorAll('.fuel-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const confirmBtn = document.getElementById('fuel-confirm-btn');
+  if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.style.opacity = '1'; }
+}
+
+function confirmFuel() {
+  const level = selectedFuelLevel;
+  selectedFuelLevel = null;
+  closeSheet();
+  if (level !== null && level >= 50) {
+    celebrate('⛽', 'Youpi ! Merci !', '🌟', 'La voiture est bien ravitaillée');
+  } else if (level !== null) {
+    showToast('⛽ Pense à refaire le plein avant la prochaine sortie');
+  }
+}
+
 function updateDistanceFromDestination() {
   const destination = document.getElementById('booking-destination')?.value || '';
   const kmInput = document.getElementById('booking-km');
@@ -975,16 +1378,16 @@ async function book(dateStr) {
       distanceKm,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    const xpGained = 20 + Math.round(distanceKm / 25);
     closeSheet();
-    showToast('Réservation confirmée ✓');
+    celebrate('🎉', 'Réservation confirmée !', `+${xpGained} XP`, `Direction : ${destination}`);
   } catch (e) { showToast('Erreur — réessayez'); }
 }
 
 async function cancelBooking(bookingId) {
   try {
     await db.collection('bookings').doc(bookingId).delete();
-    closeSheet();
-    showToast('Réservation annulée');
+    showFuelSheet();
   } catch (e) { showToast('Erreur — réessayez'); }
 }
 
