@@ -662,6 +662,17 @@
   .fuel-bar-fill { width: 100%; border-radius: 4px; transition: height 0.2s; }
   .fuel-label { font-size: 10px; font-weight: 600; }
 
+  /* ---- BADGES ---- */
+  .badge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .badge-item { border-radius: 12px; padding: 12px 14px; }
+  .badge-item.earned { background: var(--primary); color: white; }
+  .badge-item.locked { border: 1.5px dashed #ccc; color: var(--text-light); background: #fafafa; }
+  .badge-item-label { font-weight: 700; font-size: 14px; }
+  .badge-item-desc { font-size: 12px; margin-top: 2px; opacity: 0.8; }
+  .profile-xp-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+  .profile-xp-badge { background: var(--primary); color: white; border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 700; }
+  .profile-xp-num { font-size: 13px; color: var(--text-light); }
+
   /* ---- RESPONSIVE ---- */
   @media (max-width: 480px) {
     header { padding: 16px 18px; }
@@ -1135,6 +1146,41 @@ function computeStreak() {
   return streak;
 }
 
+// ==========================================
+// BADGES
+// ==========================================
+const BADGE_DEFS = [
+  { id: 'first_ride',   label: 'Première sortie', desc: '1er trajet réalisé',         check: (b, s) => b.length >= 1 },
+  { id: 'road_5',       label: '5 trajets',       desc: '5 trajets cumulés',           check: (b, s) => b.length >= 5 },
+  { id: 'road_warrior', label: 'Routier',          desc: '10 trajets cumulés',          check: (b, s) => b.length >= 10 },
+  { id: 'long_haul',    label: 'Grand Voyageur',   desc: 'Un trajet de 200 km ou plus', check: (b, s) => b.some(x => (x.distanceKm || 0) >= 200) },
+  { id: 'streak_3',     label: 'Régulier',         desc: '3 mois consécutifs',          check: (b, s) => s >= 3 },
+  { id: 'streak_6',     label: 'Fidèle',           desc: '6 mois consécutifs',          check: (b, s) => s >= 6 },
+];
+
+function computeEarnedBadges() {
+  if (!currentUser) return new Set();
+  const myBookings = Object.values(bookings).filter(b => b.userId === currentUser.id);
+  const streak = computeStreak();
+  const earned = new Set();
+  BADGE_DEFS.forEach(def => { if (def.check(myBookings, streak)) earned.add(def.id); });
+  return earned;
+}
+
+function checkNewBadges() {
+  if (!currentUser) return [];
+  const key = `badges_seen_${currentUser.id}`;
+  const seen = JSON.parse(localStorage.getItem(key) || '[]');
+  const seenSet = new Set(seen);
+  const earned = computeEarnedBadges();
+  const newBadges = BADGE_DEFS.filter(d => earned.has(d.id) && !seenSet.has(d.id));
+  if (newBadges.length > 0) {
+    const updated = [...seen, ...newBadges.map(d => d.id)];
+    localStorage.setItem(key, JSON.stringify(updated));
+  }
+  return newBadges;
+}
+
 function renderXpHeroCard() {
   if (!currentUser) {
     const card = document.getElementById('xp-hero-card');
@@ -1410,6 +1456,10 @@ async function book(dateStr) {
     const xpGained = 20 + Math.round(distanceKm / 25);
     closeSheet();
     celebrate('✓', 'Réservation confirmée !', `+${xpGained} XP`, `Direction : ${destination}`);
+    setTimeout(() => {
+      const newBadges = checkNewBadges();
+      newBadges.forEach(b => showToast(`Badge débloqué : ${b.label}`));
+    }, 2800);
   } catch (e) { showToast('Erreur — réessayez'); }
 }
 
@@ -1743,6 +1793,13 @@ function handlePhoto(input) {
 function showProfile() {
   if (!currentUser) { showMemberSelect(); return; }
   const av = currentUser.photo ? `<img src="${currentUser.photo}" alt="">` : getInitials(currentUser.name);
+  const xp = getXpForAllTime();
+  const level = getLevelFromXp(xp);
+  const earned = computeEarnedBadges();
+  const badgeItems = BADGE_DEFS.map(def => {
+    const cls = earned.has(def.id) ? 'earned' : 'locked';
+    return `<div class="badge-item ${cls}"><div class="badge-item-label">${def.label}</div><div class="badge-item-desc">${def.desc}</div></div>`;
+  }).join('');
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
       <h2>Mon profil</h2>
@@ -1753,7 +1810,14 @@ function showProfile() {
           <div class="email">${currentUser.email}</div>
         </div>
       </div>
-      <button class="btn" style="background:var(--accent-light);color:var(--accent)" onclick="showChangePin()">Changer mon code</button>
+      <div class="profile-xp-row">
+        <span class="profile-xp-badge">${level.name}</span>
+        <span class="profile-xp-num">${xp} XP</span>
+      </div>
+      <div style="margin-top:14px"><div style="font-weight:700;font-size:14px;margin-bottom:4px">Badges</div>
+        <div class="badge-grid">${badgeItems}</div>
+      </div>
+      <button class="btn" style="background:var(--accent-light);color:var(--accent);margin-top:16px" onclick="showChangePin()">Changer mon code</button>
       <button class="btn btn-danger" style="margin-top:10px" onclick="logout()">Se déconnecter</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>
     </div>`;
