@@ -368,13 +368,13 @@
     background: #ffffff;
     border: 1.5px solid var(--border);
     border-bottom: none;
-    border-radius: 28px 28px 0 0;
-    box-shadow: 0 -6px 30px rgba(0,0,0,0.08);
+    border-radius: 44px 44px 0 0;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.10);
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
-    padding: 8px 10px 24px; z-index: 120;
+    padding: 16px 10px 32px; z-index: 120;
   }
   .bottom-nav button {
-    border: none; background: transparent; border-radius: 14px; padding: 12px 6px;
+    border: none; background: transparent; border-radius: 16px; padding: 14px 6px;
     font-size: 12px; color: var(--text-light); font-weight: 600; cursor: pointer;
     display: flex; flex-direction: column; align-items: center; gap: 4px;
     transition: color 0.15s;
@@ -822,7 +822,7 @@
     </div>
 
     <!-- KPI Grid -->
-    <section class="kpi-grid" aria-label="Indicateurs mensuels" style="margin-bottom:110px">
+    <section class="kpi-grid" aria-label="Indicateurs mensuels" style="margin-bottom:130px">
       <article class="kpi-card">
         <span class="kpi-value" id="kpi-bookings">0</span>
         <div class="kpi-label">trajets ce mois</div>
@@ -865,14 +865,14 @@
       <div class="loading"><div class="spinner"></div> Chargement...</div>
     </div>
 
-    <div class="legend" style="margin-bottom:110px">
+    <div class="legend" style="margin-bottom:130px">
       <span><span class="legend-dot" style="background:var(--accent)"></span> Ma résa</span>
       <span><span class="legend-dot" style="background:var(--accent-light);border:1px solid var(--accent)"></span> Réservé</span>
       <span><span class="legend-dot" style="background:#f0f0f0"></span> Dispo</span>
     </div>
   </section>
 
-  <section class="tab-panel" id="tab-leaderboard" style="margin-bottom:110px">
+  <section class="tab-panel" id="tab-leaderboard" style="margin-bottom:130px">
     <div class="lb-header">
       <h2 class="lb-title">Classement du mois</h2>
     </div>
@@ -880,7 +880,7 @@
     <div class="lb-rest" id="lb-rest"></div>
   </section>
 
-  <section class="tab-panel" id="tab-history" style="margin-bottom:110px">
+  <section class="tab-panel" id="tab-history" style="margin-bottom:130px">
     <div class="settings-section-title">Historique des trajets</div>
     <div id="history-full"></div>
   </section>
