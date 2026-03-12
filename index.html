@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="FamCar">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <style>
@@ -57,7 +57,7 @@
   }
 
   .logo {
-    font-family: 'Fraunces', serif;
+    font-family: 'DM Sans', sans-serif;
     font-weight: 700;
     font-size: 22px;
     letter-spacing: -0.5px;
@@ -99,7 +99,7 @@
   .month-center { flex: 1; text-align: center; min-width: 0; }
 
   .month-title {
-    font-family: 'Fraunces', serif; font-size: 26px;
+    font-family: 'DM Sans', sans-serif; font-size: 26px;
     font-weight: 500; letter-spacing: -0.5px; text-transform: capitalize;
   }
 
@@ -209,6 +209,7 @@
   .cal-day.weekend { background: #fafafa; }
   .cal-day.weekend.booked { background: var(--accent-light); }
   .cal-day.weekend.mine { background: var(--accent); }
+  .cal-day.past.mine { cursor: pointer; opacity: 0.65; }
 
   /* ---- MODAL / BOTTOM SHEET ---- */
   .overlay {
@@ -231,7 +232,7 @@
   .sheet-handle { width: 36px; height: 4px; background: #ddd; border-radius: 4px; margin: 0 auto 20px; }
 
   .sheet-date {
-    font-family: 'Fraunces', serif; font-size: 22px;
+    font-family: 'DM Sans', sans-serif; font-size: 22px;
     font-weight: 500; margin-bottom: 6px; text-transform: capitalize;
   }
 
@@ -266,7 +267,12 @@
 
   /* ---- LOGIN / SIGNUP SHEET ---- */
   .login-sheet { text-align: center; }
-  .login-sheet h2 { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 500; margin-bottom: 6px; }
+  .login-sheet h2 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  .login-sheet { animation: step-slide-in 0.2s ease; }
+  @keyframes step-slide-in {
+    from { transform: translateX(16px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
   .login-sheet p { color: var(--text-light); font-size: 14px; margin-bottom: 28px; }
 
   .input-group { margin-bottom: 14px; text-align: left; }
@@ -304,25 +310,30 @@
   }
   .kpi-card {
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px;
+    border-radius: 16px;
+    padding: 16px 14px;
     background: #fff;
-    box-shadow: var(--shadow-sm);
+  }
+  .kpi-icon { font-size: 22px; margin-bottom: 6px; display: block; }
+  .kpi-value {
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 4px;
+    display: block;
   }
   .kpi-label {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-light);
-    margin-bottom: 6px;
-  }
-  .kpi-value {
-    font-size: 20px;
-    font-weight: 600;
-    letter-spacing: -0.2px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
   }
   .kpi-sub {
     font-size: 11px;
     color: var(--text-light);
-    margin-top: 4px;
+    margin-top: 2px;
   }
 
   .card {
@@ -421,7 +432,7 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 30px; margin: 0 auto 24px;
   }
-  .lock-box h1 { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 500; margin-bottom: 6px; }
+  .lock-box h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
   .lock-box p { color: var(--text-light); font-size: 15px; margin-bottom: 32px; }
 
   .pin-input { display: flex; gap: 12px; justify-content: center; margin-bottom: 28px; }
@@ -448,7 +459,7 @@
 
   /* ---- MEMBER SELECT SCREEN ---- */
   .member-select { text-align: center; padding: 60px 20px 40px; max-width: 520px; margin: 0 auto; }
-  .member-select h2 { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 500; margin-bottom: 8px; }
+  .member-select h2 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
   .member-select p { color: var(--text-light); font-size: 15px; margin-bottom: 36px; }
 
   .member-grid { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; margin-bottom: 32px; }
@@ -533,13 +544,13 @@
   }
   .quick-stat-value {
     font-size: 26px; font-weight: 700; letter-spacing: -1px;
-    font-family: 'Fraunces', serif;
+    font-family: 'DM Sans', sans-serif;
   }
   .quick-stat-label { font-size: 12px; color: var(--text-light); margin-top: 4px; }
 
   /* Leaderboard Podium */
   .lb-header { text-align: center; margin-bottom: 20px; }
-  .lb-title { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 500; }
+  .lb-title { font-family: 'DM Sans', sans-serif; font-size: 24px; font-weight: 500; }
   .podium {
     display: flex; align-items: flex-end; justify-content: center;
     gap: 8px; margin-bottom: 24px; padding: 0 4px;
@@ -596,9 +607,15 @@
     flex-direction: column;
   }
   .celebration-inner { text-align: center; color: white; z-index: 1; padding: 24px; }
-  .celebration-emoji { font-size: 64px; animation: cel-bounce 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  .celebration-check {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); border: 2.5px solid rgba(255,255,255,0.6);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto; font-size: 32px; font-weight: 700; color: white;
+    animation: cel-bounce 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  }
   .celebration-title {
-    font-family: 'Fraunces', serif; font-size: 28px; font-weight: 700;
+    font-family: 'DM Sans', sans-serif; font-size: 28px; font-weight: 700;
     margin-top: 12px; letter-spacing: -0.5px;
   }
   .celebration-xp {
@@ -609,7 +626,7 @@
   .celebration-sub { font-size: 15px; opacity: 0.85; margin-top: 6px; }
   .confetti-container { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
   .confetti-piece {
-    position: absolute; top: -30px; font-size: 22px;
+    position: absolute; top: -20px;
     animation: confetti-fall linear forwards;
   }
   @keyframes cel-bounce {
@@ -644,6 +661,17 @@
   }
   .fuel-bar-fill { width: 100%; border-radius: 4px; transition: height 0.2s; }
   .fuel-label { font-size: 10px; font-weight: 600; }
+
+  /* ---- BADGES ---- */
+  .badge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .badge-item { border-radius: 12px; padding: 12px 14px; }
+  .badge-item.earned { background: var(--primary); color: white; }
+  .badge-item.locked { border: 1.5px dashed #ccc; color: var(--text-light); background: #fafafa; }
+  .badge-item-label { font-weight: 700; font-size: 14px; }
+  .badge-item-desc { font-size: 12px; margin-top: 2px; opacity: 0.8; }
+  .profile-xp-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+  .profile-xp-badge { background: var(--primary); color: white; border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 700; }
+  .profile-xp-num { font-size: 13px; color: var(--text-light); }
 
   /* ---- RESPONSIVE ---- */
   @media (max-width: 480px) {
@@ -702,27 +730,25 @@
       </div>
     </div>
 
-    <!-- KPI Grid (conservé) -->
+    <!-- KPI Grid -->
     <section class="kpi-grid" aria-label="Indicateurs mensuels" style="margin-bottom:80px">
       <article class="kpi-card">
-        <div class="kpi-label">Réservations (mois)</div>
-        <div class="kpi-value" id="kpi-bookings">0</div>
-        <div class="kpi-sub" id="kpi-bookings-sub">Tous conducteurs</div>
+        <span class="kpi-value" id="kpi-bookings">0</span>
+        <div class="kpi-label">trajets ce mois</div>
+        <div class="kpi-sub" id="kpi-bookings-sub"></div>
       </article>
       <article class="kpi-card">
-        <div class="kpi-label">Taux d'occupation</div>
-        <div class="kpi-value" id="kpi-occupancy">0%</div>
-        <div class="kpi-sub" id="kpi-occupancy-sub">Sur le mois affiché</div>
+        <span class="kpi-value" id="kpi-occupancy">0%</span>
+        <div class="kpi-label">occupation</div>
+        <div class="kpi-sub" id="kpi-occupancy-sub"></div>
       </article>
       <article class="kpi-card">
-        <div class="kpi-label">Km estimés</div>
-        <div class="kpi-value" id="kpi-km">0 km</div>
-        <div class="kpi-sub">Distance saisie à la réservation</div>
+        <span class="kpi-value" id="kpi-km">0</span>
+        <div class="kpi-label">kilomètres</div>
       </article>
       <article class="kpi-card">
-        <div class="kpi-label">CO₂ estimé</div>
-        <div class="kpi-value" id="kpi-co2">0 kg</div>
-        <div class="kpi-sub">Base 120 g CO₂ / km</div>
+        <span class="kpi-value" id="kpi-co2">0</span>
+        <div class="kpi-label">kg CO₂</div>
       </article>
     </section>
   </section>
@@ -771,17 +797,17 @@
   </section>
 
   <nav class="bottom-nav" aria-label="Navigation principale">
-    <button type="button" id="nav-dashboard" class="active" onclick="switchTab('dashboard')">🏠 Dashboard</button>
-    <button type="button" id="nav-calendar" onclick="switchTab('calendar')">📅 Calendrier</button>
-    <button type="button" id="nav-leaderboard" onclick="switchTab('leaderboard')">🏆 Classement</button>
-    <button type="button" id="nav-history" onclick="switchTab('history')">🕓 Historique</button>
+    <button type="button" id="nav-dashboard" class="active" onclick="switchTab('dashboard')">Dashboard</button>
+    <button type="button" id="nav-calendar" onclick="switchTab('calendar')">Calendrier</button>
+    <button type="button" id="nav-leaderboard" onclick="switchTab('leaderboard')">Classement</button>
+    <button type="button" id="nav-history" onclick="switchTab('history')">Historique</button>
   </nav>
 </main>
 <div class="overlay" id="overlay" onclick="closeSheet()"><div class="sheet" id="sheet" onclick="event.stopPropagation()"><div class="sheet-handle"></div><div id="sheet-content"></div></div></div>
 <div class="toast" id="toast"></div>
 <div id="celebration" class="celebration" style="display:none;" aria-live="polite">
   <div class="celebration-inner">
-    <div class="celebration-emoji" id="cel-emoji">🎉</div>
+    <div class="celebration-check" id="cel-emoji">✓</div>
     <div class="celebration-title" id="cel-title">Réservation confirmée !</div>
     <div class="celebration-xp" id="cel-xp">+20 XP</div>
     <div class="celebration-sub" id="cel-sub">La voiture est à toi</div>
@@ -1028,8 +1054,8 @@ function renderKpis(daysInMonth) {
     : 'Tous conducteurs';
   document.getElementById('kpi-occupancy').textContent = `${occupancy}%`;
   document.getElementById('kpi-occupancy-sub').textContent = `${totalBookings} jour${totalBookings > 1 ? 's' : ''} réservé${totalBookings > 1 ? 's' : ''}`;
-  document.getElementById('kpi-km').textContent = `${estimatedKm} km`;
-  document.getElementById('kpi-co2').textContent = `${estimatedCo2} kg`;
+  document.getElementById('kpi-km').textContent = String(estimatedKm);
+  document.getElementById('kpi-co2').textContent = String(estimatedCo2);
 }
 
 function prevMonth() { currentMonth--; if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(); }
@@ -1118,6 +1144,41 @@ function computeStreak() {
     }
   }
   return streak;
+}
+
+// ==========================================
+// BADGES
+// ==========================================
+const BADGE_DEFS = [
+  { id: 'first_ride',   label: 'Première sortie', desc: '1er trajet réalisé',         check: (b, s) => b.length >= 1 },
+  { id: 'road_5',       label: '5 trajets',       desc: '5 trajets cumulés',           check: (b, s) => b.length >= 5 },
+  { id: 'road_warrior', label: 'Routier',          desc: '10 trajets cumulés',          check: (b, s) => b.length >= 10 },
+  { id: 'long_haul',    label: 'Grand Voyageur',   desc: 'Un trajet de 200 km ou plus', check: (b, s) => b.some(x => (x.distanceKm || 0) >= 200) },
+  { id: 'streak_3',     label: 'Régulier',         desc: '3 mois consécutifs',          check: (b, s) => s >= 3 },
+  { id: 'streak_6',     label: 'Fidèle',           desc: '6 mois consécutifs',          check: (b, s) => s >= 6 },
+];
+
+function computeEarnedBadges() {
+  if (!currentUser) return new Set();
+  const myBookings = Object.values(bookings).filter(b => b.userId === currentUser.id);
+  const streak = computeStreak();
+  const earned = new Set();
+  BADGE_DEFS.forEach(def => { if (def.check(myBookings, streak)) earned.add(def.id); });
+  return earned;
+}
+
+function checkNewBadges() {
+  if (!currentUser) return [];
+  const key = `badges_seen_${currentUser.id}`;
+  const seen = JSON.parse(localStorage.getItem(key) || '[]');
+  const seenSet = new Set(seen);
+  const earned = computeEarnedBadges();
+  const newBadges = BADGE_DEFS.filter(d => earned.has(d.id) && !seenSet.has(d.id));
+  if (newBadges.length > 0) {
+    const updated = [...seen, ...newBadges.map(d => d.id)];
+    localStorage.setItem(key, JSON.stringify(updated));
+  }
+  return newBadges;
 }
 
 function renderXpHeroCard() {
@@ -1217,15 +1278,19 @@ function renderLeaderboard(ranking) {
 // ==========================================
 // CELEBRATION OVERLAY
 // ==========================================
-function celebrate(emoji, title, xpText, subtitle) {
-  const emojis = ['🎉', '⭐', '🚗', '✨', '🏆', '💫', '🎊', '🌟'];
+function celebrate(icon, title, xpText, subtitle) {
+  const colors = ['rgba(255,255,255,0.85)', '#f59e0b', 'rgba(255,255,255,0.5)', '#10b981', '#a5b4fc', '#fde68a'];
   const container = document.getElementById('confetti-container');
   if (container) {
     container.innerHTML = '';
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 18; i++) {
       const piece = document.createElement('div');
       piece.className = 'confetti-piece';
-      piece.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      const size = Math.round(6 + Math.random() * 7);
+      piece.style.width = size + 'px';
+      piece.style.height = size + 'px';
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.borderRadius = Math.random() > 0.4 ? '50%' : '2px';
       piece.style.left = Math.random() * 100 + 'vw';
       piece.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
       piece.style.animationDelay = Math.random() * 0.8 + 's';
@@ -1234,7 +1299,7 @@ function celebrate(emoji, title, xpText, subtitle) {
   }
   const celEl = document.getElementById('celebration');
   if (!celEl) return;
-  document.getElementById('cel-emoji').textContent = emoji || '🎉';
+  document.getElementById('cel-emoji').textContent = icon || '✓';
   document.getElementById('cel-title').textContent = title || 'Super !';
   document.getElementById('cel-xp').textContent = xpText || '';
   document.getElementById('cel-sub').textContent = subtitle || '';
@@ -1268,8 +1333,7 @@ function showFuelSheet() {
     </button>`).join('');
   document.getElementById('sheet-content').innerHTML = `
     <div style="text-align:center;padding-bottom:4px">
-      <div style="font-size:48px;margin-bottom:8px">⛽</div>
-      <h3 style="font-family:'Fraunces',serif;font-size:22px;font-weight:500;margin-bottom:6px">Niveau d'essence rendu ?</h3>
+      <h3 style="font-size:22px;font-weight:700;margin-bottom:6px">Niveau d'essence rendu ?</h3>
       <p style="font-size:14px;color:var(--text-light)">Aidez la famille à planifier le prochain plein</p>
     </div>
     <div class="fuel-selector">${buttonsHtml}</div>
@@ -1293,7 +1357,7 @@ function confirmFuel() {
   if (level !== null && level >= 50) {
     celebrate('⛽', 'Youpi ! Merci !', '🌟', 'La voiture est bien ravitaillée');
   } else if (level !== null) {
-    showToast('⛽ Pense à refaire le plein avant la prochaine sortie');
+    showToast('Pense à refaire le plein avant la prochaine sortie');
   }
 }
 
@@ -1309,7 +1373,18 @@ function updateDistanceFromDestination() {
 // DAY CLICK
 // ==========================================
 function onDayClick(dateStr, isPast) {
-  if (isPast) return;
+  if (isPast) {
+    // Past days with MY booking → show trip report with fuel prompt
+    if (currentUser) {
+      const booking = bookings[dateStr];
+      if (booking && booking.userId === currentUser.id) {
+        const date = new Date(dateStr + 'T00:00:00');
+        const prettyDate = date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+        showTripReport(booking, prettyDate);
+      }
+    }
+    return;
+  }
   if (!currentUser) { showMemberSelect(); return; }
 
   const booking = bookings[dateStr];
@@ -1380,15 +1455,70 @@ async function book(dateStr) {
     });
     const xpGained = 20 + Math.round(distanceKm / 25);
     closeSheet();
-    celebrate('🎉', 'Réservation confirmée !', `+${xpGained} XP`, `Direction : ${destination}`);
+    celebrate('✓', 'Réservation confirmée !', `+${xpGained} XP`, `Direction : ${destination}`);
+    setTimeout(() => {
+      const newBadges = checkNewBadges();
+      newBadges.forEach(b => showToast(`Badge débloqué : ${b.label}`));
+    }, 2800);
   } catch (e) { showToast('Erreur — réessayez'); }
 }
 
 async function cancelBooking(bookingId) {
   try {
     await db.collection('bookings').doc(bookingId).delete();
-    showFuelSheet();
+    closeSheet();
+    showToast('Réservation annulée');
   } catch (e) { showToast('Erreur — réessayez'); }
+}
+
+function showTripReport(booking, prettyDate) {
+  const hasFuel = booking.fuelReturnLevel !== null && booking.fuelReturnLevel !== undefined;
+  const fuelLevels = [
+    { value: 0,   label: 'Vide',  color: '#ef4444', heightPct: 6   },
+    { value: 25,  label: '1/4',   color: '#f97316', heightPct: 30  },
+    { value: 50,  label: '1/2',   color: '#eab308', heightPct: 55  },
+    { value: 75,  label: '3/4',   color: '#84cc16', heightPct: 78  },
+    { value: 100, label: 'Plein', color: '#10b981', heightPct: 100 },
+  ];
+
+  let fuelSection;
+  if (!hasFuel) {
+    fuelSection = `
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px">Niveau d'essence rendu ?</div>
+        <div class="fuel-selector">${fuelLevels.map(f => `
+          <button class="fuel-btn" onclick="selectFuel(${f.value}, this)" type="button">
+            <div class="fuel-bar-wrap"><div class="fuel-bar-fill" style="height:${f.heightPct}%;background:${f.color}"></div></div>
+            <div class="fuel-label">${f.label}</div>
+          </button>`).join('')}</div>
+        <button class="btn btn-primary" id="fuel-confirm-btn" onclick="confirmFuelForBooking('${booking.id}')" disabled style="opacity:0.4;margin-top:8px">Enregistrer</button>
+      </div>`;
+  } else {
+    const labels = { 0: 'Vide', 25: '1/4', 50: '1/2', 75: '3/4', 100: 'Plein' };
+    fuelSection = `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);color:var(--text-light);font-size:13px">Essence rendue : <strong>${labels[booking.fuelReturnLevel] || booking.fuelReturnLevel + '%'}</strong></div>`;
+  }
+
+  document.getElementById('sheet-content').innerHTML = `
+    <div class="sheet-date">${prettyDate}</div>
+    <div style="font-size:14px;color:var(--text-light);margin-bottom:4px">${booking.destination || 'Destination non précisée'} · ${estimateDistanceForBooking(booking)} km</div>
+    ${fuelSection}
+    <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:16px" onclick="closeSheet()">Fermer</button>`;
+  document.getElementById('overlay').classList.add('open');
+}
+
+async function confirmFuelForBooking(bookingId) {
+  const level = selectedFuelLevel;
+  if (level === null) return;
+  selectedFuelLevel = null;
+  try {
+    await db.collection('bookings').doc(bookingId).update({ fuelReturnLevel: level });
+    closeSheet();
+    if (level >= 50) {
+      celebrate('✓', 'Youpi ! Merci !', '', 'La voiture est bien ravitaillée');
+    } else {
+      showToast('Pense à refaire le plein avant la prochaine sortie');
+    }
+  } catch(e) { showToast('Erreur — réessayez'); }
 }
 
 // ==========================================
@@ -1485,54 +1615,136 @@ async function verifyMemberPin(userId) {
 // ==========================================
 // SIGNUP (new member)
 // ==========================================
+// ==========================================
+// MULTI-STEP ONBOARDING (Duolingo-style)
+// ==========================================
+let signupData = {};
+
 function showSignupForm() {
+  signupData = { name: '', email: '' };
   tempPhoto = null;
-  document.getElementById('sheet-content').innerHTML = `
-    <div class="login-sheet">
-      <h2>Nouveau membre</h2>
-      <p>Créez votre profil</p>
+  renderSignupStep(1);
+  document.getElementById('overlay').classList.add('open');
+}
+
+function renderSignupStep(step) {
+  const dots = [1, 2, 3, 4].map(s =>
+    `<div style="width:${s === step ? 24 : 8}px;height:8px;border-radius:999px;background:${s <= step ? 'var(--accent)' : 'var(--border)'};transition:all 0.3s"></div>`
+  ).join('');
+  const progress = `<div style="display:flex;gap:6px;justify-content:center;margin-bottom:28px">${dots}</div>`;
+
+  let content = '';
+  if (step === 1) {
+    content = `<div class="login-sheet">
+      ${progress}
+      <div style="text-align:center;margin-bottom:24px">
+        <h2>Nouveau membre</h2>
+        <p>Comment tu t'appelles ?</p>
+      </div>
       <div class="input-group">
         <label>Prénom</label>
-        <input type="text" id="signup-name" placeholder="Votre prénom" autocomplete="given-name">
+        <input type="text" id="signup-name" placeholder="Ton prénom" autocomplete="given-name" value="${signupData.name || ''}">
+      </div>
+      <button class="btn btn-primary" onclick="signupNext(1)">Continuer →</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Annuler</button>
+    </div>`;
+  } else if (step === 2) {
+    content = `<div class="login-sheet">
+      ${progress}
+      <div style="text-align:center;margin-bottom:24px">
+        <h2>Ton email</h2>
+        <p>Pour identifier ton compte</p>
       </div>
       <div class="input-group">
         <label>Email</label>
-        <input type="email" id="signup-email" placeholder="votre@email.com" autocomplete="email">
+        <input type="email" id="signup-email" placeholder="ton@email.com" autocomplete="email" value="${signupData.email || ''}">
       </div>
-      <div class="input-group">
-        <label>Photo (optionnel)</label>
-        <div class="photo-upload">
-          <div class="photo-preview" id="photo-preview" onclick="document.getElementById('photo-input').click()">📷</div>
-          <span class="photo-label" onclick="document.getElementById('photo-input').click()">Ajouter une photo</span>
-          <input type="file" id="photo-input" accept="image/*" onchange="handlePhoto(this)">
-        </div>
-      </div>
-      <div class="input-group">
-        <label>Code personnel (4 chiffres)</label>
-        <div class="pin-input" id="signup-pin" style="justify-content:flex-start;margin-top:8px">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-        </div>
-      </div>
-      <button class="btn btn-primary" onclick="signup()">C'est parti !</button>
-      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Retour</button>
+      <button class="btn btn-primary" onclick="signupNext(2)">Continuer →</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="renderSignupStep(1)">← Retour</button>
     </div>`;
-  document.getElementById('overlay').classList.add('open');
+  } else if (step === 3) {
+    const av = tempPhoto ? `<img src="${tempPhoto}" style="width:100%;height:100%;object-fit:cover">` : '📷';
+    content = `<div class="login-sheet">
+      ${progress}
+      <div style="text-align:center;margin-bottom:24px">
+        <h2>Ta photo</h2>
+        <p>Aide les autres à te reconnaître<br><small style="color:var(--text-light)">(optionnel)</small></p>
+      </div>
+      <div class="photo-upload" style="justify-content:center;margin-bottom:20px">
+        <div class="photo-preview ${tempPhoto ? 'has-photo' : ''}" id="photo-preview" onclick="document.getElementById('photo-input').click()" style="width:80px;height:80px;font-size:28px">${av}</div>
+        <input type="file" id="photo-input" accept="image/*" onchange="handlePhotoStep(this)">
+      </div>
+      <button class="btn btn-primary" onclick="renderSignupStep(4)">Continuer →</button>
+      <button class="btn" style="background:var(--accent-light);color:var(--accent);margin-top:10px" onclick="renderSignupStep(4)">Passer sans photo</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="renderSignupStep(2)">← Retour</button>
+    </div>`;
+  } else if (step === 4) {
+    content = `<div class="login-sheet">
+      ${progress}
+      <div style="text-align:center;margin-bottom:24px">
+        <h2>Ton code secret</h2>
+        <p>4 chiffres, rien que pour toi</p>
+      </div>
+      <div class="pin-input" id="signup-pin" style="justify-content:center;margin-bottom:16px">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="lock-error" id="signup-error"></div>
+      <button class="btn btn-primary" onclick="signup()">C'est parti !</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="renderSignupStep(3)">← Retour</button>
+    </div>`;
+  }
 
-  const pins = document.querySelectorAll('#signup-pin input');
-  setupPinInputs(pins);
-  setTimeout(() => document.getElementById('signup-name')?.focus(), 300);
+  document.getElementById('sheet-content').innerHTML = content;
+  if (step === 1) setTimeout(() => document.getElementById('signup-name')?.focus(), 300);
+  if (step === 2) setTimeout(() => document.getElementById('signup-email')?.focus(), 300);
+  if (step === 4) {
+    const pins = document.querySelectorAll('#signup-pin input');
+    setupPinInputs(pins, signup);
+    setTimeout(() => pins[0].focus(), 300);
+  }
+}
+
+function signupNext(step) {
+  if (step === 1) {
+    const name = document.getElementById('signup-name')?.value.trim() || '';
+    if (!name) { showToast('Saisis ton prénom'); return; }
+    signupData.name = name;
+    renderSignupStep(2);
+  } else if (step === 2) {
+    const email = document.getElementById('signup-email')?.value.trim() || '';
+    if (!email || !email.includes('@')) { showToast('Email invalide'); return; }
+    signupData.email = email;
+    renderSignupStep(3);
+  }
+}
+
+function handlePhotoStep(input) {
+  handlePhoto(input);
+  setTimeout(() => {
+    if (tempPhoto) {
+      const prev = document.getElementById('photo-preview');
+      if (prev) {
+        prev.innerHTML = `<img src="${tempPhoto}" style="width:100%;height:100%;object-fit:cover">`;
+        prev.classList.add('has-photo');
+      }
+    }
+  }, 500);
 }
 
 async function signup() {
-  const name = document.getElementById('signup-name').value.trim();
-  const email = document.getElementById('signup-email').value.trim();
+  const name = signupData.name;
+  const email = signupData.email;
   const pin = Array.from(document.querySelectorAll('#signup-pin input')).map(i => i.value.replace(/\D/g, '')).join('');
 
-  if (!name || !email) { showToast('Prénom et email requis'); return; }
-  if (pin.length < 4) { showToast('Code à 4 chiffres requis'); return; }
+  if (!name || !email) { showToast('Données manquantes'); renderSignupStep(1); return; }
+  if (pin.length < 4) {
+    const errEl = document.getElementById('signup-error');
+    if (errEl) errEl.textContent = 'Entrez 4 chiffres';
+    return;
+  }
 
   const existing = await db.collection('users').where('email', '==', email).get();
   if (!existing.empty) { showToast('Cet email est déjà utilisé'); return; }
@@ -1546,7 +1758,7 @@ async function signup() {
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
     closeSheet();
     enterApp();
-    showToast(`Bienvenue ${name} !`);
+    celebrate('✓', `Bienvenue ${name} !`, '+50 XP', 'Prêt·e à prendre la route ?');
   } catch (e) { showToast('Erreur — réessayez'); }
 }
 
@@ -1581,6 +1793,13 @@ function handlePhoto(input) {
 function showProfile() {
   if (!currentUser) { showMemberSelect(); return; }
   const av = currentUser.photo ? `<img src="${currentUser.photo}" alt="">` : getInitials(currentUser.name);
+  const xp = getXpForAllTime();
+  const level = getLevelFromXp(xp);
+  const earned = computeEarnedBadges();
+  const badgeItems = BADGE_DEFS.map(def => {
+    const cls = earned.has(def.id) ? 'earned' : 'locked';
+    return `<div class="badge-item ${cls}"><div class="badge-item-label">${def.label}</div><div class="badge-item-desc">${def.desc}</div></div>`;
+  }).join('');
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
       <h2>Mon profil</h2>
@@ -1591,7 +1810,14 @@ function showProfile() {
           <div class="email">${currentUser.email}</div>
         </div>
       </div>
-      <button class="btn" style="background:var(--accent-light);color:var(--accent)" onclick="showChangePin()">Changer mon code</button>
+      <div class="profile-xp-row">
+        <span class="profile-xp-badge">${level.name}</span>
+        <span class="profile-xp-num">${xp} XP</span>
+      </div>
+      <div style="margin-top:14px"><div style="font-weight:700;font-size:14px;margin-bottom:4px">Badges</div>
+        <div class="badge-grid">${badgeItems}</div>
+      </div>
+      <button class="btn" style="background:var(--accent-light);color:var(--accent);margin-top:16px" onclick="showChangePin()">Changer mon code</button>
       <button class="btn btn-danger" style="margin-top:10px" onclick="logout()">Se déconnecter</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>
     </div>`;
