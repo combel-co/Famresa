@@ -607,7 +607,13 @@
     flex-direction: column;
   }
   .celebration-inner { text-align: center; color: white; z-index: 1; padding: 24px; }
-  .celebration-emoji { font-size: 64px; animation: cel-bounce 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+  .celebration-check {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); border: 2.5px solid rgba(255,255,255,0.6);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto; font-size: 32px; font-weight: 700; color: white;
+    animation: cel-bounce 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  }
   .celebration-title {
     font-family: 'DM Sans', sans-serif; font-size: 28px; font-weight: 700;
     margin-top: 12px; letter-spacing: -0.5px;
@@ -620,7 +626,7 @@
   .celebration-sub { font-size: 15px; opacity: 0.85; margin-top: 6px; }
   .confetti-container { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
   .confetti-piece {
-    position: absolute; top: -30px; font-size: 22px;
+    position: absolute; top: -20px;
     animation: confetti-fall linear forwards;
   }
   @keyframes cel-bounce {
@@ -716,24 +722,20 @@
     <!-- KPI Grid -->
     <section class="kpi-grid" aria-label="Indicateurs mensuels" style="margin-bottom:80px">
       <article class="kpi-card">
-        <span class="kpi-icon">📅</span>
         <span class="kpi-value" id="kpi-bookings">0</span>
         <div class="kpi-label">trajets ce mois</div>
         <div class="kpi-sub" id="kpi-bookings-sub"></div>
       </article>
       <article class="kpi-card">
-        <span class="kpi-icon">📊</span>
         <span class="kpi-value" id="kpi-occupancy">0%</span>
         <div class="kpi-label">occupation</div>
         <div class="kpi-sub" id="kpi-occupancy-sub"></div>
       </article>
       <article class="kpi-card">
-        <span class="kpi-icon">🛣️</span>
         <span class="kpi-value" id="kpi-km">0</span>
         <div class="kpi-label">kilomètres</div>
       </article>
       <article class="kpi-card">
-        <span class="kpi-icon">🌿</span>
         <span class="kpi-value" id="kpi-co2">0</span>
         <div class="kpi-label">kg CO₂</div>
       </article>
@@ -784,17 +786,17 @@
   </section>
 
   <nav class="bottom-nav" aria-label="Navigation principale">
-    <button type="button" id="nav-dashboard" class="active" onclick="switchTab('dashboard')">🏠 Dashboard</button>
-    <button type="button" id="nav-calendar" onclick="switchTab('calendar')">📅 Calendrier</button>
-    <button type="button" id="nav-leaderboard" onclick="switchTab('leaderboard')">🏆 Classement</button>
-    <button type="button" id="nav-history" onclick="switchTab('history')">🕓 Historique</button>
+    <button type="button" id="nav-dashboard" class="active" onclick="switchTab('dashboard')">Dashboard</button>
+    <button type="button" id="nav-calendar" onclick="switchTab('calendar')">Calendrier</button>
+    <button type="button" id="nav-leaderboard" onclick="switchTab('leaderboard')">Classement</button>
+    <button type="button" id="nav-history" onclick="switchTab('history')">Historique</button>
   </nav>
 </main>
 <div class="overlay" id="overlay" onclick="closeSheet()"><div class="sheet" id="sheet" onclick="event.stopPropagation()"><div class="sheet-handle"></div><div id="sheet-content"></div></div></div>
 <div class="toast" id="toast"></div>
 <div id="celebration" class="celebration" style="display:none;" aria-live="polite">
   <div class="celebration-inner">
-    <div class="celebration-emoji" id="cel-emoji">🎉</div>
+    <div class="celebration-check" id="cel-emoji">✓</div>
     <div class="celebration-title" id="cel-title">Réservation confirmée !</div>
     <div class="celebration-xp" id="cel-xp">+20 XP</div>
     <div class="celebration-sub" id="cel-sub">La voiture est à toi</div>
@@ -1230,15 +1232,19 @@ function renderLeaderboard(ranking) {
 // ==========================================
 // CELEBRATION OVERLAY
 // ==========================================
-function celebrate(emoji, title, xpText, subtitle) {
-  const emojis = ['🎉', '⭐', '🚗', '✨', '🏆', '💫', '🎊', '🌟'];
+function celebrate(icon, title, xpText, subtitle) {
+  const colors = ['rgba(255,255,255,0.85)', '#f59e0b', 'rgba(255,255,255,0.5)', '#10b981', '#a5b4fc', '#fde68a'];
   const container = document.getElementById('confetti-container');
   if (container) {
     container.innerHTML = '';
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 18; i++) {
       const piece = document.createElement('div');
       piece.className = 'confetti-piece';
-      piece.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      const size = Math.round(6 + Math.random() * 7);
+      piece.style.width = size + 'px';
+      piece.style.height = size + 'px';
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.borderRadius = Math.random() > 0.4 ? '50%' : '2px';
       piece.style.left = Math.random() * 100 + 'vw';
       piece.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
       piece.style.animationDelay = Math.random() * 0.8 + 's';
@@ -1247,7 +1253,7 @@ function celebrate(emoji, title, xpText, subtitle) {
   }
   const celEl = document.getElementById('celebration');
   if (!celEl) return;
-  document.getElementById('cel-emoji').textContent = emoji || '🎉';
+  document.getElementById('cel-emoji').textContent = icon || '✓';
   document.getElementById('cel-title').textContent = title || 'Super !';
   document.getElementById('cel-xp').textContent = xpText || '';
   document.getElementById('cel-sub').textContent = subtitle || '';
@@ -1281,8 +1287,7 @@ function showFuelSheet() {
     </button>`).join('');
   document.getElementById('sheet-content').innerHTML = `
     <div style="text-align:center;padding-bottom:4px">
-      <div style="font-size:48px;margin-bottom:8px">⛽</div>
-      <h3 style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:500;margin-bottom:6px">Niveau d'essence rendu ?</h3>
+      <h3 style="font-size:22px;font-weight:700;margin-bottom:6px">Niveau d'essence rendu ?</h3>
       <p style="font-size:14px;color:var(--text-light)">Aidez la famille à planifier le prochain plein</p>
     </div>
     <div class="fuel-selector">${buttonsHtml}</div>
@@ -1306,7 +1311,7 @@ function confirmFuel() {
   if (level !== null && level >= 50) {
     celebrate('⛽', 'Youpi ! Merci !', '🌟', 'La voiture est bien ravitaillée');
   } else if (level !== null) {
-    showToast('⛽ Pense à refaire le plein avant la prochaine sortie');
+    showToast('Pense à refaire le plein avant la prochaine sortie');
   }
 }
 
@@ -1404,7 +1409,7 @@ async function book(dateStr) {
     });
     const xpGained = 20 + Math.round(distanceKm / 25);
     closeSheet();
-    celebrate('🎉', 'Réservation confirmée !', `+${xpGained} XP`, `Direction : ${destination}`);
+    celebrate('✓', 'Réservation confirmée !', `+${xpGained} XP`, `Direction : ${destination}`);
   } catch (e) { showToast('Erreur — réessayez'); }
 }
 
@@ -1430,7 +1435,7 @@ function showTripReport(booking, prettyDate) {
   if (!hasFuel) {
     fuelSection = `
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-        <div style="font-size:14px;font-weight:600;margin-bottom:12px">⛽ Niveau d'essence rendu ?</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px">Niveau d'essence rendu ?</div>
         <div class="fuel-selector">${fuelLevels.map(f => `
           <button class="fuel-btn" onclick="selectFuel(${f.value}, this)" type="button">
             <div class="fuel-bar-wrap"><div class="fuel-bar-fill" style="height:${f.heightPct}%;background:${f.color}"></div></div>
@@ -1440,7 +1445,7 @@ function showTripReport(booking, prettyDate) {
       </div>`;
   } else {
     const labels = { 0: 'Vide', 25: '1/4', 50: '1/2', 75: '3/4', 100: 'Plein' };
-    fuelSection = `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);color:var(--text-light);font-size:13px">⛽ Essence rendue : <strong>${labels[booking.fuelReturnLevel] || booking.fuelReturnLevel + '%'}</strong></div>`;
+    fuelSection = `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);color:var(--text-light);font-size:13px">Essence rendue : <strong>${labels[booking.fuelReturnLevel] || booking.fuelReturnLevel + '%'}</strong></div>`;
   }
 
   document.getElementById('sheet-content').innerHTML = `
@@ -1459,9 +1464,9 @@ async function confirmFuelForBooking(bookingId) {
     await db.collection('bookings').doc(bookingId).update({ fuelReturnLevel: level });
     closeSheet();
     if (level >= 50) {
-      celebrate('⛽', 'Youpi ! Merci !', '🌟', 'La voiture est bien ravitaillée');
+      celebrate('✓', 'Youpi ! Merci !', '', 'La voiture est bien ravitaillée');
     } else {
-      showToast('⛽ Pense à refaire le plein avant la prochaine sortie');
+      showToast('Pense à refaire le plein avant la prochaine sortie');
     }
   } catch(e) { showToast('Erreur — réessayez'); }
 }
@@ -1583,7 +1588,6 @@ function renderSignupStep(step) {
     content = `<div class="login-sheet">
       ${progress}
       <div style="text-align:center;margin-bottom:24px">
-        <div style="font-size:60px;margin-bottom:12px">👋</div>
         <h2>Nouveau membre</h2>
         <p>Comment tu t'appelles ?</p>
       </div>
@@ -1598,7 +1602,6 @@ function renderSignupStep(step) {
     content = `<div class="login-sheet">
       ${progress}
       <div style="text-align:center;margin-bottom:24px">
-        <div style="font-size:60px;margin-bottom:12px">📧</div>
         <h2>Ton email</h2>
         <p>Pour identifier ton compte</p>
       </div>
@@ -1614,7 +1617,6 @@ function renderSignupStep(step) {
     content = `<div class="login-sheet">
       ${progress}
       <div style="text-align:center;margin-bottom:24px">
-        <div style="font-size:60px;margin-bottom:12px">📸</div>
         <h2>Ta photo</h2>
         <p>Aide les autres à te reconnaître<br><small style="color:var(--text-light)">(optionnel)</small></p>
       </div>
@@ -1630,7 +1632,6 @@ function renderSignupStep(step) {
     content = `<div class="login-sheet">
       ${progress}
       <div style="text-align:center;margin-bottom:24px">
-        <div style="font-size:60px;margin-bottom:12px">🔐</div>
         <h2>Ton code secret</h2>
         <p>4 chiffres, rien que pour toi</p>
       </div>
@@ -1641,7 +1642,7 @@ function renderSignupStep(step) {
         <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
       </div>
       <div class="lock-error" id="signup-error"></div>
-      <button class="btn btn-primary" onclick="signup()">C'est parti ! 🎉</button>
+      <button class="btn btn-primary" onclick="signup()">C'est parti !</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="renderSignupStep(3)">← Retour</button>
     </div>`;
   }
@@ -1707,7 +1708,7 @@ async function signup() {
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
     closeSheet();
     enterApp();
-    celebrate('🎉', `Bienvenue ${name} !`, '+50 XP', 'Prêt·e à prendre la route ?');
+    celebrate('✓', `Bienvenue ${name} !`, '+50 XP', 'Prêt·e à prendre la route ?');
   } catch (e) { showToast('Erreur — réessayez'); }
 }
 
