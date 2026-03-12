@@ -662,6 +662,12 @@
   .fuel-bar-fill { width: 100%; border-radius: 4px; transition: height 0.2s; }
   .fuel-label { font-size: 10px; font-weight: 600; }
 
+  /* ---- FUEL MINI BAR (booking sheet + dashboard) ---- */
+  .fuel-info-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); margin-bottom:14px; font-size:14px; color:var(--text-light); }
+  .fuel-mini-bar { display:flex; align-items:center; gap:6px; }
+  .fuel-mini-track { width:48px; height:8px; background:#f0f0f0; border-radius:999px; overflow:hidden; }
+  .fuel-mini-fill { height:100%; border-radius:999px; }
+
   /* ---- BADGES ---- */
   .badge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
   .badge-item { border-radius: 12px; padding: 12px 14px; }
@@ -931,12 +937,15 @@ function renderExperiencePanels() {
   const statusDot = document.getElementById('car-status-dot');
   const statusText = document.getElementById('car-status-text');
   if (statusDot && statusText) {
+    const activeCar = cars.find(c => c.id === selectedCar);
+    const fuelSuffix = (activeCar?.fuelLevel !== null && activeCar?.fuelLevel !== undefined)
+      ? ` · Essence : ${FUEL_LABELS[activeCar.fuelLevel] || activeCar.fuelLevel + '%'}` : '';
     if (todayBooking) {
       statusDot.className = 'dot-warn';
-      statusText.textContent = `Utilisée par ${todayBooking.userName}${todayBooking.destination ? ' · ' + todayBooking.destination : ''}`;
+      statusText.textContent = `Utilisée par ${todayBooking.userName}${todayBooking.destination ? ' · ' + todayBooking.destination : ''}${fuelSuffix}`;
     } else {
       statusDot.className = 'dot-ok';
-      statusText.textContent = 'Voiture disponible aujourd\'hui';
+      statusText.textContent = `Voiture disponible${fuelSuffix}`;
     }
   }
 
@@ -1144,6 +1153,22 @@ function computeStreak() {
     }
   }
   return streak;
+}
+
+// ==========================================
+// FUEL HELPERS
+// ==========================================
+const FUEL_COLORS = { 0: '#ef4444', 25: '#f97316', 50: '#eab308', 75: '#84cc16', 100: '#22c55e' };
+const FUEL_LABELS = { 0: 'Vide', 25: '1/4', 50: '1/2', 75: '3/4', 100: 'Plein' };
+
+function getFuelBar(level) {
+  if (level === null || level === undefined) {
+    return '<span style="color:var(--text-light);font-size:13px">Inconnu</span>';
+  }
+  return `<div class="fuel-mini-bar">
+    <div class="fuel-mini-track"><div class="fuel-mini-fill" style="width:${level}%;background:${FUEL_COLORS[level]}"></div></div>
+    <span style="font-size:13px;font-weight:600;color:var(--text)">${FUEL_LABELS[level] || level + '%'}</span>
+  </div>`;
 }
 
 // ==========================================
@@ -1406,9 +1431,10 @@ function onDayClick(dateStr, isPast) {
       ${isMine ? `<button class="btn btn-danger" onclick="cancelBooking('${booking.id}')">Annuler ma réservation</button>` : ''}
       <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Fermer</button>`;
   } else {
+    const activeCar = cars.find(c => c.id === selectedCar);
     html = `
       <div class="sheet-date">${prettyDate}</div>
-      <div class="sheet-status">✅ Jour disponible</div>
+      <div class="fuel-info-row"><span>Essence disponible</span>${getFuelBar(activeCar?.fuelLevel)}</div>
       <div class="input-group">
         <label>Destination</label>
         <select id="booking-destination" onchange="updateDistanceFromDestination()">
@@ -1491,7 +1517,7 @@ function showTripReport(booking, prettyDate) {
             <div class="fuel-bar-wrap"><div class="fuel-bar-fill" style="height:${f.heightPct}%;background:${f.color}"></div></div>
             <div class="fuel-label">${f.label}</div>
           </button>`).join('')}</div>
-        <button class="btn btn-primary" id="fuel-confirm-btn" onclick="confirmFuelForBooking('${booking.id}')" disabled style="opacity:0.4;margin-top:8px">Enregistrer</button>
+        <button class="btn btn-primary" id="fuel-confirm-btn" onclick="confirmFuelAfterTrip('${booking.id}')" disabled style="opacity:0.4;margin-top:8px">Enregistrer</button>
       </div>`;
   } else {
     const labels = { 0: 'Vide', 25: '1/4', 50: '1/2', 75: '3/4', 100: 'Plein' };
@@ -1506,12 +1532,16 @@ function showTripReport(booking, prettyDate) {
   document.getElementById('overlay').classList.add('open');
 }
 
-async function confirmFuelForBooking(bookingId) {
+async function confirmFuelAfterTrip(bookingId) {
   const level = selectedFuelLevel;
   if (level === null) return;
   selectedFuelLevel = null;
   try {
-    await db.collection('bookings').doc(bookingId).update({ fuelReturnLevel: level });
+    // Write to cars (rules allow write), not bookings (no update rule)
+    await db.collection('cars').doc(selectedCar).update({ fuelLevel: level });
+    // Update local cache so it shows immediately on next booking
+    const car = cars.find(c => c.id === selectedCar);
+    if (car) car.fuelLevel = level;
     closeSheet();
     if (level >= 50) {
       celebrate('✓', 'Youpi ! Merci !', '', 'La voiture est bien ravitaillée');
