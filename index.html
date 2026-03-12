@@ -679,6 +679,68 @@
   .profile-xp-badge { background: var(--primary); color: white; border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 700; }
   .profile-xp-num { font-size: 13px; color: var(--text-light); }
 
+  /* ---- CAR STATUS CARD ---- */
+  .car-status-card {
+    border: 1px solid var(--border); border-radius: 16px;
+    padding: 16px; margin-bottom: 14px;
+    background: white; box-shadow: var(--shadow-sm);
+  }
+  .car-status-header {
+    display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 12px;
+  }
+  .car-status-left { display: flex; align-items: center; gap: 8px; }
+  .car-status-label { font-size: 14px; font-weight: 600; color: var(--text); }
+  .car-info-btn {
+    font-size: 12px; font-weight: 600; color: var(--accent);
+    background: var(--accent-light); border: none; border-radius: 8px;
+    padding: 6px 12px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .car-status-fuel {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 13px; color: var(--text-light);
+  }
+
+  /* ---- RESERVE CTA ---- */
+  .reserve-cta {
+    border: 1px solid var(--border); border-radius: 16px;
+    padding: 16px; margin-bottom: 14px; background: white;
+  }
+  .reserve-cta-label { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: var(--text); }
+
+  /* ---- HISTORY CARD ---- */
+  .history-card {
+    display: flex; border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden; margin-bottom: 10px; background: white;
+  }
+  .history-left {
+    flex: 1; padding: 14px; display: flex; flex-direction: column;
+    align-items: flex-start; gap: 5px;
+  }
+  .history-right {
+    flex: 1; padding: 14px; background: #fafafa; border-left: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: flex-start; gap: 5px;
+  }
+  .history-avatar-sm {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--accent); color: white; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; overflow: hidden; margin-bottom: 4px;
+  }
+  .history-section-label {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--text-light);
+  }
+  .history-date-val { font-size: 13px; font-weight: 600; color: var(--text); }
+  .history-dest { font-size: 12px; color: var(--text-light); max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ---- SETTINGS TAB ---- */
+  .settings-section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.6px; color: var(--text-light); margin: 18px 0 10px;
+  }
+
   /* ---- RESPONSIVE ---- */
   @media (max-width: 480px) {
     header { padding: 16px 18px; }
@@ -718,10 +780,19 @@
       </div>
     </article>
 
-    <!-- Statut voiture inline -->
-    <div class="car-status-inline">
-      <span class="dot-ok" id="car-status-dot"></span>
-      <span id="car-status-text">Voiture disponible aujourd'hui</span>
+    <!-- Statut voiture card -->
+    <div class="car-status-card">
+      <div class="car-status-header">
+        <div class="car-status-left">
+          <span class="dot-ok" id="car-status-dot"></span>
+          <span class="car-status-label" id="car-status-text">Voiture disponible</span>
+        </div>
+        <button class="car-info-btn" onclick="showCarInfo()">Info voiture</button>
+      </div>
+      <div class="car-status-fuel">
+        <span>Réservoir</span>
+        <div id="car-fuel-display"></div>
+      </div>
     </div>
 
     <!-- Quick Stats -->
@@ -734,6 +805,12 @@
         <div class="quick-stat-value" id="qs-rank">#—</div>
         <div class="quick-stat-label">mon classement</div>
       </div>
+    </div>
+
+    <!-- Reserve CTA -->
+    <div class="reserve-cta">
+      <div class="reserve-cta-label">Réserver la voiture</div>
+      <button class="btn btn-primary" style="width:100%" onclick="switchTab('calendar')">Voir le calendrier des réservations →</button>
     </div>
 
     <!-- KPI Grid -->
@@ -796,17 +873,15 @@
   </section>
 
   <section class="tab-panel" id="tab-history" style="margin-bottom:80px">
-    <article class="card">
-      <div class="card-title">Historique des trajets</div>
-      <div class="mini-list" id="history-full"></div>
-    </article>
+    <div class="settings-section-title">Historique des trajets</div>
+    <div id="history-full"></div>
   </section>
 
   <nav class="bottom-nav" aria-label="Navigation principale">
     <button type="button" id="nav-dashboard" class="active" onclick="switchTab('dashboard')">Dashboard</button>
     <button type="button" id="nav-calendar" onclick="switchTab('calendar')">Calendrier</button>
     <button type="button" id="nav-leaderboard" onclick="switchTab('leaderboard')">Classement</button>
-    <button type="button" id="nav-history" onclick="switchTab('history')">Historique</button>
+    <button type="button" id="nav-history" onclick="switchTab('history')">Paramètres</button>
   </nav>
 </main>
 <div class="overlay" id="overlay" onclick="closeSheet()"><div class="sheet" id="sheet" onclick="event.stopPropagation()"><div class="sheet-handle"></div><div id="sheet-content"></div></div></div>
@@ -933,20 +1008,22 @@ function renderExperiencePanels() {
   const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
   const todayBooking = bookings[todayStr];
 
-  // Inline car status (new simplified format)
+  // Car status card
   const statusDot = document.getElementById('car-status-dot');
   const statusText = document.getElementById('car-status-text');
+  const fuelDisplay = document.getElementById('car-fuel-display');
+  const activeCar = cars.find(c => c.id === selectedCar);
   if (statusDot && statusText) {
-    const activeCar = cars.find(c => c.id === selectedCar);
-    const fuelSuffix = (activeCar?.fuelLevel !== null && activeCar?.fuelLevel !== undefined)
-      ? ` · Essence : ${FUEL_LABELS[activeCar.fuelLevel] || activeCar.fuelLevel + '%'}` : '';
     if (todayBooking) {
       statusDot.className = 'dot-warn';
-      statusText.textContent = `Utilisée par ${todayBooking.userName}${todayBooking.destination ? ' · ' + todayBooking.destination : ''}${fuelSuffix}`;
+      statusText.textContent = `Utilisée par ${todayBooking.userName}${todayBooking.destination ? ' · ' + todayBooking.destination : ''}`;
     } else {
       statusDot.className = 'dot-ok';
-      statusText.textContent = `Voiture disponible${fuelSuffix}`;
+      statusText.textContent = 'Voiture disponible';
     }
+  }
+  if (fuelDisplay) {
+    fuelDisplay.innerHTML = getFuelBar(activeCar?.fuelLevel ?? null);
   }
 
   // Points accumulator (with photo for podium avatars)
@@ -979,8 +1056,30 @@ function renderExperiencePanels() {
   const history = Object.values(bookings).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   const historyEl = document.getElementById('history-full');
   if (historyEl) {
-    if (!history.length) { historyEl.innerHTML = '<div class="mini-item">Aucun trajet enregistré.</div>'; }
-    else { historyEl.innerHTML = history.map(h=>`<div class="mini-item"><span><strong>${h.userName || 'Conducteur'}</strong><br><small style="color:var(--text-light)">${h.date || ''} · ${h.destination || 'Destination non précisée'}</small></span><span>${estimateDistanceForBooking(h)} km</span></div>`).join(''); }
+    if (!history.length) {
+      historyEl.innerHTML = '<div style="color:var(--text-light);font-size:14px;padding:16px 0">Aucun trajet enregistré.</div>';
+    } else {
+      historyEl.innerHTML = history.map(h => {
+        const av = h.photo ? `<img src="${h.photo}" alt="" style="width:100%;height:100%;object-fit:cover">` : getInitials(h.userName || 'C');
+        const dateFormatted = h.date ? new Date(h.date + 'T00:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : '—';
+        const dest = h.destination || 'Destination non précisée';
+        const km = estimateDistanceForBooking(h);
+        const fuelLeft = (h.fuelReturnLevel !== undefined && h.fuelReturnLevel !== null) ? getFuelBar(h.fuelReturnLevel) : '<span style="color:var(--text-light);font-size:12px">—</span>';
+        return `<div class="history-card">
+          <div class="history-left">
+            <div class="history-avatar-sm">${av}</div>
+            <div class="history-section-label">Réservation</div>
+            <div class="history-date-val">${dateFormatted}</div>
+            <div class="history-dest">${dest}</div>
+          </div>
+          <div class="history-right">
+            <div class="history-section-label">Retour · réservoir</div>
+            <div style="margin-top:2px">${fuelLeft}</div>
+            <div class="history-dest" style="margin-top:4px">${km} km</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
   }
 }
 
@@ -1834,7 +1933,11 @@ function showProfile() {
     <div class="login-sheet">
       <h2>Mon profil</h2>
       <div class="profile-row">
-        <div class="profile-avatar">${av}</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+          <div class="profile-avatar">${av}</div>
+          <label style="font-size:12px;color:var(--accent);cursor:pointer;text-decoration:underline" onclick="document.getElementById('profile-photo-input').click()">Modifier photo</label>
+          <input type="file" id="profile-photo-input" accept="image/*" style="display:none" onchange="changeProfilePhoto(this)">
+        </div>
         <div class="profile-meta">
           <div class="name">${currentUser.name}</div>
           <div class="email">${currentUser.email}</div>
@@ -1852,6 +1955,74 @@ function showProfile() {
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>
     </div>`;
   document.getElementById('overlay').classList.add('open');
+}
+
+async function changeProfilePhoto(input) {
+  const file = input.files[0];
+  if (!file || !currentUser) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const img = new Image();
+    img.onload = async () => {
+      const canvas = document.createElement('canvas');
+      const size = 120; canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const min = Math.min(img.width, img.height);
+      ctx.drawImage(img, (img.width - min)/2, (img.height - min)/2, min, min, 0, 0, size, size);
+      const photo = canvas.toDataURL('image/jpeg', 0.6);
+      try {
+        await db.collection('users').doc(currentUser.id).update({ photo });
+        currentUser.photo = photo;
+        localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+        updateUserPill();
+        showProfile(); // re-render sheet with new photo
+        showToast('Photo mise à jour ✓');
+      } catch(e) { showToast('Erreur — réessayez'); }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function showCarInfo() {
+  const car = cars.find(c => c.id === selectedCar);
+  if (!car) return;
+  const plaque = car.plaque || '';
+  const assurance = car.assurance || '';
+  const observations = car.observations || '';
+  document.getElementById('sheet-content').innerHTML = `
+    <div class="login-sheet">
+      <h2>Info voiture</h2>
+      <div style="color:var(--text-light);font-size:13px;margin-bottom:20px">${car.emoji || '🚗'} ${car.name}</div>
+      <div class="input-group">
+        <label>Plaque d'immatriculation</label>
+        <input type="text" id="car-plaque" placeholder="Ex: AB-123-CD" value="${plaque}" style="text-transform:uppercase">
+      </div>
+      <div class="input-group">
+        <label>Assurance</label>
+        <input type="text" id="car-assurance" placeholder="Compagnie / n° de contrat" value="${assurance}">
+      </div>
+      <div class="input-group">
+        <label>Observations</label>
+        <textarea id="car-observations" placeholder="Carrosserie, entretien, notes..." rows="3" style="resize:none;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;width:100%">${observations}</textarea>
+      </div>
+      <button class="btn btn-primary" onclick="saveCarInfo()">Enregistrer</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+
+async function saveCarInfo() {
+  const plaque = (document.getElementById('car-plaque')?.value || '').trim().toUpperCase();
+  const assurance = (document.getElementById('car-assurance')?.value || '').trim();
+  const observations = (document.getElementById('car-observations')?.value || '').trim();
+  try {
+    await db.collection('cars').doc(selectedCar).update({ plaque, assurance, observations });
+    const car = cars.find(c => c.id === selectedCar);
+    if (car) Object.assign(car, { plaque, assurance, observations });
+    closeSheet();
+    showToast('Infos voiture enregistrées ✓');
+  } catch(e) { showToast('Erreur — réessayez'); }
 }
 
 function showChangePin() {
