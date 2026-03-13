@@ -959,6 +959,57 @@
     .member-grid { gap: 16px; }
     .member-card .m-avatar { width: 56px; height: 56px; font-size: 18px; }
   }
+
+  /* ===== Onboarding Wizard ===== */
+  .ob-overlay {
+    position: fixed; inset: 0; z-index: 500; background: white;
+    display: flex; align-items: center; justify-content: center;
+    overflow-y: auto; padding: 20px;
+  }
+  .ob-overlay.hidden { display: none; }
+  .ob-card { max-width: 400px; width: 100%; text-align: center; position: relative; }
+  .ob-emoji { font-size: 64px; margin-bottom: 16px; }
+  .ob-back {
+    position: absolute; top: 0; left: 0; background: #f0f0f0;
+    border: none; border-radius: 50%; width: 36px; height: 36px;
+    font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .ob-dots { display: flex; gap: 6px; justify-content: center; margin: 12px 0 28px; }
+  .ob-dot { height: 8px; border-radius: 999px; background: var(--border); transition: all 0.3s; width: 8px; }
+  .ob-dot.active { background: var(--accent); width: 24px; }
+  .ob-fields { text-align: left; margin: 20px 0 24px; display: flex; flex-direction: column; gap: 14px; }
+  .ob-photo-row { display: flex; justify-content: center; margin: 8px 0; }
+
+  /* ===== PWA Install ===== */
+  .pwa-install-btn {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    z-index: 300; background: var(--text); color: white; border: none;
+    border-radius: 24px; padding: 12px 24px; font-size: 15px; font-weight: 700;
+    font-family: 'DM Sans', sans-serif; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25); white-space: nowrap;
+  }
+  .ios-overlay {
+    position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,0.55);
+    display: flex; align-items: flex-end; padding: 16px;
+  }
+  .ios-overlay.hidden { display: none; }
+  .ios-overlay-card {
+    background: white; border-radius: 24px; padding: 28px 24px; width: 100%;
+    position: relative; box-shadow: 0 -4px 32px rgba(0,0,0,0.15);
+  }
+  .ios-overlay-close {
+    position: absolute; top: 16px; right: 16px; background: #f0f0f0;
+    border: none; border-radius: 50%; width: 32px; height: 32px;
+    font-size: 14px; cursor: pointer;
+  }
+  .ios-overlay-icon { font-size: 48px; text-align: center; margin-bottom: 8px; }
+  .ios-overlay-title { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 20px; color: var(--text); }
+  .ios-step { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 15px; color: var(--text); }
+  .ios-step-num {
+    background: var(--accent); color: white; border-radius: 50%;
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; flex-shrink: 0;
+  }
 </style>
 </head>
 <body>
@@ -2773,18 +2824,258 @@ async function confirmRangeBooking() {
 }
 
 // ==========================================
+// ONBOARDING — First-run wizard
+// ==========================================
+async function checkFirstRun() {
+  try {
+    const [configDoc, usersSnap] = await Promise.all([
+      db.collection('config').doc('access').get(),
+      db.collection('users').limit(1).get()
+    ]);
+    if (!configDoc.exists && usersSnap.empty) {
+      document.getElementById('lock-screen').classList.add('hidden');
+      document.getElementById('onboarding-overlay').classList.remove('hidden');
+      showOnboardingStep(1);
+      return true;
+    }
+  } catch (e) { console.warn('checkFirstRun:', e); }
+  return false;
+}
+
+function showOnboardingStep(n) {
+  document.querySelectorAll('.ob-step').forEach(s => s.classList.add('hidden'));
+  document.getElementById(`ob-step-${n}`)?.classList.remove('hidden');
+  if (n === 2) {
+    const create = document.querySelectorAll('#ob-pin-create input');
+    const confirm = document.querySelectorAll('#ob-pin-confirm input');
+    setupPinInputs(create, () => confirm[0].focus());
+    setupPinInputs(confirm, obStep2Advance);
+    setTimeout(() => create[0].focus(), 300);
+  }
+  if (n === 3) {
+    const pins = document.querySelectorAll('#ob-user-pin input');
+    setupPinInputs(pins, obStep3Advance);
+    setTimeout(() => document.getElementById('ob-name')?.focus(), 300);
+  }
+}
+
+async function obStep2Advance() {
+  const create = Array.from(document.querySelectorAll('#ob-pin-create input')).map(i => i.value.replace(/\D/g, '')).join('');
+  const confirm = Array.from(document.querySelectorAll('#ob-pin-confirm input')).map(i => i.value.replace(/\D/g, '')).join('');
+  const errEl = document.getElementById('ob-pin-error');
+  if (create.length < 4) { errEl.textContent = 'Entrez 4 chiffres'; return; }
+  if (create !== confirm) { errEl.textContent = 'Les codes ne correspondent pas'; return; }
+  errEl.textContent = '';
+  try {
+    await db.collection('config').doc('access').set({ pin: create });
+    isUnlocked = true;
+    localStorage.setItem('famcar_unlocked', 'true');
+    showOnboardingStep(3);
+  } catch (e) { errEl.textContent = 'Erreur — réessayez'; }
+}
+
+async function obStep3Advance() {
+  const name = document.getElementById('ob-name')?.value.trim() || '';
+  const email = document.getElementById('ob-email')?.value.trim() || '';
+  const pin = Array.from(document.querySelectorAll('#ob-user-pin input')).map(i => i.value.replace(/\D/g, '')).join('');
+  const errEl = document.getElementById('ob-step3-error');
+  if (!name) { errEl.textContent = 'Entrez votre prénom'; return; }
+  if (!email || !email.includes('@')) { errEl.textContent = 'Email invalide'; return; }
+  if (pin.length < 4) { errEl.textContent = 'Entrez votre code à 4 chiffres'; return; }
+  errEl.textContent = '';
+  try {
+    const existing = await db.collection('users').where('email', '==', email).get();
+    if (!existing.empty) { errEl.textContent = 'Cet email est déjà utilisé'; return; }
+    const ref = await db.collection('users').add({
+      name, email, photo: tempPhoto || null, pin,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    currentUser = { id: ref.id, name, email, photo: tempPhoto || null };
+    localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+    showOnboardingStep(4);
+  } catch (e) { errEl.textContent = 'Erreur — réessayez'; }
+}
+
+function finishOnboarding() {
+  document.getElementById('onboarding-overlay').classList.add('hidden');
+  enterApp();
+  celebrate('🚗', `Bienvenue ${currentUser?.name || ''} !`, '+50 XP', 'La famille est prête à prendre la route !');
+}
+
+// ==========================================
+// PWA
+// ==========================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/Resa-voiture/sw.js', { scope: '/Resa-voiture/' })
+      .catch(err => console.warn('SW:', err));
+  });
+}
+
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById('pwa-install-btn')?.classList.remove('hidden');
+});
+window.addEventListener('appinstalled', () => {
+  document.getElementById('pwa-install-btn')?.classList.add('hidden');
+  deferredInstallPrompt = null;
+});
+function triggerPwaInstall() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(() => {
+    deferredInstallPrompt = null;
+    document.getElementById('pwa-install-btn')?.classList.add('hidden');
+  });
+}
+function dismissIosInstall() {
+  document.getElementById('ios-install-overlay')?.classList.add('hidden');
+  localStorage.setItem('ios_install_dismissed', '1');
+}
+// iOS: show install overlay 3s after first visit if not already in standalone mode
+const _isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+if (_isIos && !window.navigator.standalone && !localStorage.getItem('ios_install_dismissed')) {
+  setTimeout(() => document.getElementById('ios-install-overlay')?.classList.remove('hidden'), 3000);
+}
+
+// ==========================================
 // INIT
 // ==========================================
 initLockScreen();
 loadCars();
 
-if (isUnlocked && currentUser) {
-  document.getElementById('lock-screen').classList.add('hidden');
-  enterApp();
-} else if (isUnlocked && !currentUser) {
-  document.getElementById('lock-screen').classList.add('hidden');
-  showMemberSelect();
-}
+checkFirstRun().then(isNew => {
+  if (!isNew) {
+    if (isUnlocked && currentUser) {
+      document.getElementById('lock-screen').classList.add('hidden');
+      enterApp();
+    } else if (isUnlocked && !currentUser) {
+      document.getElementById('lock-screen').classList.add('hidden');
+      showMemberSelect();
+    }
+  }
+});
 </script>
+
+<!-- ===== Onboarding Wizard ===== -->
+<div id="onboarding-overlay" class="ob-overlay hidden">
+
+  <!-- Step 1: Welcome -->
+  <div class="ob-step ob-card" id="ob-step-1">
+    <div class="ob-emoji">🚗</div>
+    <h1 style="font-size:32px;margin-bottom:8px">FamCar</h1>
+    <p style="color:var(--text-light);margin-bottom:40px;font-size:16px">Gérez la voiture familiale<br>simplement, ensemble.</p>
+    <button class="btn btn-primary" style="width:100%" onclick="showOnboardingStep(2)">Commencer →</button>
+  </div>
+
+  <!-- Step 2: Family PIN -->
+  <div class="ob-step ob-card hidden" id="ob-step-2">
+    <button class="ob-back" onclick="showOnboardingStep(1)">←</button>
+    <div class="ob-dots">
+      <div class="ob-dot active"></div>
+      <div class="ob-dot"></div>
+      <div class="ob-dot"></div>
+    </div>
+    <div class="ob-emoji">🔒</div>
+    <h2 style="margin-bottom:6px">Code familial</h2>
+    <p style="color:var(--text-light);margin-bottom:24px;font-size:14px">Ce code protège l'accès à l'application.<br>Partagez-le avec tous les conducteurs.</p>
+    <div class="ob-fields">
+      <div>
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Choisissez un code à 4 chiffres</label>
+        <div class="pin-input" id="ob-pin-create" style="justify-content:center">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Confirmez le code</label>
+        <div class="pin-input" id="ob-pin-confirm" style="justify-content:center">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+    </div>
+    <div class="lock-error" id="ob-pin-error"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="obStep2Advance()">Continuer →</button>
+  </div>
+
+  <!-- Step 3: First member -->
+  <div class="ob-step ob-card hidden" id="ob-step-3">
+    <button class="ob-back" onclick="showOnboardingStep(2)">←</button>
+    <div class="ob-dots">
+      <div class="ob-dot"></div>
+      <div class="ob-dot active"></div>
+      <div class="ob-dot"></div>
+    </div>
+    <div class="ob-emoji">👤</div>
+    <h2 style="margin-bottom:6px">Premier conducteur</h2>
+    <p style="color:var(--text-light);margin-bottom:20px;font-size:14px">Créez votre profil pour commencer.</p>
+    <div class="ob-fields">
+      <div class="input-group" style="margin-bottom:0">
+        <label>Prénom</label>
+        <input type="text" id="ob-name" placeholder="Ton prénom" autocomplete="given-name">
+      </div>
+      <div class="input-group" style="margin-bottom:0">
+        <label>Email</label>
+        <input type="email" id="ob-email" placeholder="ton@email.com" autocomplete="email">
+      </div>
+      <div>
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Photo <span style="color:var(--text-light);font-weight:400">(optionnel)</span></label>
+        <div class="ob-photo-row">
+          <div class="photo-preview" id="photo-preview" onclick="document.getElementById('ob-photo-input').click()" style="width:72px;height:72px;font-size:24px;cursor:pointer">📷</div>
+          <input type="file" id="ob-photo-input" accept="image/*" style="display:none" onchange="handlePhoto(this)">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Votre code secret (4 chiffres)</label>
+        <div class="pin-input" id="ob-user-pin" style="justify-content:center">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+    </div>
+    <div class="lock-error" id="ob-step3-error"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="obStep3Advance()">Créer mon profil →</button>
+  </div>
+
+  <!-- Step 4: Done -->
+  <div class="ob-step ob-card hidden" id="ob-step-4">
+    <div class="ob-dots">
+      <div class="ob-dot"></div>
+      <div class="ob-dot"></div>
+      <div class="ob-dot active"></div>
+    </div>
+    <div class="ob-emoji">🎉</div>
+    <h2 style="margin-bottom:8px">Famille créée !</h2>
+    <p style="color:var(--text-light);margin-bottom:40px;font-size:16px">Vous êtes prêt·e à réserver<br>la voiture familiale.</p>
+    <button class="btn btn-primary" style="width:100%" onclick="finishOnboarding()">Découvrir FamCar →</button>
+  </div>
+
+</div>
+
+<!-- Android PWA install button -->
+<button id="pwa-install-btn" class="pwa-install-btn hidden" onclick="triggerPwaInstall()">
+  📲 Installer l'application
+</button>
+
+<!-- iOS install instructions overlay -->
+<div id="ios-install-overlay" class="ios-overlay hidden">
+  <div class="ios-overlay-card">
+    <button class="ios-overlay-close" onclick="dismissIosInstall()">✕</button>
+    <div class="ios-overlay-icon">🚗</div>
+    <div class="ios-overlay-title">Installer FamCar</div>
+    <div class="ios-step"><div class="ios-step-num">1</div>Appuie sur <strong>Partager</strong> ⎙ en bas de Safari</div>
+    <div class="ios-step"><div class="ios-step-num">2</div>Sélectionne <strong>« Sur l'écran d'accueil »</strong></div>
+    <div class="ios-step"><div class="ios-step-num">3</div>Appuie sur <strong>Ajouter</strong></div>
+  </div>
+</div>
 </body>
 </html>
