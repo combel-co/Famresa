@@ -257,6 +257,8 @@
   .btn-primary:hover { background: #333; }
   .btn-danger { background: var(--danger-light); color: var(--danger); }
   .btn-danger:hover { background: #fee2e2; }
+  .btn-outline { background: transparent; color: var(--text); border: 2px solid var(--border); }
+  .btn-outline:hover { background: var(--surface); }
   .btn + .btn { margin-top: 10px; }
 
   /* ---- LOGIN / SIGNUP SHEET ---- */
@@ -2442,7 +2444,7 @@ function logout() {
   currentUser = null;
   localStorage.removeItem('famcar_user');
   closeSheet();
-  showMemberSelect();
+  showWelcomeScreen();
   showToast('Déconnecté');
 }
 
@@ -2511,7 +2513,7 @@ function unlockApp() {
   localStorage.setItem('famcar_unlocked', 'true');
   document.getElementById('lock-screen').classList.add('hidden');
   if (currentUser) { enterApp(); }
-  else { showMemberSelect(); }
+  else { showWelcomeScreen(); }
 }
 
 // ==========================================
@@ -2882,6 +2884,123 @@ function showOnboardingStep(n) {
   }
 }
 
+// ==========================================
+// WELCOME / JOIN FLOW
+// ==========================================
+function showWelcomeScreen() {
+  document.getElementById('app-header').style.display = 'none';
+  document.getElementById('app-main').style.display = 'none';
+  document.getElementById('member-select').style.display = 'none';
+  document.getElementById('welcome-screen').style.display = 'flex';
+}
+
+function connectUser() {
+  document.getElementById('welcome-screen').style.display = 'none';
+  showMemberSelect();
+}
+
+async function startSignup() {
+  try {
+    const configDoc = await db.collection('config').doc('access').get();
+    document.getElementById('welcome-screen').style.display = 'none';
+    if (configDoc.exists) {
+      document.getElementById('join-overlay').classList.remove('hidden');
+      showJoinStep(1);
+    } else {
+      document.getElementById('lock-screen').classList.add('hidden');
+      document.getElementById('onboarding-overlay').classList.remove('hidden');
+      showOnboardingStep(1);
+    }
+  } catch(e) {
+    document.getElementById('welcome-screen').style.display = 'none';
+    document.getElementById('onboarding-overlay').classList.remove('hidden');
+    showOnboardingStep(1);
+  }
+}
+
+let joinTempPhoto = null;
+
+function handleJoinPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const size = 120; canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const min = Math.min(img.width, img.height);
+      ctx.drawImage(img, (img.width - min)/2, (img.height - min)/2, min, min, 0, 0, size, size);
+      joinTempPhoto = canvas.toDataURL('image/jpeg', 0.6);
+      const preview = document.getElementById('join-photo-preview');
+      preview.innerHTML = `<img src="${joinTempPhoto}" alt="">`;
+      preview.classList.add('has-photo');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function showJoinStep(n) {
+  document.querySelectorAll('.join-step').forEach(s => s.classList.add('hidden'));
+  document.getElementById(`join-step-${n}`)?.classList.remove('hidden');
+  if (n === 1) {
+    const pins = document.querySelectorAll('#join-pin input');
+    setupPinInputs(pins, joinStep1Advance);
+    setTimeout(() => pins[0].focus(), 300);
+  }
+  if (n === 2) {
+    joinTempPhoto = null;
+    const preview = document.getElementById('join-photo-preview');
+    if (preview) { preview.innerHTML = '📷'; preview.classList.remove('has-photo'); }
+    const pins = document.querySelectorAll('#join-user-pin input');
+    setupPinInputs(pins, joinStep2Advance);
+    setTimeout(() => document.getElementById('join-name')?.focus(), 300);
+  }
+}
+
+async function joinStep1Advance() {
+  const pin = Array.from(document.querySelectorAll('#join-pin input')).map(i => i.value.replace(/\D/g, '')).join('');
+  const errEl = document.getElementById('join-pin-error');
+  if (pin.length < 4) { errEl.textContent = 'Entrez 4 chiffres'; return; }
+  try {
+    const doc = await db.collection('config').doc('access').get();
+    if (!doc.exists || doc.data().pin !== pin) { errEl.textContent = 'Code incorrect'; return; }
+    errEl.textContent = '';
+    isUnlocked = true;
+    localStorage.setItem('famcar_unlocked', 'true');
+    showJoinStep(2);
+  } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
+}
+
+async function joinStep2Advance() {
+  const name = document.getElementById('join-name')?.value.trim() || '';
+  const email = document.getElementById('join-email')?.value.trim() || '';
+  const pin = Array.from(document.querySelectorAll('#join-user-pin input')).map(i => i.value.replace(/\D/g, '')).join('');
+  const errEl = document.getElementById('join-step2-error');
+  if (!name) { errEl.textContent = 'Entrez votre prénom'; return; }
+  if (!email || !email.includes('@')) { errEl.textContent = 'Email invalide'; return; }
+  if (pin.length < 4) { errEl.textContent = 'Entrez votre code à 4 chiffres'; return; }
+  errEl.textContent = '';
+  try {
+    const existing = await db.collection('users').where('email', '==', email).get();
+    if (!existing.empty) { errEl.textContent = 'Cet email est déjà utilisé'; return; }
+    const ref = await db.collection('users').add({
+      name, email, photo: joinTempPhoto || null, pin,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    currentUser = { id: ref.id, name, email, photo: joinTempPhoto || null };
+    localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+    document.getElementById('join-overlay').classList.add('hidden');
+    enterApp();
+    celebrate('🎉', `Bienvenue ${name} !`, '+50 XP', 'Tu fais partie de la famille !');
+  } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
+}
+
+// ==========================================
+// CAR ONBOARDING
+// ==========================================
 let selectedCarEmoji = '🚗';
 
 function selectCarEmoji(btn, emoji) {
@@ -2961,13 +3080,86 @@ checkFirstRun().then(isNew => {
       enterApp();
     } else if (isUnlocked && !currentUser) {
       document.getElementById('lock-screen').classList.add('hidden');
-      showMemberSelect();
+      showWelcomeScreen();
     }
   }
 });
 </script>
 
 <!-- ===== Onboarding Wizard ===== -->
+<!-- Welcome Screen -->
+<div id="welcome-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:200;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px">
+  <div style="font-size:64px;margin-bottom:16px">🚗</div>
+  <h1 style="font-size:32px;margin-bottom:8px">FamCar</h1>
+  <p style="color:var(--text-light);font-size:16px;margin-bottom:48px;text-align:center">Gérez la voiture familiale<br>simplement, ensemble.</p>
+  <div style="width:100%;max-width:320px">
+    <button class="btn btn-primary" onclick="connectUser()">Se connecter</button>
+    <button class="btn btn-outline" onclick="startSignup()">S'inscrire</button>
+  </div>
+</div>
+
+<!-- Join Family Overlay -->
+<div id="join-overlay" class="ob-overlay hidden">
+  <!-- Step 1: Family PIN -->
+  <div class="join-step ob-card" id="join-step-1">
+    <button class="ob-back" onclick="document.getElementById('join-overlay').classList.add('hidden');showWelcomeScreen()">←</button>
+    <div class="ob-dots">
+      <div class="ob-dot active"></div>
+      <div class="ob-dot"></div>
+    </div>
+    <div class="ob-emoji">🔒</div>
+    <h2 style="margin-bottom:6px">Code familial</h2>
+    <p style="color:var(--text-light);margin-bottom:24px;font-size:14px">Entrez le code de votre famille<br>pour rejoindre l'espace partagé.</p>
+    <div class="pin-input" id="join-pin" style="justify-content:center">
+      <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+      <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+      <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+      <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+    </div>
+    <div class="lock-error" id="join-pin-error"></div>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="joinStep1Advance()">Continuer →</button>
+  </div>
+  <!-- Step 2: Create profile -->
+  <div class="join-step ob-card hidden" id="join-step-2">
+    <button class="ob-back" onclick="showJoinStep(1)">←</button>
+    <div class="ob-dots">
+      <div class="ob-dot"></div>
+      <div class="ob-dot active"></div>
+    </div>
+    <div class="ob-emoji">👤</div>
+    <h2 style="margin-bottom:6px">Votre profil</h2>
+    <p style="color:var(--text-light);margin-bottom:20px;font-size:14px">Créez votre profil pour rejoindre la famille.</p>
+    <div class="ob-fields">
+      <div class="input-group" style="margin-bottom:0">
+        <label>Prénom</label>
+        <input type="text" id="join-name" placeholder="Ton prénom" autocomplete="given-name">
+      </div>
+      <div class="input-group" style="margin-bottom:0">
+        <label>Email</label>
+        <input type="email" id="join-email" placeholder="ton@email.com" autocomplete="email">
+      </div>
+      <div>
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Photo <span style="color:var(--text-light);font-weight:400">(optionnel)</span></label>
+        <div class="ob-photo-row">
+          <div class="photo-preview" id="join-photo-preview" onclick="document.getElementById('join-photo-input').click()" style="width:72px;height:72px;font-size:24px;cursor:pointer">📷</div>
+          <input type="file" id="join-photo-input" accept="image/*" style="display:none" onchange="handleJoinPhoto(this)">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Votre code secret (4 chiffres)</label>
+        <div class="pin-input" id="join-user-pin" style="justify-content:center">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+    </div>
+    <div class="lock-error" id="join-step2-error"></div>
+    <button class="btn btn-primary" style="margin-top:8px" onclick="joinStep2Advance()">Rejoindre →</button>
+  </div>
+</div>
+
 <div id="onboarding-overlay" class="ob-overlay hidden">
 
   <!-- Step 1: Welcome -->
