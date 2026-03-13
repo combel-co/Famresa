@@ -902,6 +902,8 @@
   .bm-step.completed .bm-card-mini,
   .bm-step.upcoming .bm-card-mini { display: flex; }
   .bm-step.upcoming .bm-card-mini { opacity: 0.45; pointer-events: none; }
+  /* Completed steps stick to top while calendar scrolls */
+  .bm-step.completed { position: sticky; top: 0; z-index: 10; }
 
   /* Mini card */
   .bm-card-mini {
@@ -2673,14 +2675,6 @@ function onBmDayClick(ds) {
   }
   renderBmCalendar();
   renderBmSteps();
-  // Auto-advance to hours step once both dates selected
-  if (bm.startDate && bm.endDate && bmCurrentStep === 'dates') {
-    setTimeout(() => {
-      bmCurrentStep = 'hours';
-      renderBmSteps();
-      document.getElementById('bm-step-hours')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 400);
-  }
 }
 
 function formatBmDateRange(s, e) {
