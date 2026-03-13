@@ -959,6 +959,37 @@
     .member-grid { gap: 16px; }
     .member-card .m-avatar { width: 56px; height: 56px; font-size: 18px; }
   }
+
+  /* ===== PWA Install ===== */
+  .pwa-install-btn {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    z-index: 300; background: var(--text); color: white; border: none;
+    border-radius: 24px; padding: 12px 24px; font-size: 15px; font-weight: 700;
+    font-family: 'DM Sans', sans-serif; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25); white-space: nowrap;
+  }
+  .ios-overlay {
+    position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,0.55);
+    display: flex; align-items: flex-end; padding: 16px;
+  }
+  .ios-overlay.hidden { display: none; }
+  .ios-overlay-card {
+    background: white; border-radius: 24px; padding: 28px 24px; width: 100%;
+    position: relative; box-shadow: 0 -4px 32px rgba(0,0,0,0.15);
+  }
+  .ios-overlay-close {
+    position: absolute; top: 16px; right: 16px; background: #f0f0f0;
+    border: none; border-radius: 50%; width: 32px; height: 32px;
+    font-size: 14px; cursor: pointer;
+  }
+  .ios-overlay-icon { font-size: 48px; text-align: center; margin-bottom: 8px; }
+  .ios-overlay-title { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 20px; color: var(--text); }
+  .ios-step { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; font-size: 15px; color: var(--text); }
+  .ios-step-num {
+    background: var(--accent); color: white; border-radius: 50%;
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; flex-shrink: 0;
+  }
 </style>
 </head>
 <body>
@@ -2773,6 +2804,44 @@ async function confirmRangeBooking() {
 }
 
 // ==========================================
+// PWA
+// ==========================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/Resa-voiture/sw.js', { scope: '/Resa-voiture/' })
+      .catch(err => console.warn('SW:', err));
+  });
+}
+
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById('pwa-install-btn')?.classList.remove('hidden');
+});
+window.addEventListener('appinstalled', () => {
+  document.getElementById('pwa-install-btn')?.classList.add('hidden');
+  deferredInstallPrompt = null;
+});
+function triggerPwaInstall() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(() => {
+    deferredInstallPrompt = null;
+    document.getElementById('pwa-install-btn')?.classList.add('hidden');
+  });
+}
+function dismissIosInstall() {
+  document.getElementById('ios-install-overlay')?.classList.add('hidden');
+  localStorage.setItem('ios_install_dismissed', '1');
+}
+// iOS: show install overlay 3s after first visit if not already in standalone mode
+const _isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+if (_isIos && !window.navigator.standalone && !localStorage.getItem('ios_install_dismissed')) {
+  setTimeout(() => document.getElementById('ios-install-overlay')?.classList.remove('hidden'), 3000);
+}
+
+// ==========================================
 // INIT
 // ==========================================
 initLockScreen();
@@ -2786,5 +2855,22 @@ if (isUnlocked && currentUser) {
   showMemberSelect();
 }
 </script>
+
+<!-- Android PWA install button -->
+<button id="pwa-install-btn" class="pwa-install-btn hidden" onclick="triggerPwaInstall()">
+  📲 Installer l'application
+</button>
+
+<!-- iOS install instructions overlay -->
+<div id="ios-install-overlay" class="ios-overlay hidden">
+  <div class="ios-overlay-card">
+    <button class="ios-overlay-close" onclick="dismissIosInstall()">✕</button>
+    <div class="ios-overlay-icon">🚗</div>
+    <div class="ios-overlay-title">Installer FamCar</div>
+    <div class="ios-step"><div class="ios-step-num">1</div>Appuie sur <strong>Partager</strong> ⎙ en bas de Safari</div>
+    <div class="ios-step"><div class="ios-step-num">2</div>Sélectionne <strong>« Sur l'écran d'accueil »</strong></div>
+    <div class="ios-step"><div class="ios-step-num">3</div>Appuie sur <strong>Ajouter</strong></div>
+  </div>
+</div>
 </body>
 </html>
