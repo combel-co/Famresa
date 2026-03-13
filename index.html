@@ -983,6 +983,8 @@
   .ob-dot.active { background: var(--accent); width: 24px; }
   .ob-fields { text-align: left; margin: 20px 0 24px; display: flex; flex-direction: column; gap: 14px; }
   .ob-photo-row { display: flex; justify-content: center; margin: 8px 0; }
+  .ob-emoji-btn { font-size: 28px; background: var(--surface); border: 2px solid var(--border); border-radius: 12px; width: 56px; height: 56px; cursor: pointer; transition: all 0.15s; }
+  .ob-emoji-btn.active { border-color: var(--accent); background: rgba(99,102,241,0.08); }
 </style>
 </head>
 <body>
@@ -2872,6 +2874,35 @@ function showOnboardingStep(n) {
     setupPinInputs(pins, obStep3Advance);
     setTimeout(() => document.getElementById('ob-name')?.focus(), 300);
   }
+  if (n === 4) {
+    selectedCarEmoji = '🚗';
+    document.querySelectorAll('.ob-emoji-btn').forEach(b => b.classList.remove('active'));
+    const firstBtn = document.querySelector('#ob-step-4 .ob-emoji-btn');
+    if (firstBtn) firstBtn.classList.add('active');
+  }
+}
+
+let selectedCarEmoji = '🚗';
+
+function selectCarEmoji(btn, emoji) {
+  selectedCarEmoji = emoji;
+  document.querySelectorAll('.ob-emoji-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function obStep4Advance() {
+  const name = (document.getElementById('ob-car-name')?.value.trim()) || 'Voiture familiale';
+  const plaque = (document.getElementById('ob-car-plaque')?.value.trim().toUpperCase()) || '';
+  const errEl = document.getElementById('ob-step4-error');
+  errEl.textContent = '';
+  try {
+    if (selectedCar) {
+      await db.collection('cars').doc(selectedCar).update({ name, emoji: selectedCarEmoji, plaque });
+      const car = cars.find(c => c.id === selectedCar);
+      if (car) Object.assign(car, { name, emoji: selectedCarEmoji, plaque });
+    }
+    showOnboardingStep(5);
+  } catch (e) { errEl.textContent = 'Erreur — réessayez'; }
 }
 
 async function obStep2Advance() {
@@ -2954,6 +2985,7 @@ checkFirstRun().then(isNew => {
       <div class="ob-dot active"></div>
       <div class="ob-dot"></div>
       <div class="ob-dot"></div>
+      <div class="ob-dot"></div>
     </div>
     <div class="ob-emoji">🔒</div>
     <h2 style="margin-bottom:6px">Code familial</h2>
@@ -2989,6 +3021,7 @@ checkFirstRun().then(isNew => {
       <div class="ob-dot"></div>
       <div class="ob-dot active"></div>
       <div class="ob-dot"></div>
+      <div class="ob-dot"></div>
     </div>
     <div class="ob-emoji">👤</div>
     <h2 style="margin-bottom:6px">Premier conducteur</h2>
@@ -3023,9 +3056,45 @@ checkFirstRun().then(isNew => {
     <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="obStep3Advance()">Créer mon profil →</button>
   </div>
 
-  <!-- Step 4: Done -->
+  <!-- Step 4: Car setup -->
   <div class="ob-step ob-card hidden" id="ob-step-4">
+    <button class="ob-back" onclick="showOnboardingStep(3)">←</button>
     <div class="ob-dots">
+      <div class="ob-dot"></div>
+      <div class="ob-dot"></div>
+      <div class="ob-dot active"></div>
+      <div class="ob-dot"></div>
+    </div>
+    <div class="ob-emoji">🚗</div>
+    <h2 style="margin-bottom:6px">Votre voiture</h2>
+    <p style="color:var(--text-light);margin-bottom:20px;font-size:14px">Personnalisez votre voiture familiale.</p>
+    <div class="ob-fields">
+      <div class="input-group" style="margin-bottom:0">
+        <label>Nom de la voiture</label>
+        <input type="text" id="ob-car-name" placeholder="Ex: Renault Scenic" value="Voiture familiale">
+      </div>
+      <div>
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Emoji</label>
+        <div style="display:flex;gap:10px;justify-content:center">
+          <button onclick="selectCarEmoji(this,'🚗')" class="ob-emoji-btn active">🚗</button>
+          <button onclick="selectCarEmoji(this,'🚙')" class="ob-emoji-btn">🚙</button>
+          <button onclick="selectCarEmoji(this,'🚕')" class="ob-emoji-btn">🚕</button>
+          <button onclick="selectCarEmoji(this,'🏎️')" class="ob-emoji-btn">🏎️</button>
+        </div>
+      </div>
+      <div class="input-group" style="margin-bottom:0">
+        <label>Plaque d'immatriculation <span style="color:var(--text-light);font-weight:400">(optionnel)</span></label>
+        <input type="text" id="ob-car-plaque" placeholder="Ex: AB-123-CD" style="text-transform:uppercase">
+      </div>
+    </div>
+    <div class="lock-error" id="ob-step4-error"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="obStep4Advance()">Continuer →</button>
+  </div>
+
+  <!-- Step 5: Done -->
+  <div class="ob-step ob-card hidden" id="ob-step-5">
+    <div class="ob-dots">
+      <div class="ob-dot"></div>
       <div class="ob-dot"></div>
       <div class="ob-dot"></div>
       <div class="ob-dot active"></div>
