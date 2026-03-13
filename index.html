@@ -777,8 +777,8 @@
 
   /* Body — fond gris, cartes blanches */
   .bm-body {
-    flex: 1; overflow-y: auto; padding: 0 16px 16px;
-    -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 12px;
+    flex: 1; overflow-y: hidden; padding: 0 16px 16px;
+    display: flex; flex-direction: column; gap: 12px; min-height: 0;
   }
 
   /* Cartes */
@@ -902,8 +902,11 @@
   .bm-step.completed .bm-card-mini,
   .bm-step.upcoming .bm-card-mini { display: flex; }
   .bm-step.upcoming .bm-card-mini { opacity: 0.45; pointer-events: none; }
-  /* Completed steps stick to top while calendar scrolls */
-  .bm-step.completed { position: sticky; top: 0; z-index: 10; }
+  /* Completed/upcoming steps shrink to their mini card size */
+  .bm-step.completed, .bm-step.upcoming { flex-shrink: 0; }
+  /* Active step fills remaining space; section scrolls internally */
+  .bm-step.active { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .bm-step.active .bm-section { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
   /* Mini card */
   .bm-card-mini {
