@@ -894,7 +894,33 @@
     background: transparent; color: var(--text); letter-spacing: -0.5px;
   }
 
-  /* Footer Airbnb — Réinitialiser | Confirmer */
+  /* ---- Wizard : step system ---- */
+  .bm-step .bm-section { display: block; }
+  .bm-step.completed .bm-section,
+  .bm-step.upcoming .bm-section { display: none; }
+  .bm-step .bm-card-mini { display: none; }
+  .bm-step.completed .bm-card-mini,
+  .bm-step.upcoming .bm-card-mini { display: flex; }
+  .bm-step.upcoming .bm-card-mini { opacity: 0.45; pointer-events: none; }
+
+  /* Mini card */
+  .bm-card-mini {
+    background: white; border-radius: 16px; padding: 16px 20px;
+    border: 1px solid #e8e8e8; cursor: pointer; transition: background 0.15s;
+    align-items: center; justify-content: space-between;
+  }
+  .bm-card-mini:active { background: #f0f0f0; }
+  .bm-card-mini-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--text-light); margin-bottom: 3px;
+  }
+  .bm-card-mini-value { font-size: 15px; font-weight: 600; color: var(--text); }
+  .bm-card-mini-edit {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; flex-shrink: 0;
+  }
+
+  /* Footer Airbnb — Réinitialiser | Suivant/Réserver */
   .bm-footer {
     flex-shrink: 0; background: white;
     border-top: 1px solid var(--border);
@@ -907,14 +933,14 @@
     font-family: 'DM Sans', sans-serif;
     text-decoration: underline; text-underline-offset: 3px; padding: 8px 0;
   }
-  .bm-confirm-btn {
+  .bm-next-btn {
     padding: 16px 28px; background: var(--text); color: white;
     border: none; border-radius: 14px; font-size: 16px; font-weight: 700;
     font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.15s;
     flex-shrink: 0;
   }
-  .bm-confirm-btn:hover:not(:disabled) { background: #333; }
-  .bm-confirm-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .bm-next-btn:hover { background: #333; }
+  .bm-next-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
   /* ---- RESPONSIVE ---- */
   @media (max-width: 480px) {
@@ -1067,43 +1093,80 @@
     <button class="bm-close" onclick="closeBookingModal()">✕</button>
   </div>
   <div class="bm-body" id="bm-body">
-    <!-- 1. Destination -->
-    <div class="bm-section">
-      <div class="bm-section-title">Où ?</div>
-      <div class="bm-dest-search">
-        <span class="bm-dest-search-icon">🔍</span>
-        <input class="bm-dest-input" type="text" id="bm-dest-input" placeholder="Rechercher une destination" oninput="filterDestSuggestions(this.value)" autocomplete="off">
-      </div>
-      <div class="bm-dest-suggestions" id="bm-dest-suggestions"></div>
-      <div class="bm-dest-km" id="bm-dest-km"></div>
-    </div>
-    <!-- 2. Dates -->
-    <div class="bm-section">
-      <div class="bm-section-title">Quand ?</div>
-      <div class="bm-section-subtitle" id="bm-dates-hint">Sélectionnez votre date de départ</div>
-      <div class="bm-cal-top-header">
-        <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
-      </div>
-      <div id="bm-calendar-container"></div>
-    </div>
-    <!-- 3. Horaires -->
-    <div class="bm-section">
-      <div class="bm-section-title">À quelle heure ?</div>
-      <div class="bm-time-row">
-        <div class="bm-time-block">
-          <div class="bm-time-label">Prise</div>
-          <input class="bm-time-input" type="time" id="bm-start-hour" value="09:00" onchange="updateBookingRecap()">
+
+    <!-- STEP 1 — Destination -->
+    <div class="bm-step active" id="bm-step-destination">
+      <!-- Mini (collapsed) -->
+      <div class="bm-card-mini" onclick="goToStep('destination')">
+        <div>
+          <div class="bm-card-mini-label">Destination</div>
+          <div class="bm-card-mini-value" id="bm-mini-dest-val">Je suis flexible</div>
         </div>
-        <div class="bm-time-block">
-          <div class="bm-time-label">Retour</div>
-          <input class="bm-time-input" type="time" id="bm-end-hour" value="20:00" onchange="updateBookingRecap()">
+        <div class="bm-card-mini-edit">Modifier</div>
+      </div>
+      <!-- Full (expanded) -->
+      <div class="bm-section">
+        <div class="bm-section-title">Où ?</div>
+        <div class="bm-dest-search">
+          <span class="bm-dest-search-icon">🔍</span>
+          <input class="bm-dest-input" type="text" id="bm-dest-input" placeholder="Rechercher une destination" oninput="filterDestSuggestions(this.value)" autocomplete="off">
+        </div>
+        <div class="bm-dest-suggestions" id="bm-dest-suggestions"></div>
+        <div class="bm-dest-km" id="bm-dest-km"></div>
+      </div>
+    </div>
+
+    <!-- STEP 2 — Dates -->
+    <div class="bm-step upcoming" id="bm-step-dates">
+      <!-- Mini -->
+      <div class="bm-card-mini" onclick="goToStep('dates')">
+        <div>
+          <div class="bm-card-mini-label">Dates</div>
+          <div class="bm-card-mini-value" id="bm-mini-dates-val">Ajouter des dates</div>
+        </div>
+        <div class="bm-card-mini-edit">Modifier</div>
+      </div>
+      <!-- Full -->
+      <div class="bm-section">
+        <div class="bm-section-title">Quand ?</div>
+        <div class="bm-section-subtitle" id="bm-dates-hint">Sélectionnez votre date de départ</div>
+        <div class="bm-cal-top-header">
+          <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
+        </div>
+        <div id="bm-calendar-container"></div>
+      </div>
+    </div>
+
+    <!-- STEP 3 — Horaires -->
+    <div class="bm-step upcoming" id="bm-step-hours">
+      <!-- Mini -->
+      <div class="bm-card-mini" onclick="goToStep('hours')">
+        <div>
+          <div class="bm-card-mini-label">Heure</div>
+          <div class="bm-card-mini-value" id="bm-mini-hours-val">09:00 → 20:00</div>
+        </div>
+        <div class="bm-card-mini-edit">Modifier</div>
+      </div>
+      <!-- Full -->
+      <div class="bm-section">
+        <div class="bm-section-title">À quelle heure ?</div>
+        <div class="bm-time-row">
+          <div class="bm-time-block">
+            <div class="bm-time-label">Prise</div>
+            <input class="bm-time-input" type="time" id="bm-start-hour" value="09:00" onchange="updateBookingRecap()">
+          </div>
+          <div class="bm-time-block">
+            <div class="bm-time-label">Retour</div>
+            <input class="bm-time-input" type="time" id="bm-end-hour" value="20:00" onchange="updateBookingRecap()">
+          </div>
         </div>
       </div>
     </div>
+
   </div>
   <div class="bm-footer">
     <button class="bm-reset-btn" onclick="resetBookingModal()">Réinitialiser</button>
-    <button class="bm-confirm-btn" id="bm-confirm-btn" onclick="confirmRangeBooking()" disabled>Confirmer</button>
+    <button class="bm-next-btn" id="bm-next-btn" onclick="bmNextStep()">Suivant</button>
   </div>
 </div>
 
@@ -2443,17 +2506,82 @@ const DEST_PRESETS = [
   { name: 'Lille', km: 225 },
 ];
 
+let bmCurrentStep = 'destination';
+
+function renderBmSteps() {
+  const steps = ['destination', 'dates', 'hours'];
+  const currentIndex = steps.indexOf(bmCurrentStep);
+  steps.forEach((step, i) => {
+    const el = document.getElementById(`bm-step-${step}`);
+    if (!el) return;
+    el.classList.remove('active', 'completed', 'upcoming');
+    if (i < currentIndex) el.classList.add('completed');
+    else if (i === currentIndex) el.classList.add('active');
+    else el.classList.add('upcoming');
+  });
+  // Update mini card values
+  const destVal = document.getElementById('bm-mini-dest-val');
+  if (destVal) destVal.textContent = bm.destinations.length > 0 ? bm.destinations[0].name : 'Je suis flexible';
+  const datesVal = document.getElementById('bm-mini-dates-val');
+  if (datesVal) datesVal.textContent = bm.startDate
+    ? (bm.endDate && bm.endDate !== bm.startDate
+        ? formatBmDateRange(bm.startDate, bm.endDate)
+        : new Date(bm.startDate + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }))
+    : 'Ajouter des dates';
+  const hoursVal = document.getElementById('bm-mini-hours-val');
+  if (hoursVal) hoursVal.textContent = `${bm.startHour} → ${bm.endHour}`;
+  // Footer button
+  const nextBtn = document.getElementById('bm-next-btn');
+  if (nextBtn) {
+    if (bmCurrentStep === 'hours') {
+      nextBtn.textContent = 'Réserver';
+      nextBtn.disabled = !bm.startDate;
+    } else if (bmCurrentStep === 'dates') {
+      nextBtn.textContent = 'Suivant';
+      nextBtn.disabled = !bm.startDate;
+    } else {
+      nextBtn.textContent = 'Suivant';
+      nextBtn.disabled = false;
+    }
+  }
+}
+
+function bmNextStep() {
+  if (bmCurrentStep === 'destination') {
+    bmCurrentStep = 'dates';
+    renderBmCalendar();
+  } else if (bmCurrentStep === 'dates') {
+    bmCurrentStep = 'hours';
+  } else if (bmCurrentStep === 'hours') {
+    confirmRangeBooking();
+    return;
+  }
+  renderBmSteps();
+  setTimeout(() => {
+    document.getElementById(`bm-step-${bmCurrentStep}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 50);
+}
+
+function goToStep(step) {
+  bmCurrentStep = step;
+  if (step === 'dates') renderBmCalendar();
+  renderBmSteps();
+  setTimeout(() => {
+    document.getElementById(`bm-step-${step}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 50);
+}
+
 function openBookingModal() {
   if (!currentUser) { showMemberSelect(); return; }
   bm = { startDate: null, endDate: null, startHour: '09:00', endHour: '20:00', destinations: [], step: 'start' };
+  bmCurrentStep = 'destination';
   document.getElementById('booking-modal').classList.add('open');
   const sh = document.getElementById('bm-start-hour'); if (sh) sh.value = '09:00';
   const eh = document.getElementById('bm-end-hour'); if (eh) eh.value = '20:00';
   const di = document.getElementById('bm-dest-input'); if (di) di.value = '';
   const hint = document.getElementById('bm-dates-hint'); if (hint) hint.textContent = 'Sélectionnez votre date de départ';
-  renderBmCalendar();
   renderDestSuggestions('');
-  updateBookingRecap();
+  renderBmSteps();
 }
 
 function closeBookingModal() {
@@ -2544,7 +2672,15 @@ function onBmDayClick(ds) {
     else hint.textContent = 'Sélectionnez la date de retour';
   }
   renderBmCalendar();
-  updateBookingRecap();
+  renderBmSteps();
+  // Auto-advance to hours step once both dates selected
+  if (bm.startDate && bm.endDate && bmCurrentStep === 'dates') {
+    setTimeout(() => {
+      bmCurrentStep = 'hours';
+      renderBmSteps();
+      document.getElementById('bm-step-hours')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 400);
+  }
 }
 
 function formatBmDateRange(s, e) {
@@ -2581,34 +2717,23 @@ function toggleDestination(name, km) {
   if (kmEl) kmEl.textContent = bm.destinations.length > 0
     ? `Distance estimée depuis Paris : ${bm.destinations[0].km * 2} km aller-retour`
     : '';
-  updateBookingRecap();
+  renderBmSteps();
 }
 
 function updateBookingRecap() {
-  const confirmBtn = document.getElementById('bm-confirm-btn');
   bm.startHour = document.getElementById('bm-start-hour')?.value || '09:00';
   bm.endHour = document.getElementById('bm-end-hour')?.value || '20:00';
-  if (confirmBtn) {
-    confirmBtn.disabled = !bm.startDate;
-    if (bm.startDate) {
-      const label = bm.endDate && bm.endDate !== bm.startDate
-        ? `Confirmer · ${formatBmDateRange(bm.startDate, bm.endDate)}`
-        : `Confirmer · ${new Date(bm.startDate + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
-      confirmBtn.textContent = label;
-    } else {
-      confirmBtn.textContent = 'Confirmer';
-    }
-  }
+  renderBmSteps();
 }
 
 function resetBookingModal() {
   bm.startDate = null; bm.endDate = null; bm.destinations = []; bm.step = 'start';
+  bmCurrentStep = 'destination';
   const hint = document.getElementById('bm-dates-hint'); if (hint) hint.textContent = 'Sélectionnez votre date de départ';
   const di = document.getElementById('bm-dest-input'); if (di) di.value = '';
   const kmEl = document.getElementById('bm-dest-km'); if (kmEl) kmEl.textContent = '';
-  renderBmCalendar();
   renderDestSuggestions('');
-  updateBookingRecap();
+  renderBmSteps();
 }
 
 async function confirmRangeBooking() {
