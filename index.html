@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FamCar — Réservation voiture familiale</title>
 <meta name="description" content="Réservation de la voiture familiale — simple, rapide, gratuit.">
-<meta name="apple-mobile-web-app-capable" content="no">
-<meta name="mobile-web-app-capable" content="no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -2082,14 +2082,7 @@ async function showMemberSelect() {
     </div>`;
   }).join('');
 
-  html += `<div class="member-card add-member-card" onclick="showSignupForm()">
-    <div class="m-avatar">+</div>
-    <div class="m-name">Nouveau</div>
-  </div>`;
-
   grid.innerHTML = html;
-
-  if (members.length === 0) showSignupForm();
 }
 
 // ==========================================
@@ -2150,151 +2143,7 @@ async function verifyMemberPin(userId) {
 // SIGNUP (new member)
 // ==========================================
 // ==========================================
-// MULTI-STEP ONBOARDING (Duolingo-style)
-// ==========================================
-let signupData = {};
-
-function showSignupForm() {
-  signupData = { name: '', email: '' };
-  tempPhoto = null;
-  renderSignupStep(1);
-  document.getElementById('overlay').classList.add('open');
-}
-
-function renderSignupStep(step) {
-  const dots = [1, 2, 3, 4].map(s =>
-    `<div style="width:${s === step ? 24 : 8}px;height:8px;border-radius:999px;background:${s <= step ? 'var(--accent)' : 'var(--border)'};transition:all 0.3s"></div>`
-  ).join('');
-  const progress = `<div style="display:flex;gap:6px;justify-content:center;margin-bottom:28px">${dots}</div>`;
-
-  let content = '';
-  if (step === 1) {
-    content = `<div class="login-sheet">
-      ${progress}
-      <div style="text-align:center;margin-bottom:24px">
-        <h2>Nouveau membre</h2>
-        <p>Comment tu t'appelles ?</p>
-      </div>
-      <div class="input-group">
-        <label>Prénom</label>
-        <input type="text" id="signup-name" placeholder="Ton prénom" autocomplete="given-name" value="${signupData.name || ''}">
-      </div>
-      <button class="btn btn-primary" onclick="signupNext(1)">Continuer →</button>
-      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Annuler</button>
-    </div>`;
-  } else if (step === 2) {
-    content = `<div class="login-sheet">
-      ${progress}
-      <div style="text-align:center;margin-bottom:24px">
-        <h2>Ton email</h2>
-        <p>Pour identifier ton compte</p>
-      </div>
-      <div class="input-group">
-        <label>Email</label>
-        <input type="email" id="signup-email" placeholder="ton@email.com" autocomplete="email" value="${signupData.email || ''}">
-      </div>
-      <button class="btn btn-primary" onclick="signupNext(2)">Continuer →</button>
-      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="renderSignupStep(1)">← Retour</button>
-    </div>`;
-  } else if (step === 3) {
-    const av = tempPhoto ? `<img src="${tempPhoto}" style="width:100%;height:100%;object-fit:cover">` : '📷';
-    content = `<div class="login-sheet">
-      ${progress}
-      <div style="text-align:center;margin-bottom:24px">
-        <h2>Ta photo</h2>
-        <p>Aide les autres à te reconnaître<br><small style="color:var(--text-light)">(optionnel)</small></p>
-      </div>
-      <div class="photo-upload" style="justify-content:center;margin-bottom:20px">
-        <div class="photo-preview ${tempPhoto ? 'has-photo' : ''}" id="photo-preview" onclick="document.getElementById('photo-input').click()" style="width:80px;height:80px;font-size:28px">${av}</div>
-        <input type="file" id="photo-input" accept="image/*" onchange="handlePhotoStep(this)">
-      </div>
-      <button class="btn btn-primary" onclick="renderSignupStep(4)">Continuer →</button>
-      <button class="btn" style="background:var(--accent-light);color:var(--accent);margin-top:10px" onclick="renderSignupStep(4)">Passer sans photo</button>
-      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="renderSignupStep(2)">← Retour</button>
-    </div>`;
-  } else if (step === 4) {
-    content = `<div class="login-sheet">
-      ${progress}
-      <div style="text-align:center;margin-bottom:24px">
-        <h2>Ton code secret</h2>
-        <p>4 chiffres, rien que pour toi</p>
-      </div>
-      <div class="pin-input" id="signup-pin" style="justify-content:center;margin-bottom:16px">
-        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-      </div>
-      <div class="lock-error" id="signup-error"></div>
-      <button class="btn btn-primary" onclick="signup()">C'est parti !</button>
-      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="renderSignupStep(3)">← Retour</button>
-    </div>`;
-  }
-
-  document.getElementById('sheet-content').innerHTML = content;
-  if (step === 1) setTimeout(() => document.getElementById('signup-name')?.focus(), 300);
-  if (step === 2) setTimeout(() => document.getElementById('signup-email')?.focus(), 300);
-  if (step === 4) {
-    const pins = document.querySelectorAll('#signup-pin input');
-    setupPinInputs(pins, signup);
-    setTimeout(() => pins[0].focus(), 300);
-  }
-}
-
-function signupNext(step) {
-  if (step === 1) {
-    const name = document.getElementById('signup-name')?.value.trim() || '';
-    if (!name) { showToast('Saisis ton prénom'); return; }
-    signupData.name = name;
-    renderSignupStep(2);
-  } else if (step === 2) {
-    const email = document.getElementById('signup-email')?.value.trim() || '';
-    if (!email || !email.includes('@')) { showToast('Email invalide'); return; }
-    signupData.email = email;
-    renderSignupStep(3);
-  }
-}
-
-function handlePhotoStep(input) {
-  handlePhoto(input);
-  setTimeout(() => {
-    if (tempPhoto) {
-      const prev = document.getElementById('photo-preview');
-      if (prev) {
-        prev.innerHTML = `<img src="${tempPhoto}" style="width:100%;height:100%;object-fit:cover">`;
-        prev.classList.add('has-photo');
-      }
-    }
-  }, 500);
-}
-
-async function signup() {
-  const name = signupData.name;
-  const email = signupData.email;
-  const pin = Array.from(document.querySelectorAll('#signup-pin input')).map(i => i.value.replace(/\D/g, '')).join('');
-
-  if (!name || !email) { showToast('Données manquantes'); renderSignupStep(1); return; }
-  if (pin.length < 4) {
-    const errEl = document.getElementById('signup-error');
-    if (errEl) errEl.textContent = 'Entrez 4 chiffres';
-    return;
-  }
-
-  const existing = await db.collection('users').where('email', '==', email).get();
-  if (!existing.empty) { showToast('Cet email est déjà utilisé'); return; }
-
-  try {
-    const ref = await db.collection('users').add({
-      name, email, photo: tempPhoto || null, pin,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    currentUser = { id: ref.id, name, email, photo: tempPhoto };
-    localStorage.setItem('famcar_user', JSON.stringify(currentUser));
-    closeSheet();
-    enterApp();
-    celebrate('✓', `Bienvenue ${name} !`, '+50 XP', 'Prêt·e à prendre la route ?');
-  } catch (e) { showToast('Erreur — réessayez'); }
-}
+// (old showSignupForm/renderSignupStep removed — new signup flow via #signup-overlay)
 
 // ==========================================
 // PHOTO HANDLER
@@ -2905,42 +2754,152 @@ function showOnboardingStep(n) {
 }
 
 // ==========================================
-// WELCOME / JOIN FLOW
+// WELCOME / LOGIN / SIGNUP FLOW
 // ==========================================
 function showWelcomeScreen() {
   document.getElementById('app-header').style.display = 'none';
   document.getElementById('app-main').style.display = 'none';
   document.getElementById('member-select').style.display = 'none';
+  document.getElementById('login-overlay').classList.add('hidden');
+  document.getElementById('signup-overlay').classList.add('hidden');
   document.getElementById('welcome-screen').style.display = 'flex';
 }
 
+// ---- LOGIN ----
 function connectUser() {
   document.getElementById('welcome-screen').style.display = 'none';
-  showMemberSelect();
+  const emailEl = document.getElementById('login-email');
+  if (emailEl) emailEl.value = '';
+  document.querySelectorAll('#login-pin input').forEach(i => i.value = '');
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('login-overlay').classList.remove('hidden');
+  const pins = document.querySelectorAll('#login-pin input');
+  setupPinInputs(pins, loginUser);
+  setTimeout(() => document.getElementById('login-email')?.focus(), 300);
 }
 
-async function startSignup() {
+async function loginUser() {
+  const email = (document.getElementById('login-email')?.value || '').trim().toLowerCase();
+  const pin = Array.from(document.querySelectorAll('#login-pin input')).map(i => i.value.replace(/\D/g, '')).join('');
+  const errEl = document.getElementById('login-error');
+  if (!email || !email.includes('@')) { errEl.textContent = 'Email invalide'; return; }
+  if (pin.length < 4) { errEl.textContent = 'Entrez votre code à 4 chiffres'; return; }
+  errEl.textContent = '';
   try {
-    const configDoc = await db.collection('config').doc('access').get();
-    document.getElementById('welcome-screen').style.display = 'none';
-    if (configDoc.exists) {
-      document.getElementById('join-overlay').classList.remove('hidden');
-      showJoinStep(1);
-    } else {
-      document.getElementById('lock-screen').classList.add('hidden');
-      document.getElementById('onboarding-overlay').classList.remove('hidden');
-      showOnboardingStep(1);
-    }
-  } catch(e) {
-    document.getElementById('welcome-screen').style.display = 'none';
-    document.getElementById('onboarding-overlay').classList.remove('hidden');
-    showOnboardingStep(1);
+    const snap = await db.collection('users').where('email', '==', email).get();
+    if (snap.empty) { errEl.textContent = 'Email introuvable'; return; }
+    const doc = snap.docs[0];
+    const data = doc.data();
+    if (String(data.pin) !== pin) { errEl.textContent = 'Code incorrect'; return; }
+    currentUser = { id: doc.id, name: data.name, email: data.email, photo: data.photo || null };
+    localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+    document.getElementById('login-overlay').classList.add('hidden');
+    enterApp();
+    showToast(`Bonjour ${currentUser.name} !`);
+  } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
+}
+
+// ---- SIGNUP ----
+let suTempPhoto = null;
+let suInviteUrl = '';
+
+function startSignup() {
+  document.getElementById('welcome-screen').style.display = 'none';
+  suTempPhoto = null;
+  suInviteUrl = '';
+  document.getElementById('signup-overlay').classList.remove('hidden');
+  showSignupStep(1);
+}
+
+function showSignupStep(id) {
+  document.querySelectorAll('.su-step').forEach(s => s.classList.add('hidden'));
+  document.getElementById(`su-step-${id}`)?.classList.remove('hidden');
+  if (id === '2b' || id === 2) {
+    // nothing extra
+  }
+  if (id === 3) {
+    suTempPhoto = null;
+    const prev = document.getElementById('su-photo-preview');
+    if (prev) { prev.innerHTML = '📷'; prev.classList.remove('has-photo'); }
+    document.querySelectorAll('#su-name,#su-email').forEach(el => { if (el) el.value = ''; });
+    document.querySelectorAll('#su-user-pin input').forEach(i => i.value = '');
+    document.getElementById('su-profile-error').textContent = '';
+    const pins = document.querySelectorAll('#su-user-pin input');
+    setupPinInputs(pins, signupProfileAdvance);
+    setTimeout(() => document.getElementById('su-name')?.focus(), 300);
   }
 }
 
-let joinTempPhoto = null;
+function signupChooseJoin() {
+  document.querySelectorAll('.su-step').forEach(s => s.classList.add('hidden'));
+  document.getElementById('su-step-2a').classList.remove('hidden');
+  document.getElementById('su-invite-url').value = '';
+  document.getElementById('su-join-error').textContent = '';
+  setTimeout(() => document.getElementById('su-invite-url')?.focus(), 300);
+}
 
-function handleJoinPhoto(input) {
+function signupChooseCreate() {
+  document.querySelectorAll('.su-step').forEach(s => s.classList.add('hidden'));
+  document.getElementById('su-step-2b').classList.remove('hidden');
+  document.getElementById('su-family-name').value = '';
+  document.querySelectorAll('#su-family-pin input, #su-family-pin-confirm input').forEach(i => i.value = '');
+  document.getElementById('su-create-error').textContent = '';
+  const createPins = document.querySelectorAll('#su-family-pin input');
+  const confirmPins = document.querySelectorAll('#su-family-pin-confirm input');
+  setupPinInputs(createPins, () => confirmPins[0].focus());
+  setupPinInputs(confirmPins, signupCreateAdvance);
+  setTimeout(() => document.getElementById('su-family-name')?.focus(), 300);
+}
+
+async function signupJoinAdvance() {
+  const url = (document.getElementById('su-invite-url')?.value || '').trim();
+  const errEl = document.getElementById('su-join-error');
+  if (!url) { errEl.textContent = 'Collez le lien d\'invitation'; return; }
+  let code = '';
+  try {
+    const u = new URL(url);
+    code = u.searchParams.get('join') || '';
+  } catch(e) { errEl.textContent = 'Lien invalide'; return; }
+  if (!code) { errEl.textContent = 'Lien invalide — paramètre ?join= manquant'; return; }
+  errEl.textContent = '';
+  try {
+    const doc = await db.collection('config').doc('access').get();
+    if (!doc.exists || doc.data().inviteCode !== code) { errEl.textContent = 'Lien invalide ou expiré'; return; }
+    showSignupStep(3);
+  } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
+}
+
+function generateInviteCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+async function signupCreateAdvance() {
+  const familyName = (document.getElementById('su-family-name')?.value || '').trim();
+  const pin = Array.from(document.querySelectorAll('#su-family-pin input')).map(i => i.value.replace(/\D/g, '')).join('');
+  const confirm = Array.from(document.querySelectorAll('#su-family-pin-confirm input')).map(i => i.value.replace(/\D/g, '')).join('');
+  const errEl = document.getElementById('su-create-error');
+  if (!familyName) { errEl.textContent = 'Entrez un nom pour votre famille'; return; }
+  if (pin.length < 4) { errEl.textContent = 'Entrez le code familial (4 chiffres)'; return; }
+  if (pin !== confirm) { errEl.textContent = 'Les codes ne correspondent pas'; return; }
+  errEl.textContent = '';
+  const inviteCode = generateInviteCode();
+  suInviteUrl = `${location.origin}${location.pathname}?join=${inviteCode}`;
+  try {
+    await db.collection('config').doc('access').set({ pin, familyName, inviteCode });
+    document.querySelectorAll('.su-step').forEach(s => s.classList.add('hidden'));
+    document.getElementById('su-step-2b-link').classList.remove('hidden');
+    document.getElementById('su-invite-display').textContent = suInviteUrl;
+  } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
+}
+
+function copyInviteLink() {
+  navigator.clipboard?.writeText(suInviteUrl).then(() => showToast('Lien copié !')).catch(() => showToast(suInviteUrl));
+}
+
+function handleSignupPhoto(input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -2952,67 +2911,34 @@ function handleJoinPhoto(input) {
       const ctx = canvas.getContext('2d');
       const min = Math.min(img.width, img.height);
       ctx.drawImage(img, (img.width - min)/2, (img.height - min)/2, min, min, 0, 0, size, size);
-      joinTempPhoto = canvas.toDataURL('image/jpeg', 0.6);
-      const preview = document.getElementById('join-photo-preview');
-      preview.innerHTML = `<img src="${joinTempPhoto}" alt="">`;
-      preview.classList.add('has-photo');
+      suTempPhoto = canvas.toDataURL('image/jpeg', 0.6);
+      const preview = document.getElementById('su-photo-preview');
+      if (preview) { preview.innerHTML = `<img src="${suTempPhoto}" alt="">`; preview.classList.add('has-photo'); }
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
 
-function showJoinStep(n) {
-  document.querySelectorAll('.join-step').forEach(s => s.classList.add('hidden'));
-  document.getElementById(`join-step-${n}`)?.classList.remove('hidden');
-  if (n === 1) {
-    const pins = document.querySelectorAll('#join-pin input');
-    setupPinInputs(pins, joinStep1Advance);
-    setTimeout(() => pins[0].focus(), 300);
-  }
-  if (n === 2) {
-    joinTempPhoto = null;
-    const preview = document.getElementById('join-photo-preview');
-    if (preview) { preview.innerHTML = '📷'; preview.classList.remove('has-photo'); }
-    const pins = document.querySelectorAll('#join-user-pin input');
-    setupPinInputs(pins, joinStep2Advance);
-    setTimeout(() => document.getElementById('join-name')?.focus(), 300);
-  }
-}
-
-async function joinStep1Advance() {
-  const pin = Array.from(document.querySelectorAll('#join-pin input')).map(i => i.value.replace(/\D/g, '')).join('');
-  const errEl = document.getElementById('join-pin-error');
-  if (pin.length < 4) { errEl.textContent = 'Entrez 4 chiffres'; return; }
-  try {
-    const doc = await db.collection('config').doc('access').get();
-    if (!doc.exists || doc.data().pin !== pin) { errEl.textContent = 'Code incorrect'; return; }
-    errEl.textContent = '';
-    isUnlocked = true;
-    localStorage.setItem('famcar_unlocked', 'true');
-    showJoinStep(2);
-  } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
-}
-
-async function joinStep2Advance() {
-  const name = document.getElementById('join-name')?.value.trim() || '';
-  const email = document.getElementById('join-email')?.value.trim() || '';
-  const pin = Array.from(document.querySelectorAll('#join-user-pin input')).map(i => i.value.replace(/\D/g, '')).join('');
-  const errEl = document.getElementById('join-step2-error');
+async function signupProfileAdvance() {
+  const name = (document.getElementById('su-name')?.value || '').trim();
+  const email = (document.getElementById('su-email')?.value || '').trim().toLowerCase();
+  const pin = Array.from(document.querySelectorAll('#su-user-pin input')).map(i => i.value.replace(/\D/g, '')).join('');
+  const errEl = document.getElementById('su-profile-error');
   if (!name) { errEl.textContent = 'Entrez votre prénom'; return; }
   if (!email || !email.includes('@')) { errEl.textContent = 'Email invalide'; return; }
-  if (pin.length < 4) { errEl.textContent = 'Entrez votre code à 4 chiffres'; return; }
+  if (pin.length < 4) { errEl.textContent = 'Entrez votre code secret (4 chiffres)'; return; }
   errEl.textContent = '';
   try {
     const existing = await db.collection('users').where('email', '==', email).get();
     if (!existing.empty) { errEl.textContent = 'Cet email est déjà utilisé'; return; }
     const ref = await db.collection('users').add({
-      name, email, photo: joinTempPhoto || null, pin,
+      name, email, photo: suTempPhoto || null, pin,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    currentUser = { id: ref.id, name, email, photo: joinTempPhoto || null };
+    currentUser = { id: ref.id, name, email, photo: suTempPhoto || null };
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
-    document.getElementById('join-overlay').classList.add('hidden');
+    document.getElementById('signup-overlay').classList.add('hidden');
     enterApp();
     celebrate('🎉', `Bienvenue ${name} !`, '+50 XP', 'Tu fais partie de la famille !');
   } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
@@ -3090,17 +3016,33 @@ function finishOnboarding() {
 // ==========================================
 // INIT
 // ==========================================
-initLockScreen();
+// Lock screen is bypassed — welcome screen is the new entry point
+document.getElementById('lock-screen').classList.add('hidden');
 loadCars();
+
+// Handle invite link auto-fill: if ?join= param present, pre-fill signup
+(function() {
+  const joinCode = new URLSearchParams(location.search).get('join');
+  if (joinCode) {
+    // Store for later use after welcome screen loads
+    window._pendingJoinCode = joinCode;
+  }
+})();
 
 checkFirstRun().then(isNew => {
   if (!isNew) {
-    if (isUnlocked && currentUser) {
-      document.getElementById('lock-screen').classList.add('hidden');
+    if (currentUser) {
       enterApp();
-    } else if (isUnlocked && !currentUser) {
-      document.getElementById('lock-screen').classList.add('hidden');
+    } else {
       showWelcomeScreen();
+      // If arrived via invite link, jump directly to join step
+      if (window._pendingJoinCode) {
+        startSignup();
+        signupChooseJoin();
+        const urlInput = document.getElementById('su-invite-url');
+        if (urlInput) urlInput.value = `${location.origin}${location.pathname}?join=${window._pendingJoinCode}`;
+        delete window._pendingJoinCode;
+      }
     }
   }
 });
@@ -3118,56 +3060,133 @@ checkFirstRun().then(isNew => {
   </div>
 </div>
 
-<!-- Join Family Overlay -->
-<div id="join-overlay" class="ob-overlay hidden">
-  <!-- Step 1: Family PIN -->
-  <div class="join-step ob-card" id="join-step-1">
-    <button class="ob-back" onclick="document.getElementById('join-overlay').classList.add('hidden');showWelcomeScreen()">←</button>
-    <div class="ob-dots">
-      <div class="ob-dot active"></div>
-      <div class="ob-dot"></div>
+<!-- Login Overlay -->
+<div id="login-overlay" class="ob-overlay hidden">
+  <div class="ob-card">
+    <button class="ob-back" onclick="document.getElementById('login-overlay').classList.add('hidden');showWelcomeScreen()">←</button>
+    <div class="ob-emoji">👋</div>
+    <h2 style="margin-bottom:6px">Connexion</h2>
+    <p style="color:var(--text-light);margin-bottom:24px;font-size:14px">Entrez votre email et votre code secret.</p>
+    <div class="ob-fields">
+      <div class="input-group" style="margin-bottom:0">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="ton@email.com" autocomplete="email">
+      </div>
+      <div>
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Code secret (4 chiffres)</label>
+        <div class="pin-input" id="login-pin" style="justify-content:center">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
     </div>
-    <div class="ob-emoji">🔒</div>
-    <h2 style="margin-bottom:6px">Code familial</h2>
-    <p style="color:var(--text-light);margin-bottom:24px;font-size:14px">Entrez le code de votre famille<br>pour rejoindre l'espace partagé.</p>
-    <div class="pin-input" id="join-pin" style="justify-content:center">
-      <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-      <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-      <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-      <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-    </div>
-    <div class="lock-error" id="join-pin-error"></div>
-    <button class="btn btn-primary" style="margin-top:16px" onclick="joinStep1Advance()">Continuer →</button>
+    <div class="lock-error" id="login-error"></div>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="loginUser()">Se connecter →</button>
   </div>
-  <!-- Step 2: Create profile -->
-  <div class="join-step ob-card hidden" id="join-step-2">
-    <button class="ob-back" onclick="showJoinStep(1)">←</button>
-    <div class="ob-dots">
-      <div class="ob-dot"></div>
-      <div class="ob-dot active"></div>
+</div>
+
+<!-- Signup Overlay -->
+<div id="signup-overlay" class="ob-overlay hidden">
+
+  <!-- Step 1: join or create -->
+  <div class="su-step ob-card" id="su-step-1">
+    <button class="ob-back" onclick="document.getElementById('signup-overlay').classList.add('hidden');showWelcomeScreen()">←</button>
+    <div class="ob-emoji">👨‍👩‍👧‍👦</div>
+    <h2 style="margin-bottom:6px">Bienvenue !</h2>
+    <p style="color:var(--text-light);margin-bottom:28px;font-size:14px">Vous rejoignez une famille déjà créée ?</p>
+    <button class="btn btn-primary" onclick="signupChooseJoin()">Oui, rejoindre une famille →</button>
+    <button class="btn btn-outline" onclick="signupChooseCreate()">Non, créer ma famille →</button>
+  </div>
+
+  <!-- Step 2a: join — paste invite URL -->
+  <div class="su-step ob-card hidden" id="su-step-2a">
+    <button class="ob-back" onclick="showSignupStep(1)">←</button>
+    <div class="ob-dots"><div class="ob-dot active"></div><div class="ob-dot"></div></div>
+    <div class="ob-emoji">🔗</div>
+    <h2 style="margin-bottom:6px">Lien d'invitation</h2>
+    <p style="color:var(--text-light);margin-bottom:20px;font-size:14px">Collez ici le lien que votre famille vous a partagé.</p>
+    <div class="ob-fields">
+      <div class="input-group" style="margin-bottom:0">
+        <label>Lien d'invitation</label>
+        <input type="url" id="su-invite-url" placeholder="https://combel-co.github.io/Resa-voiture/?join=..." autocomplete="off">
+      </div>
     </div>
+    <div class="lock-error" id="su-join-error"></div>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="signupJoinAdvance()">Continuer →</button>
+  </div>
+
+  <!-- Step 2b: create family -->
+  <div class="su-step ob-card hidden" id="su-step-2b">
+    <button class="ob-back" onclick="showSignupStep(1)">←</button>
+    <div class="ob-dots"><div class="ob-dot active"></div><div class="ob-dot"></div></div>
+    <div class="ob-emoji">🏠</div>
+    <h2 style="margin-bottom:6px">Créer ma famille</h2>
+    <p style="color:var(--text-light);margin-bottom:20px;font-size:14px">Choisissez un nom et un code d'accès familial.</p>
+    <div class="ob-fields">
+      <div class="input-group" style="margin-bottom:0">
+        <label>Nom de la famille</label>
+        <input type="text" id="su-family-name" placeholder="Ex : Les Dupont" autocomplete="off">
+      </div>
+      <div>
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Code familial (4 chiffres)</label>
+        <div class="pin-input" id="su-family-pin" style="justify-content:center">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Confirmer le code</label>
+        <div class="pin-input" id="su-family-pin-confirm" style="justify-content:center">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+    </div>
+    <div class="lock-error" id="su-create-error"></div>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="signupCreateAdvance()">Créer →</button>
+  </div>
+
+  <!-- Step 2b-link: show generated invite link -->
+  <div class="su-step ob-card hidden" id="su-step-2b-link">
+    <div class="ob-emoji">🎉</div>
+    <h2 style="margin-bottom:6px">Famille créée !</h2>
+    <p style="color:var(--text-light);margin-bottom:20px;font-size:14px">Partagez ce lien pour inviter d'autres membres.</p>
+    <div style="background:var(--surface);border-radius:12px;padding:14px;word-break:break-all;font-size:13px;color:var(--text);margin-bottom:12px" id="su-invite-display"></div>
+    <button class="btn btn-outline" style="margin-bottom:8px" onclick="copyInviteLink()">Copier le lien</button>
+    <button class="btn btn-primary" onclick="showSignupStep(3)">Continuer →</button>
+  </div>
+
+  <!-- Step 3: profile -->
+  <div class="su-step ob-card hidden" id="su-step-3">
+    <div class="ob-dots"><div class="ob-dot"></div><div class="ob-dot active"></div></div>
     <div class="ob-emoji">👤</div>
     <h2 style="margin-bottom:6px">Votre profil</h2>
     <p style="color:var(--text-light);margin-bottom:20px;font-size:14px">Créez votre profil pour rejoindre la famille.</p>
     <div class="ob-fields">
       <div class="input-group" style="margin-bottom:0">
         <label>Prénom</label>
-        <input type="text" id="join-name" placeholder="Ton prénom" autocomplete="given-name">
+        <input type="text" id="su-name" placeholder="Ton prénom" autocomplete="given-name">
       </div>
       <div class="input-group" style="margin-bottom:0">
         <label>Email</label>
-        <input type="email" id="join-email" placeholder="ton@email.com" autocomplete="email">
+        <input type="email" id="su-email" placeholder="ton@email.com" autocomplete="email">
       </div>
       <div>
         <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Photo <span style="color:var(--text-light);font-weight:400">(optionnel)</span></label>
         <div class="ob-photo-row">
-          <div class="photo-preview" id="join-photo-preview" onclick="document.getElementById('join-photo-input').click()" style="width:72px;height:72px;font-size:24px;cursor:pointer">📷</div>
-          <input type="file" id="join-photo-input" accept="image/*" style="display:none" onchange="handleJoinPhoto(this)">
+          <div class="photo-preview" id="su-photo-preview" onclick="document.getElementById('su-photo-input').click()" style="width:72px;height:72px;font-size:24px;cursor:pointer">📷</div>
+          <input type="file" id="su-photo-input" accept="image/*" style="display:none" onchange="handleSignupPhoto(this)">
         </div>
       </div>
       <div>
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Votre code secret (4 chiffres)</label>
-        <div class="pin-input" id="join-user-pin" style="justify-content:center">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Code secret (4 chiffres)</label>
+        <div class="pin-input" id="su-user-pin" style="justify-content:center">
           <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
           <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
           <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
@@ -3175,9 +3194,10 @@ checkFirstRun().then(isNew => {
         </div>
       </div>
     </div>
-    <div class="lock-error" id="join-step2-error"></div>
-    <button class="btn btn-primary" style="margin-top:8px" onclick="joinStep2Advance()">Rejoindre →</button>
+    <div class="lock-error" id="su-profile-error"></div>
+    <button class="btn btn-primary" style="margin-top:8px" onclick="signupProfileAdvance()">C'est parti ! →</button>
   </div>
+
 </div>
 
 <div id="onboarding-overlay" class="ob-overlay hidden">
