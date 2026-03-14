@@ -422,23 +422,6 @@
   .toast.show { transform: translateX(-50%) translateY(0); }
 
 
-  /* ---- LOCK SCREEN ---- */
-  .lock-screen {
-    position: fixed; inset: 0; background: white; z-index: 500;
-    display: flex; align-items: center; justify-content: center;
-    transition: opacity 0.4s, visibility 0.4s;
-  }
-  .lock-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-
-  .lock-box { text-align: center; padding: 24px; width: 100%; max-width: 320px; }
-
-  .lock-box .lock-icon {
-    width: 64px; height: 64px; background: #f5f5f5; border-radius: 20px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 30px; margin: 0 auto 24px;
-  }
-  .lock-box h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; }
-  .lock-box p { color: var(--text-light); font-size: 15px; margin-bottom: 32px; }
 
   .pin-input { display: flex; gap: 12px; justify-content: center; margin-bottom: 28px; }
 
@@ -462,40 +445,6 @@
 
   .lock-error { color: var(--danger); font-size: 14px; margin-top: -16px; margin-bottom: 16px; min-height: 20px; }
 
-  /* ---- MEMBER SELECT SCREEN ---- */
-  .member-select {
-    position: fixed; inset: 0; background: var(--bg); z-index: 150;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 40px 20px; overflow-y: auto; text-align: center;
-  }
-  .member-select h2 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
-  .member-select p { color: var(--text-light); font-size: 15px; margin-bottom: 36px; }
-
-  .member-grid { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; margin-bottom: 32px; }
-
-  .member-card {
-    display: flex; flex-direction: column; align-items: center;
-    gap: 8px; cursor: pointer; transition: all 0.15s; width: 80px;
-  }
-  .member-card:hover { transform: scale(1.08); }
-
-  .member-card .m-avatar {
-    width: 64px; height: 64px; border-radius: 50%;
-    background: var(--accent); color: white;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; font-weight: 600; overflow: hidden;
-    border: 3px solid transparent; transition: border 0.15s;
-  }
-  .member-card:hover .m-avatar { border-color: var(--accent); }
-  .member-card .m-avatar img { width: 100%; height: 100%; object-fit: cover; }
-
-  .member-card .m-name { font-size: 13px; font-weight: 500; color: var(--text); }
-
-  .add-member-card .m-avatar {
-    background: #f0f0f0; color: var(--text-light);
-    font-size: 28px; border: 2px dashed #ddd;
-  }
-  .add-member-card:hover .m-avatar { border-color: var(--accent); color: var(--accent); }
 
   /* ---- LOADING ---- */
   .loading {
@@ -973,9 +922,6 @@
     .active-car-badge { max-width: 170px; font-size: 11px; padding: 5px 10px; }
     .month-btn.today-btn { padding: 0 10px; font-size: 12px; }
     .cal-day { font-size: 13px; border-radius: 10px; height: 48px; padding-top: 7px; padding-bottom: 18px; }
-    .member-select { padding: 32px 16px; }
-    .member-grid { gap: 16px; }
-    .member-card .m-avatar { width: 56px; height: 56px; font-size: 18px; }
   }
 
   /* ===== Onboarding Wizard ===== */
@@ -1004,8 +950,6 @@
 </style>
 </head>
 <body>
-<div class="lock-screen" id="lock-screen"><div class="lock-box"><div class="lock-icon">🔒</div><h1>FamCar</h1><p>Entrez le code familial</p><div class="pin-input" id="pin-input"><input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off"><input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off"><input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off"><input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off"></div><div class="lock-error" id="lock-error"></div><button class="btn btn-primary" onclick="checkPin()">Entrer</button></div></div>
-<div class="member-select" id="member-select" style="display:none;"><h2>Qui conduit ?</h2><p>Sélectionnez votre profil</p><div class="member-grid" id="member-grid"></div></div>
 <header id="app-header" style="display:none;"><div class="logo"><div class="logo-icon">🚗</div> FamCar</div><div class="user-pill" id="user-pill" onclick="showProfile()"><div class="avatar" id="header-avatar">?</div><span id="header-name">Se connecter</span></div></header>
 <main id="app-main" style="display:none;">
   <section class="tab-panel active" id="tab-dashboard">
@@ -2004,7 +1948,7 @@ function onDayClick(dateStr, isPast) {
     }
     return;
   }
-  if (!currentUser) { showMemberSelect(); return; }
+  if (!currentUser) { showWelcomeScreen(); return; }
 
   const booking = bookings[dateStr];
   const date = new Date(dateStr + 'T00:00:00');
@@ -2159,93 +2103,6 @@ async function confirmFuelAfterTrip(bookingId) {
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 
-// ==========================================
-// MEMBER SELECT (Netflix-style)
-// ==========================================
-async function showMemberSelect() {
-  document.getElementById('app-header').style.display = 'none';
-  document.getElementById('app-main').style.display = 'none';
-  document.getElementById('member-select').style.display = 'block';
-
-  const snap = await db.collection('users').orderBy('name').get();
-  const members = [];
-  snap.forEach(doc => members.push({ id: doc.id, ...doc.data() }));
-
-  const grid = document.getElementById('member-grid');
-
-  let html = members.map(m => {
-    const av = m.photo ? `<img src="${m.photo}" alt="">` : getInitials(m.name);
-    const safeId = m.id;
-    const safeName = m.name.replace(/'/g, "\\'");
-    const safePhoto = (m.photo || '').replace(/'/g, "\\'");
-    return `<div class="member-card" onclick="askMemberPin('${safeId}', '${safeName}', '${safePhoto}')">
-      <div class="m-avatar">${av}</div>
-      <div class="m-name">${m.name}</div>
-    </div>`;
-  }).join('');
-
-  grid.innerHTML = html;
-}
-
-// ==========================================
-// ASK MEMBER PIN
-// ==========================================
-function askMemberPin(userId, name, photo) {
-  const av = photo ? `<img src="${photo}" alt="" style="width:100%;height:100%;object-fit:cover">` : getInitials(name);
-  document.getElementById('sheet-content').innerHTML = `
-    <div class="login-sheet">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:24px">
-        <div style="width:64px;height:64px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;overflow:hidden">${av}</div>
-        <div style="font-size:18px;font-weight:600">${name}</div>
-      </div>
-      <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Entrez votre code personnel</p>
-      <div class="pin-input" id="member-pin-input">
-        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-      </div>
-      <div class="lock-error" id="member-pin-error"></div>
-      <button class="btn btn-primary" onclick="verifyMemberPin('${userId}')">Valider</button>
-      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Retour</button>
-    </div>`;
-  document.getElementById('overlay').classList.add('open');
-
-  const inputs = document.querySelectorAll('#member-pin-input input');
-  setTimeout(() => inputs[0].focus(), 300);
-  setupPinInputs(inputs, () => verifyMemberPin(userId));
-}
-
-async function verifyMemberPin(userId) {
-  const inputs = document.querySelectorAll('#member-pin-input input');
-  const pin = Array.from(inputs).map(i => i.value.replace(/\D/g, '')).join('');
-  if (pin.length < 4) { document.getElementById('member-pin-error').textContent = 'Entrez les 4 chiffres'; return; }
-
-  try {
-    const doc = await db.collection('users').doc(userId).get();
-    if (!doc.exists) { document.getElementById('member-pin-error').textContent = 'Utilisateur introuvable'; return; }
-
-    const data = doc.data();
-    if (String(data.pin) === pin) {
-      currentUser = { id: userId, name: data.name, email: data.email, photo: data.photo };
-      localStorage.setItem('famcar_user', JSON.stringify(currentUser));
-      closeSheet();
-      enterApp();
-      showToast(`Bonjour ${currentUser.name} !`);
-    } else {
-      document.getElementById('member-pin-error').textContent = 'Code incorrect';
-      inputs.forEach(i => { i.value = ''; i.classList.add('error'); });
-      inputs[0].focus();
-      setTimeout(() => inputs.forEach(i => i.classList.remove('error')), 600);
-    }
-  } catch (e) { document.getElementById('member-pin-error').textContent = 'Erreur de connexion'; }
-}
-
-// ==========================================
-// SIGNUP (new member)
-// ==========================================
-// ==========================================
-// (old showSignupForm/renderSignupStep removed — new signup flow via #signup-overlay)
 
 // ==========================================
 // PHOTO HANDLER
@@ -2276,7 +2133,7 @@ function handlePhoto(input) {
 // PROFILE / LOGOUT / CHANGE PIN
 // ==========================================
 function showProfile() {
-  if (!currentUser) { showMemberSelect(); return; }
+  if (!currentUser) { showWelcomeScreen(); return; }
   const av = currentUser.photo ? `<img src="${currentUser.photo}" alt="">` : getInitials(currentUser.name);
   const xp = getXpForAllTime();
   const level = getLevelFromXp(xp);
@@ -2420,7 +2277,6 @@ function logout() {
 }
 
 function enterApp() {
-  document.getElementById('member-select').style.display = 'none';
   document.getElementById('app-header').style.display = 'flex';
   document.getElementById('app-main').style.display = 'block';
   updateUserPill();
@@ -2441,52 +2297,6 @@ function updateUserPill() {
   }
 }
 
-// ==========================================
-// PIN LOCK (family code)
-// ==========================================
-let isUnlocked = localStorage.getItem('famcar_unlocked') === 'true';
-
-function initLockScreen() {
-  if (isUnlocked) { document.getElementById('lock-screen').classList.add('hidden'); return; }
-  const inputs = document.querySelectorAll('#pin-input input');
-  inputs[0].focus();
-  setupPinInputs(inputs, checkPin);
-}
-
-async function checkPin() {
-  const inputs = document.querySelectorAll('#pin-input input');
-  const pin = Array.from(inputs).map(i => i.value.replace(/\D/g, '')).join('');
-  if (pin.length < 4) { showPinError('Entrez les 4 chiffres'); return; }
-
-  try {
-    const doc = await db.collection('config').doc('access').get();
-    if (!doc.exists) {
-      try { await db.collection('config').doc('access').set({ pin }); } catch(e) {}
-      unlockApp();
-      return;
-    }
-    if (pin === String(doc.data().pin)) { unlockApp(); }
-    else {
-      showPinError('Code incorrect');
-      inputs.forEach(i => { i.value = ''; i.classList.add('error'); });
-      inputs[0].focus();
-      setTimeout(() => inputs.forEach(i => i.classList.remove('error')), 600);
-    }
-  } catch (e) {
-    console.error('PIN check error:', e);
-    showPinError('Erreur de connexion — vérifiez Firestore');
-  }
-}
-
-function showPinError(msg) { document.getElementById('lock-error').textContent = msg; }
-
-function unlockApp() {
-  isUnlocked = true;
-  localStorage.setItem('famcar_unlocked', 'true');
-  document.getElementById('lock-screen').classList.add('hidden');
-  if (currentUser) { enterApp(); }
-  else { showWelcomeScreen(); }
-}
 
 // ==========================================
 // HELPERS
@@ -2612,7 +2422,7 @@ function goToStep(step) {
 }
 
 function openBookingModal() {
-  if (!currentUser) { showMemberSelect(); return; }
+  if (!currentUser) { showWelcomeScreen(); return; }
   bm = { startDate: null, endDate: null, startHour: '09:00', endHour: '20:00', destinations: [], step: 'start' };
   bmCurrentStep = 'destination';
   document.getElementById('booking-modal').classList.add('open');
@@ -2807,31 +2617,6 @@ async function confirmRangeBooking() {
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 
-// ==========================================
-// ONBOARDING — First-run wizard
-// ==========================================
-async function checkFirstRun() {
-  // Mode démo : forcer le wizard via ?setup dans l'URL
-  if (new URLSearchParams(location.search).has('setup')) {
-    document.getElementById('lock-screen').classList.add('hidden');
-    document.getElementById('onboarding-overlay').classList.remove('hidden');
-    showOnboardingStep(1);
-    return true;
-  }
-  try {
-    const [configDoc, usersSnap] = await Promise.all([
-      db.collection('config').doc('access').get(),
-      db.collection('users').limit(1).get()
-    ]);
-    if (!configDoc.exists && usersSnap.empty) {
-      document.getElementById('lock-screen').classList.add('hidden');
-      document.getElementById('onboarding-overlay').classList.remove('hidden');
-      showOnboardingStep(1);
-      return true;
-    }
-  } catch (e) { console.warn('checkFirstRun:', e); }
-  return false;
-}
 
 function showOnboardingStep(n) {
   document.querySelectorAll('.ob-step').forEach(s => s.classList.add('hidden'));
@@ -2862,7 +2647,6 @@ function showOnboardingStep(n) {
 function showWelcomeScreen() {
   document.getElementById('app-header').style.display = 'none';
   document.getElementById('app-main').style.display = 'none';
-  document.getElementById('member-select').style.display = 'none';
   document.getElementById('login-overlay').classList.add('hidden');
   document.getElementById('signup-overlay').classList.add('hidden');
   document.getElementById('welcome-screen').style.display = 'flex';
@@ -3094,8 +2878,6 @@ async function obStep2Advance() {
   errEl.textContent = '';
   try {
     await db.collection('config').doc('access').set({ pin: create });
-    isUnlocked = true;
-    localStorage.setItem('famcar_unlocked', 'true');
     showOnboardingStep(3);
   } catch (e) { errEl.textContent = 'Erreur — réessayez'; }
 }
@@ -3131,36 +2913,22 @@ function finishOnboarding() {
 // ==========================================
 // INIT
 // ==========================================
-// Lock screen is bypassed — welcome screen is the new entry point
-document.getElementById('lock-screen').classList.add('hidden');
 loadCars();
 
-// Handle invite link auto-fill: if ?join= param present, pre-fill signup
-(function() {
-  const joinCode = new URLSearchParams(location.search).get('join');
-  if (joinCode) {
-    // Store for later use after welcome screen loads
-    window._pendingJoinCode = joinCode;
-  }
-})();
+// Lien d'invitation : ?join= → pré-remplir le signup
+const _joinCode = new URLSearchParams(location.search).get('join');
 
-checkFirstRun().then(isNew => {
-  if (!isNew) {
-    if (currentUser) {
-      enterApp();
-    } else {
-      showWelcomeScreen();
-      // If arrived via invite link, jump directly to join step
-      if (window._pendingJoinCode) {
-        startSignup();
-        signupChooseJoin();
-        const urlInput = document.getElementById('su-invite-url');
-        if (urlInput) urlInput.value = `${location.origin}${location.pathname}?join=${window._pendingJoinCode}`;
-        delete window._pendingJoinCode;
-      }
-    }
+if (currentUser) {
+  enterApp();
+} else {
+  showWelcomeScreen();
+  if (_joinCode) {
+    startSignup();
+    signupChooseJoin();
+    const urlInput = document.getElementById('su-invite-url');
+    if (urlInput) urlInput.value = `${location.origin}${location.pathname}?join=${_joinCode}`;
   }
-});
+}
 </script>
 
 <!-- ===== Onboarding Wizard ===== -->
