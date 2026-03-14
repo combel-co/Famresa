@@ -2790,8 +2790,11 @@ async function loadAndCopyInviteLink() {
   const el = document.getElementById('invite-link-display');
   try {
     const doc = await db.collection('config').doc('access').get();
-    const code = doc.exists && doc.data().inviteCode;
-    if (!code) { el.textContent = 'Aucun code trouvé — recréez la famille.'; return; }
+    let code = doc.exists && doc.data().inviteCode;
+    if (!code) {
+      code = generateInviteCode();
+      await db.collection('config').doc('access').set({ inviteCode: code }, { merge: true });
+    }
     const url = `${location.origin}${location.pathname}?join=${code}`;
     el.textContent = url;
     navigator.clipboard?.writeText(url).then(() => showToast('Lien copié !')).catch(() => showToast('Lien affiché ci-dessus'));
