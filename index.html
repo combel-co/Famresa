@@ -463,7 +463,11 @@
   .lock-error { color: var(--danger); font-size: 14px; margin-top: -16px; margin-bottom: 16px; min-height: 20px; }
 
   /* ---- MEMBER SELECT SCREEN ---- */
-  .member-select { text-align: center; padding: 60px 20px 40px; max-width: 520px; margin: 0 auto; }
+  .member-select {
+    position: fixed; inset: 0; background: var(--bg); z-index: 150;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 20px; overflow-y: auto; text-align: center;
+  }
   .member-select h2 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
   .member-select p { color: var(--text-light); font-size: 15px; margin-bottom: 36px; }
 
@@ -969,7 +973,7 @@
     .active-car-badge { max-width: 170px; font-size: 11px; padding: 5px 10px; }
     .month-btn.today-btn { padding: 0 10px; font-size: 12px; }
     .cal-day { font-size: 13px; border-radius: 10px; height: 48px; padding-top: 7px; padding-bottom: 18px; }
-    .member-select { padding: 40px 16px 40px; }
+    .member-select { padding: 32px 16px; }
     .member-grid { gap: 16px; }
     .member-card .m-avatar { width: 56px; height: 56px; font-size: 18px; }
   }
@@ -2162,7 +2166,6 @@ async function showMemberSelect() {
   document.getElementById('app-header').style.display = 'none';
   document.getElementById('app-main').style.display = 'none';
   document.getElementById('member-select').style.display = 'block';
-  switchTab('dashboard');
 
   const snap = await db.collection('users').orderBy('name').get();
   const members = [];
