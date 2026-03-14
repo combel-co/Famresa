@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FamCar — Réservation voiture familiale</title>
 <meta name="description" content="Réservation de la voiture familiale — simple, rapide, gratuit.">
-<meta name="apple-mobile-web-app-capable" content="no">
-<meta name="mobile-web-app-capable" content="no">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -423,15 +421,6 @@
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
 
-  /* Masque d'éventuels CTA d'installation PWA/FWA */
-  .pwa-install,
-  .pwa-install-banner,
-  .install-app-banner,
-  .install-prompt,
-  [data-install-app],
-  [data-pwa-install] {
-    display: none !important;
-  }
 
   /* ---- LOCK SCREEN ---- */
   .lock-screen {
@@ -1244,58 +1233,6 @@ let unsubscribe = null;
 let tempPhoto = null;
 let activeTab = 'dashboard';
 
-function removeInstallAppPrompts() {
-  const selectors = [
-    '.pwa-install',
-    '.pwa-install-banner',
-    '.install-app-banner',
-    '.install-prompt',
-    '[data-install-app]',
-    '[data-pwa-install]',
-    '#install-app',
-    '#pwa-install'
-  ];
-  selectors.forEach((selector) => {
-    document.querySelectorAll(selector).forEach((node) => node.remove());
-  });
-
-  document.querySelectorAll('button, a, div, span, aside, section, footer').forEach((node) => {
-    const text = (node.textContent || '').trim().toLowerCase();
-    if (!text) return;
-    const isInstallCTA = (text.includes('installer') || text.includes('install'))
-      && (text.includes('application') || text.includes('app'));
-    const isAddToHome = text.includes('ajouter') && (text.includes('accueil') || text.includes('écran'));
-    if (isInstallCTA || isAddToHome) {
-      try { node.remove(); } catch(e) {}
-    }
-  });
-}
-
-window.addEventListener('beforeinstallprompt', (event) => {
-  event.preventDefault();
-});
-
-window.addEventListener('appinstalled', (event) => {
-  event.preventDefault();
-});
-
-// Unregister any previously installed service workers
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    registrations.forEach(r => r.unregister());
-  });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  removeInstallAppPrompts();
-  // Retry after short delays to catch late-injected banners
-  setTimeout(removeInstallAppPrompts, 500);
-  setTimeout(removeInstallAppPrompts, 1500);
-  setTimeout(removeInstallAppPrompts, 3000);
-
-  const observer = new MutationObserver(() => removeInstallAppPrompts());
-  observer.observe(document.body, { childList: true, subtree: true });
-});
 
 // ==========================================
 // CARS
