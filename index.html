@@ -714,6 +714,14 @@
   }
   .reserve-cta-label { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: var(--text); }
 
+  .post-trip-card {
+    border: 1px solid #facc15; border-radius: 16px;
+    background: #fffbeb; padding: 14px; margin-bottom: 14px;
+  }
+  .post-trip-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .post-trip-sub { font-size: 13px; color: #92400e; margin-bottom: 10px; }
+  .post-trip-meta { font-size: 12px; color: var(--text-light); margin-bottom: 12px; }
+
   /* ---- HISTORY CARD ---- */
   .history-card {
     display: flex; border: 1px solid var(--border);
@@ -745,6 +753,15 @@
     font-size: 11px; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.6px; color: var(--text-light); margin: 18px 0 10px;
   }
+  .improvement-plan-card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: #f8fafc;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .improvement-plan-card h3 { font-size: 14px; margin-bottom: 8px; }
+  .improvement-plan-card ul { padding-left: 18px; color: var(--text-light); font-size: 13px; line-height: 1.5; }
 
   /* ===================================================
      BOOKING MODAL — design Airbnb
@@ -1020,6 +1037,8 @@
       </div>
     </div>
 
+    <div id="post-trip-reminder"></div>
+
     <!-- Quick Stats -->
     <div class="quick-stats-row">
       <div class="quick-stat">
@@ -1072,7 +1091,7 @@
       <button class="month-btn today-btn" type="button" onclick="goToToday()">Aujourd'hui</button>
     </div>
 
-    <div class="calendar-hint">Touchez un jour futur pour réserver.</div>
+    <div class="calendar-hint">Planning de la voiture (lecture seule). Réservez depuis le Dashboard.</div>
 
     <div class="cal-header">
       <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
@@ -1099,14 +1118,22 @@
 
   <section class="tab-panel" id="tab-history" style="margin-bottom:130px">
     <div class="settings-section-title">Historique des trajets</div>
+    <div class="improvement-plan-card">
+      <h3>Plan d’amélioration (prochaine itération)</h3>
+      <ul>
+        <li>Extraire le code JS de `index.html` en modules (state, services, UI).</li>
+        <li>Ajouter un écran de clôture trajet dédié (carburant + km + remarques).</li>
+        <li>Ajouter filtres et export sur l’historique (période, conducteur, carburant).</li>
+      </ul>
+    </div>
     <div id="history-full"></div>
   </section>
 
   <nav class="bottom-nav" aria-label="Navigation principale">
     <button type="button" id="nav-dashboard" class="active" data-icon="🏠" onclick="switchTab('dashboard')">Dashboard</button>
-    <button type="button" id="nav-calendar" data-icon="📅" onclick="switchTab('calendar')">Calendrier</button>
+    <button type="button" id="nav-calendar" data-icon="📅" onclick="switchTab('calendar')">Planning</button>
     <button type="button" id="nav-leaderboard" data-icon="🏆" onclick="switchTab('leaderboard')">Classement</button>
-    <button type="button" id="nav-history" data-icon="⚙️" onclick="switchTab('history')">Paramètres</button>
+    <button type="button" id="nav-history" data-icon="⚙️" onclick="switchTab('history')">Historique</button>
   </nav>
 </main>
 <div class="overlay" id="overlay" onclick="closeSheet()"><div class="sheet" id="sheet" onclick="event.stopPropagation()"><div class="sheet-handle"></div><div id="sheet-content"></div></div></div>
@@ -1232,6 +1259,9 @@ let selectedCar = null;
 let unsubscribe = null;
 let tempPhoto = null;
 let activeTab = 'dashboard';
+let fuelReportsByBooking = {};
+let unsubscribeFuelReports = null;
+let pendingFuelPromptBookingId = null;
 
 
 // ==========================================
@@ -1249,6 +1279,7 @@ async function loadCars() {
     selectedCar = cars[0].id;
     renderCarSelector();
     subscribeBookings();
+    subscribeFuelReports();
   } catch (e) {
     console.error('Firebase error:', e);
     document.getElementById('cal-grid').innerHTML =
@@ -1271,7 +1302,7 @@ function renderCarSelector() {
   badge.disabled = cars.length <= 1;
 }
 
-function selectCar(id) { selectedCar = id; renderCarSelector(); subscribeBookings(); }
+function selectCar(id) { selectedCar = id; renderCarSelector(); subscribeBookings(); subscribeFuelReports(); }
 
 function cycleCar() {
   if (cars.length <= 1) return;
@@ -1310,6 +1341,28 @@ function subscribeBookings() {
     });
 }
 
+
+function subscribeFuelReports() {
+  if (unsubscribeFuelReports) unsubscribeFuelReports();
+  if (!selectedCar) return;
+  unsubscribeFuelReports = db.collection('fuelReports')
+    .where('carId', '==', selectedCar)
+    .onSnapshot(snap => {
+      fuelReportsByBooking = {};
+      snap.forEach(doc => {
+        const d = doc.data() || {};
+        if (d.bookingId) fuelReportsByBooking[d.bookingId] = d;
+      });
+      renderExperiencePanels();
+      maybePromptPendingFuel();
+    }, (err) => {
+      console.warn('fuelReports unavailable:', err);
+      fuelReportsByBooking = {};
+      renderExperiencePanels();
+      maybePromptPendingFuel();
+    });
+}
+
 function switchTab(tab) {
   activeTab = tab;
   ['dashboard', 'calendar', 'leaderboard', 'history'].forEach(name => {
@@ -1329,6 +1382,79 @@ function getMonthBookingEntries() {
     }
   });
   return result;
+}
+
+function getUniqueBookingsSorted() {
+  const seen = new Set();
+  const unique = [];
+  Object.values(bookings).forEach((b) => {
+    if (!b || !b.id || seen.has(b.id)) return;
+    seen.add(b.id);
+    unique.push(b);
+  });
+  return unique.sort((a, b) => ((b.startDate || b.date || '')).localeCompare(a.startDate || a.date || ''));
+}
+
+function getFuelReturnLevelForBooking(booking) {
+  if (!booking) return null;
+  if (booking.fuelReturnLevel !== undefined && booking.fuelReturnLevel !== null) return booking.fuelReturnLevel;
+  return fuelReportsByBooking[booking.id]?.fuelReturnLevel ?? null;
+}
+
+function formatBookingDateRange(booking) {
+  const start = booking.startDate || booking.date;
+  const end = booking.endDate || booking.date;
+  if (!start) return '—';
+  const sd = new Date(start + 'T00:00:00');
+  const ed = new Date(end + 'T00:00:00');
+  if (start === end) return sd.toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' });
+  return `${sd.toLocaleDateString('fr-FR', { day:'numeric', month:'short' })} → ${ed.toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' })}`;
+}
+
+function getPendingFuelBookingForCurrentUser() {
+  if (!currentUser) return null;
+  const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
+  const minePast = getUniqueBookingsSorted().filter(b => (b.userId === currentUser.id) && ((b.endDate || b.date || '') < todayStr));
+  return minePast.find(b => getFuelReturnLevelForBooking(b) === null) || null;
+}
+
+function renderPostTripReminder() {
+  const el = document.getElementById('post-trip-reminder');
+  if (!el) return;
+  const booking = getPendingFuelBookingForCurrentUser();
+  if (!booking) { el.innerHTML = ''; return; }
+  const destination = getBookingDestinationLabel(booking);
+  const km = estimateDistanceForBooking(booking);
+  el.innerHTML = `<div class="post-trip-card">
+    <div class="post-trip-title">Vous avez utilisé la voiture</div>
+    <div class="post-trip-sub">Résumé de votre dernière resa</div>
+    <div class="post-trip-meta">${formatBookingDateRange(booking)} · ${destination} · ${km} km</div>
+    <button class="btn btn-primary" type="button" onclick="openFuelReminder('${booking.id}')">Mettre à jour le réservoir rendu</button>
+  </div>`;
+}
+
+function openFuelReminder(bookingId) {
+  const booking = getUniqueBookingsSorted().find(b => b.id === bookingId);
+  if (!booking) return;
+  showTripReport(booking, formatBookingDateRange(booking));
+}
+
+function maybePromptPendingFuel() {
+  if (!currentUser || !selectedCar) return;
+  if (document.getElementById('overlay')?.classList.contains('open')) return;
+  const booking = getPendingFuelBookingForCurrentUser();
+  if (!booking) return;
+  if (pendingFuelPromptBookingId === booking.id) return;
+
+  const storageKey = `famcar_fuel_prompt_seen_${booking.id}`;
+  if (localStorage.getItem(storageKey) === '1') return;
+
+  pendingFuelPromptBookingId = booking.id;
+  localStorage.setItem(storageKey, '1');
+  setTimeout(() => {
+    if (document.getElementById('overlay')?.classList.contains('open')) return;
+    showTripReport(booking, formatBookingDateRange(booking));
+  }, 250);
 }
 
 function renderExperiencePanels() {
@@ -1380,8 +1506,8 @@ function renderExperiencePanels() {
   // Leaderboard podium
   renderLeaderboard(ranking);
 
-  // History (full list only — no more preview on dashboard)
-  const history = Object.values(bookings).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  // History grouped by booking (no day-by-day duplicates)
+  const history = getUniqueBookingsSorted();
   const historyEl = document.getElementById('history-full');
   if (historyEl) {
     if (!history.length) {
@@ -1389,10 +1515,11 @@ function renderExperiencePanels() {
     } else {
       historyEl.innerHTML = history.map(h => {
         const av = h.photo ? `<img src="${h.photo}" alt="" style="width:100%;height:100%;object-fit:cover">` : getInitials(h.userName || 'C');
-        const dateFormatted = h.date ? new Date(h.date + 'T00:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : '—';
-        const dest = h.destination || 'Destination non précisée';
+        const dateFormatted = formatBookingDateRange(h);
+        const dest = getBookingDestinationLabel(h);
         const km = estimateDistanceForBooking(h);
-        const fuelLeft = (h.fuelReturnLevel !== undefined && h.fuelReturnLevel !== null) ? getFuelBar(h.fuelReturnLevel) : '<span style="color:var(--text-light);font-size:12px">—</span>';
+        const fuelLevel = getFuelReturnLevelForBooking(h);
+        const fuelLeft = (fuelLevel !== undefined && fuelLevel !== null) ? getFuelBar(fuelLevel) : '<span style="color:#b45309;font-size:12px">Donnée manquante</span>';
         return `<div class="history-card">
           <div class="history-left">
             <div class="history-avatar-sm">${av}</div>
@@ -1409,6 +1536,8 @@ function renderExperiencePanels() {
       }).join('');
     }
   }
+
+  renderPostTripReminder();
 }
 
 // ==========================================
@@ -1526,14 +1655,34 @@ function estimateRoundTripKm(destination) {
   return map[destination] || null;
 }
 
+function getBookingDestinationLabel(booking) {
+  if (!booking) return 'Destination non précisée';
+  if (typeof booking.destination === 'string' && booking.destination.trim()) return booking.destination.trim();
+  if (Array.isArray(booking.destinations) && booking.destinations.length > 0) {
+    const names = booking.destinations
+      .map(d => (d?.name || '').trim())
+      .filter(Boolean);
+    if (names.length) return names.join(', ');
+  }
+  return 'Destination non précisée';
+}
+
 function estimateDistanceForBooking(booking) {
+  if (!booking) return 0;
   if (typeof booking.kmEstimate === 'number' && booking.kmEstimate > 0) return booking.kmEstimate;
   if (typeof booking.distanceKm === 'number' && booking.distanceKm > 0) return booking.distanceKm;
-  if (booking.destination) {
-    const estimated = estimateRoundTripKm(booking.destination);
-    if (estimated) return estimated;
+
+  if (Array.isArray(booking.destinations) && booking.destinations.length > 0) {
+    const fromDestinations = booking.destinations
+      .map(d => Number(d?.kmFromParis || 0))
+      .filter(km => Number.isFinite(km) && km > 0)
+      .reduce((sum, km) => sum + (km * 2), 0);
+    if (fromDestinations > 0) return fromDestinations;
   }
-  return 0;
+
+  const destination = getBookingDestinationLabel(booking);
+  const estimated = estimateRoundTripKm(destination);
+  return estimated || 0;
 }
 
 // ==========================================
@@ -1869,32 +2018,25 @@ function onDayClick(dateStr, isPast) {
           <div class="info">${booking.userName}<small>${isMine ? 'Votre réservation' : 'A réservé ce jour'}</small></div>
         </div>
       </div>
-      ${isMine ? `<button class="btn btn-danger" onclick="cancelBooking('${booking.id}')">Annuler ma réservation</button>` : ''}
       <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Fermer</button>`;
   } else {
     const activeCar = cars.find(c => c.id === selectedCar);
     html = `
       <div class="sheet-date">${prettyDate}</div>
+      <div style="font-size:14px;color:var(--text-light);margin-bottom:14px">Planning en lecture seule dans cet onglet.</div>
       <div class="fuel-info-row"><span>Essence disponible</span>${getFuelBar(activeCar?.fuelLevel)}</div>
-      <div class="input-group">
-        <label>Destination</label>
-        <select id="booking-destination" onchange="updateDistanceFromDestination()">
-          <option value="">Choisir une destination</option>
-          <option>Paris intra-muros</option><option>Versailles</option><option>Roissy CDG</option><option>Orly</option>
-          <option>Lille</option><option>Reims</option><option>Orléans</option><option>Rouen</option>
-          <option>Lyon</option><option>Nantes</option><option>Bordeaux</option><option>Marseille</option>
-        </select>
-      </div>
-      <div class="input-group">
-        <label>Distance aller-retour (km)</label>
-        <input type="number" id="booking-km" min="1" step="1" placeholder="Ex: 120">
-      </div>
-      <button class="btn btn-primary" onclick="book('${dateStr}')">Réserver ce jour</button>
-      <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Annuler</button>`;
+      <button class="btn btn-primary" onclick="goToDashboardBooking()">Réserver depuis le Dashboard</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Fermer</button>`;
   }
 
   document.getElementById('sheet-content').innerHTML = html;
   document.getElementById('overlay').classList.add('open');
+}
+
+function goToDashboardBooking() {
+  closeSheet();
+  switchTab('dashboard');
+  openBookingModal();
 }
 
 // ==========================================
@@ -1939,7 +2081,8 @@ async function cancelBooking(bookingId) {
 }
 
 function showTripReport(booking, prettyDate) {
-  const hasFuel = booking.fuelReturnLevel !== null && booking.fuelReturnLevel !== undefined;
+  const existingFuelLevel = getFuelReturnLevelForBooking(booking);
+  const hasFuel = existingFuelLevel !== null && existingFuelLevel !== undefined;
   const fuelLevels = [
     { value: 0,   label: 'Vide',  color: '#ef4444', heightPct: 6   },
     { value: 25,  label: '1/4',   color: '#f97316', heightPct: 30  },
@@ -1962,12 +2105,12 @@ function showTripReport(booking, prettyDate) {
       </div>`;
   } else {
     const labels = { 0: 'Vide', 25: '1/4', 50: '1/2', 75: '3/4', 100: 'Plein' };
-    fuelSection = `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);color:var(--text-light);font-size:13px">Essence rendue : <strong>${labels[booking.fuelReturnLevel] || booking.fuelReturnLevel + '%'}</strong></div>`;
+    fuelSection = `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);color:var(--text-light);font-size:13px">Essence rendue : <strong>${labels[existingFuelLevel] || existingFuelLevel + '%'}</strong></div>`;
   }
 
   document.getElementById('sheet-content').innerHTML = `
     <div class="sheet-date">${prettyDate}</div>
-    <div style="font-size:14px;color:var(--text-light);margin-bottom:4px">${booking.destination || 'Destination non précisée'} · ${estimateDistanceForBooking(booking)} km</div>
+    <div style="font-size:14px;color:var(--text-light);margin-bottom:4px">${getBookingDestinationLabel(booking)} · ${estimateDistanceForBooking(booking)} km</div>
     ${fuelSection}
     <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:16px" onclick="closeSheet()">Fermer</button>`;
   document.getElementById('overlay').classList.add('open');
@@ -1978,16 +2121,36 @@ async function confirmFuelAfterTrip(bookingId) {
   if (level === null) return;
   selectedFuelLevel = null;
   try {
-    // Write to cars (rules allow write), not bookings (no update rule)
     await db.collection('cars').doc(selectedCar).update({ fuelLevel: level });
-    // Update local cache so it shows immediately on next booking
+
+    const booking = getUniqueBookingsSorted().find(b => b.id === bookingId);
+    try {
+      await db.collection('fuelReports').doc(bookingId).set({
+        bookingId,
+        carId: selectedCar,
+        userId: currentUser?.id || null,
+        userName: currentUser?.name || null,
+        date: booking?.date || booking?.startDate || null,
+        destination: getBookingDestinationLabel(booking),
+        distanceKm: estimateDistanceForBooking(booking || {}),
+        fuelReturnLevel: level,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    } catch (fuelErr) {
+      console.warn('fuelReports write failed:', fuelErr);
+    }
+
     const car = cars.find(c => c.id === selectedCar);
     if (car) car.fuelLevel = level;
+    if (booking) booking.fuelReturnLevel = level;
+    fuelReportsByBooking[bookingId] = { ...(fuelReportsByBooking[bookingId] || {}), bookingId, fuelReturnLevel: level };
+
     closeSheet();
+    renderExperiencePanels();
     if (level >= 50) {
-      celebrate('✓', 'Youpi ! Merci !', '', 'La voiture est bien ravitaillée');
+      celebrate('✓', 'Merci ! Réservoir mis à jour', '', 'Le prochain conducteur voit le bon niveau');
     } else {
-      showToast('Pense à refaire le plein avant la prochaine sortie');
+      showToast('Niveau enregistré. Pense à refaire le plein avant la prochaine sortie');
     }
   } catch(e) { showToast('Erreur — réessayez'); }
 }
@@ -2260,6 +2423,7 @@ function enterApp() {
   updateUserPill();
   switchTab(activeTab || 'dashboard');
   renderCalendar();
+  setTimeout(() => maybePromptPendingFuel(), 350);
 }
 
 function updateUserPill() {
