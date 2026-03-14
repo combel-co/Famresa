@@ -2921,17 +2921,22 @@ loadCars();
 // Lien d'invitation : ?join= → pré-remplir le signup
 const _joinCode = new URLSearchParams(location.search).get('join');
 
-if (currentUser) {
-  enterApp();
-} else {
-  showWelcomeScreen();
-  if (_joinCode) {
-    startSignup();
-    signupChooseJoin();
-    const urlInput = document.getElementById('su-invite-url');
-    if (urlInput) urlInput.value = `${location.origin}${location.pathname}?join=${_joinCode}`;
+// Wrap in DOMContentLoaded so that #welcome-screen and other overlay divs
+// (defined after this <script> block) are available in the DOM before we
+// try to show/hide them.
+document.addEventListener('DOMContentLoaded', () => {
+  if (currentUser) {
+    enterApp();
+  } else {
+    showWelcomeScreen();
+    if (_joinCode) {
+      startSignup();
+      signupChooseJoin();
+      const urlInput = document.getElementById('su-invite-url');
+      if (urlInput) urlInput.value = `${location.origin}${location.pathname}?join=${_joinCode}`;
+    }
   }
-}
+});
 </script>
 
 <!-- ===== Onboarding Wizard ===== -->
