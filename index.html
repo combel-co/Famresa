@@ -1123,15 +1123,13 @@
   </section>
 
   <section class="tab-panel" id="tab-history" style="margin-bottom:130px">
-    <div class="settings-section-title">Historique des trajets</div>
-    <div class="improvement-plan-card">
-      <h3>Plan d’amélioration (prochaine itération)</h3>
-      <ul>
-        <li>Extraire le code JS de `index.html` en modules (state, services, UI).</li>
-        <li>Ajouter un écran de clôture trajet dédié (carburant + km + remarques).</li>
-        <li>Ajouter filtres et export sur l’historique (période, conducteur, carburant).</li>
-      </ul>
+    <div class="settings-section-title">Inviter un membre</div>
+    <div class="car-status-card" style="margin-bottom:16px">
+      <p style="font-size:14px;color:var(--text-light);margin-bottom:12px">Partagez ce lien pour qu’un nouveau membre rejoigne votre famille.</p>
+      <div id="invite-link-display" style="font-size:13px;color:var(--accent);word-break:break-all;background:var(--accent-light);padding:10px 12px;border-radius:10px;margin-bottom:12px;min-height:36px"></div>
+      <button class="btn btn-primary" onclick="loadAndCopyInviteLink()" style="width:100%">Copier le lien d’invitation</button>
     </div>
+    <div class="settings-section-title" style="margin-top:8px">Historique des trajets</div>
     <div id="history-full"></div>
   </section>
 
@@ -3002,6 +3000,18 @@ async function signupCreateAdvance() {
 
 function copyInviteLink() {
   navigator.clipboard?.writeText(suInviteUrl).then(() => showToast('Lien copié !')).catch(() => showToast(suInviteUrl));
+}
+
+async function loadAndCopyInviteLink() {
+  const el = document.getElementById('invite-link-display');
+  try {
+    const doc = await db.collection('config').doc('access').get();
+    const code = doc.exists && doc.data().inviteCode;
+    if (!code) { el.textContent = 'Aucun code trouvé — recréez la famille.'; return; }
+    const url = `${location.origin}${location.pathname}?join=${code}`;
+    el.textContent = url;
+    navigator.clipboard?.writeText(url).then(() => showToast('Lien copié !')).catch(() => showToast('Lien affiché ci-dessus'));
+  } catch(e) { el.textContent = 'Erreur de chargement.'; }
 }
 
 function handleSignupPhoto(input) {
