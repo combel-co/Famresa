@@ -1285,6 +1285,7 @@ function subscribeBookings() {
         }
       });
       renderCalendar();
+      renderExperiencePanels();
       if (document.getElementById('booking-modal')?.classList.contains('open')) renderBmCalendar();
     });
 }
@@ -2072,21 +2073,17 @@ async function confirmFuelAfterTrip(bookingId) {
     await db.collection('cars').doc(selectedCar).update({ fuelLevel: level });
 
     const booking = getUniqueBookingsSorted().find(b => b.id === bookingId);
-    try {
-      await db.collection('fuelReports').doc(bookingId).set({
-        bookingId,
-        carId: selectedCar,
-        userId: currentUser?.id || null,
-        userName: currentUser?.name || null,
-        date: booking?.date || booking?.startDate || null,
-        destination: getBookingDestinationLabel(booking),
-        distanceKm: estimateDistanceForBooking(booking || {}),
-        fuelReturnLevel: level,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true });
-    } catch (fuelErr) {
-      console.warn('fuelReports write failed:', fuelErr);
-    }
+    await db.collection('fuelReports').doc(bookingId).set({
+      bookingId,
+      carId: selectedCar,
+      userId: currentUser?.id || null,
+      userName: currentUser?.name || null,
+      date: booking?.date || booking?.startDate || null,
+      destination: getBookingDestinationLabel(booking),
+      distanceKm: estimateDistanceForBooking(booking || {}),
+      fuelReturnLevel: level,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
 
     const car = cars.find(c => c.id === selectedCar);
     if (car) car.fuelLevel = level;
