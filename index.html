@@ -1195,6 +1195,11 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+function familyRef() {
+  if (!currentUser?.familyId) throw new Error('No familyId on currentUser');
+  return db.collection('families').doc(currentUser.familyId);
+}
+
 // ==========================================
 // STATE
 // ==========================================
@@ -1210,6 +1215,7 @@ let activeTab = 'dashboard';
 let fuelReportsByBooking = {};
 let unsubscribeFuelReports = null;
 let pendingFuelPromptBookingId = null;
+let suPendingFamilyId = null;
 
 
 // ==========================================
@@ -1217,11 +1223,11 @@ let pendingFuelPromptBookingId = null;
 // ==========================================
 async function loadCars() {
   try {
-    const snap = await db.collection('cars').orderBy('name').get();
+    const snap = await familyRef().collection('cars').orderBy('name').get();
     cars = [];
     snap.forEach(doc => cars.push({ id: doc.id, ...doc.data() }));
     if (cars.length === 0) {
-      const ref = await db.collection('cars').add({ name: 'Voiture familiale', emoji: '🚗' });
+      const ref = await familyRef().collection('cars').add({ name: 'Voiture familiale', emoji: '🚗' });
       cars = [{ id: ref.id, name: 'Voiture familiale', emoji: '🚗' }];
     }
     selectedCar = cars[0].id;
@@ -1265,7 +1271,7 @@ function cycleCar() {
 // ==========================================
 function subscribeBookings() {
   if (unsubscribe) unsubscribe();
-  unsubscribe = db.collection('bookings')
+  unsubscribe = familyRef().collection('bookings')
     .where('carId', '==', selectedCar)
     .onSnapshot(snap => {
       bookings = {};
@@ -1292,24 +1298,8 @@ function subscribeBookings() {
 
 
 function subscribeFuelReports() {
-  if (unsubscribeFuelReports) unsubscribeFuelReports();
-  if (!selectedCar) return;
-  unsubscribeFuelReports = db.collection('fuelReports')
-    .where('carId', '==', selectedCar)
-    .onSnapshot(snap => {
-      fuelReportsByBooking = {};
-      snap.forEach(doc => {
-        const d = doc.data() || {};
-        if (d.bookingId) fuelReportsByBooking[d.bookingId] = d;
-      });
-      renderExperiencePanels();
-      maybePromptPendingFuel();
-    }, (err) => {
-      console.warn('fuelReports unavailable:', err);
-      fuelReportsByBooking = {};
-      renderExperiencePanels();
-      maybePromptPendingFuel();
-    });
+  // fuelReports collection is deprecated — no-op
+  fuelReportsByBooking = {};
 }
 
 function switchTab(tab) {
@@ -1998,7 +1988,7 @@ async function book(dateStr) {
   if (!currentUser) return;
   try {
     // Check for existing booking (prevent double-booking)
-    const existing = await db.collection('bookings').where('carId', '==', selectedCar).where('date', '==', dateStr).get();
+    const existing = await familyRef().collection('bookings').where('carId', '==', selectedCar).where('date', '==', dateStr).get();
     if (!existing.empty) { closeSheet(); showToast("Ce jour vient d'être réservé"); return; }
 
     const destination = (document.getElementById('booking-destination')?.value || '').trim();
@@ -2006,7 +1996,7 @@ async function book(dateStr) {
     if (!destination) { showToast('Choisissez une destination'); return; }
     if (!distanceKm || distanceKm <= 0) { showToast('Ajoutez une distance valide (km)'); return; }
 
-    await db.collection('bookings').add({
+    await familyRef().collection('bookings').add({
       carId: selectedCar, date: dateStr,
       userId: currentUser.id, userName: currentUser.name,
       photo: currentUser.photo || null,
@@ -2026,7 +2016,7 @@ async function book(dateStr) {
 
 async function cancelBooking(bookingId) {
   try {
-    await db.collection('bookings').doc(bookingId).delete();
+    await familyRef().collection('bookings').doc(bookingId).delete();
     closeSheet();
     showToast('Réservation annulée');
   } catch (e) { showToast('Erreur — réessayez'); }
@@ -2073,10 +2063,10 @@ async function confirmFuelAfterTrip(bookingId) {
   if (level === null) return;
   selectedFuelLevel = null;
   try {
-    await db.collection('cars').doc(selectedCar).update({ fuelLevel: level });
+    await familyRef().collection('cars').doc(selectedCar).update({ fuelLevel: level });
 
     const booking = getUniqueBookingsSorted().find(b => b.id === bookingId);
-    await db.collection('bookings').doc(bookingId).update({
+    await familyRef().collection('bookings').doc(bookingId).update({
       fuelReturnLevel: level,
       fuelUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -2178,7 +2168,7 @@ async function changeProfilePhoto(input) {
       ctx.drawImage(img, (img.width - min)/2, (img.height - min)/2, min, min, 0, 0, size, size);
       const photo = canvas.toDataURL('image/jpeg', 0.6);
       try {
-        await db.collection('users').doc(currentUser.id).update({ photo });
+        await familyRef().collection('members').doc(currentUser.id).update({ photo });
         currentUser.photo = photo;
         localStorage.setItem('famcar_user', JSON.stringify(currentUser));
         updateUserPill();
@@ -2224,7 +2214,7 @@ async function saveCarInfo() {
   const assurance = (document.getElementById('car-assurance')?.value || '').trim();
   const observations = (document.getElementById('car-observations')?.value || '').trim();
   try {
-    await db.collection('cars').doc(selectedCar).update({ plaque, assurance, observations });
+    await familyRef().collection('cars').doc(selectedCar).update({ plaque, assurance, observations });
     const car = cars.find(c => c.id === selectedCar);
     if (car) Object.assign(car, { plaque, assurance, observations });
     closeSheet();
@@ -2591,7 +2581,7 @@ async function confirmRangeBooking() {
   }
 
   try {
-    await db.collection('bookings').add({
+    await familyRef().collection('bookings').add({
       carId: selectedCar,
       userId: currentUser.id, userName: currentUser.name, photo: currentUser.photo || null,
       startDate, endDate, startHour, endHour,
@@ -2672,11 +2662,28 @@ async function loginUser() {
     const doc = snap.docs[0];
     const data = doc.data();
     if (String(data.pin) !== pin) { errEl.textContent = 'Code incorrect'; return; }
-    currentUser = { id: doc.id, name: data.name, email: data.email, photo: data.photo || null };
+    const familyId = data.familyId || null;
+    let name = data.name || '';
+    let photo = data.photo || null;
+    if (familyId) {
+      try {
+        const memberDoc = await db.collection('families').doc(familyId).collection('members').doc(doc.id).get();
+        if (memberDoc.exists) {
+          name  = memberDoc.data().name  || name;
+          photo = memberDoc.data().photo || photo;
+        }
+      } catch(e) { /* fallback to global data */ }
+    }
+    currentUser = { id: doc.id, name, email: data.email, photo, familyId };
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
     document.getElementById('login-overlay').classList.add('hidden');
-    enterApp();
-    showToast(`Bonjour ${currentUser.name} !`);
+    if (!familyId) {
+      await runMigrationIfNeeded();
+    } else {
+      loadCars();
+      enterApp();
+      showToast(`Bonjour ${currentUser.name} !`);
+    }
   } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
 }
 
@@ -2688,6 +2695,7 @@ function startSignup() {
   document.getElementById('welcome-screen').style.display = 'none';
   suTempPhoto = null;
   suInviteUrl = '';
+  suPendingFamilyId = null;
   document.getElementById('signup-overlay').classList.remove('hidden');
   showSignupStep(1);
 }
@@ -2744,8 +2752,9 @@ async function signupJoinAdvance() {
   if (!code) { errEl.textContent = 'Lien invalide — paramètre ?join= manquant'; return; }
   errEl.textContent = '';
   try {
-    const doc = await db.collection('config').doc('access').get();
-    if (!doc.exists || doc.data().inviteCode !== code) { errEl.textContent = 'Lien invalide ou expiré'; return; }
+    const snap = await db.collection('families').where('inviteCode', '==', code).limit(1).get();
+    if (snap.empty) { errEl.textContent = 'Lien invalide ou expiré'; return; }
+    suPendingFamilyId = snap.docs[0].id;
     showSignupStep(3);
   } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
 }
@@ -2769,7 +2778,11 @@ async function signupCreateAdvance() {
   const inviteCode = generateInviteCode();
   suInviteUrl = `${location.origin}${location.pathname}?join=${inviteCode}`;
   try {
-    await db.collection('config').doc('access').set({ pin, familyName, inviteCode });
+    const familyDocRef = await db.collection('families').add({
+      name: familyName, pin, inviteCode,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    suPendingFamilyId = familyDocRef.id;
     document.querySelectorAll('.su-step').forEach(s => s.classList.add('hidden'));
     document.getElementById('su-step-2b-link').classList.remove('hidden');
     document.getElementById('su-invite-display').textContent = suInviteUrl;
@@ -2783,11 +2796,11 @@ function copyInviteLink() {
 async function loadAndCopyInviteLink() {
   const el = document.getElementById('invite-link-display');
   try {
-    const doc = await db.collection('config').doc('access').get();
-    let code = doc.exists && doc.data().inviteCode;
+    const famDoc = await familyRef().get();
+    let code = famDoc.exists && famDoc.data().inviteCode;
     if (!code) {
       code = generateInviteCode();
-      await db.collection('config').doc('access').set({ inviteCode: code }, { merge: true });
+      await familyRef().update({ inviteCode: code });
     }
     const url = `${location.origin}${location.pathname}?join=${code}`;
     el.textContent = url;
@@ -2829,12 +2842,17 @@ async function signupProfileAdvance() {
     const existing = await db.collection('users').where('email', '==', email).get();
     if (!existing.empty) { errEl.textContent = 'Cet email est déjà utilisé'; return; }
     const ref = await db.collection('users').add({
-      name, email, photo: suTempPhoto || null, pin,
+      email, pin, familyId: suPendingFamilyId,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    currentUser = { id: ref.id, name, email, photo: suTempPhoto || null };
+    await db.collection('families').doc(suPendingFamilyId).collection('members').doc(ref.id).set({
+      name, email, photo: suTempPhoto || null,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    currentUser = { id: ref.id, name, email, photo: suTempPhoto || null, familyId: suPendingFamilyId };
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
     document.getElementById('signup-overlay').classList.add('hidden');
+    loadCars();
     enterApp();
     celebrate('🎉', `Bienvenue ${name} !`, '+50 XP', 'Tu fais partie de la famille !');
   } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
@@ -2858,7 +2876,7 @@ async function obStep4Advance() {
   errEl.textContent = '';
   try {
     if (selectedCar) {
-      await db.collection('cars').doc(selectedCar).update({ name, emoji: selectedCarEmoji, plaque });
+      await familyRef().collection('cars').doc(selectedCar).update({ name, emoji: selectedCarEmoji, plaque });
       const car = cars.find(c => c.id === selectedCar);
       if (car) Object.assign(car, { name, emoji: selectedCarEmoji, plaque });
     }
@@ -2874,7 +2892,11 @@ async function obStep2Advance() {
   if (create !== confirm) { errEl.textContent = 'Les codes ne correspondent pas'; return; }
   errEl.textContent = '';
   try {
-    await db.collection('config').doc('access').set({ pin: create });
+    const familyDocRef = await db.collection('families').add({
+      pin: create, inviteCode: generateInviteCode(),
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    suPendingFamilyId = familyDocRef.id;
     showOnboardingStep(3);
   } catch (e) { errEl.textContent = 'Erreur — réessayez'; }
 }
@@ -2892,10 +2914,14 @@ async function obStep3Advance() {
     const existing = await db.collection('users').where('email', '==', email).get();
     if (!existing.empty) { errEl.textContent = 'Cet email est déjà utilisé'; return; }
     const ref = await db.collection('users').add({
-      name, email, photo: tempPhoto || null, pin,
+      email, pin, familyId: suPendingFamilyId,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    currentUser = { id: ref.id, name, email, photo: tempPhoto || null };
+    await db.collection('families').doc(suPendingFamilyId).collection('members').doc(ref.id).set({
+      name, email, photo: tempPhoto || null,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    currentUser = { id: ref.id, name, email, photo: tempPhoto || null, familyId: suPendingFamilyId };
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
     showOnboardingStep(4);
   } catch (e) { errEl.textContent = 'Erreur — réessayez'; }
@@ -2908,19 +2934,89 @@ function finishOnboarding() {
 }
 
 // ==========================================
+// MIGRATION HELPERS
+// ==========================================
+function showMigrationBanner() {
+  const el = document.getElementById('migration-overlay');
+  if (el) el.style.display = 'flex';
+  return el;
+}
+
+function hideMigrationBanner(el) {
+  if (el) el.style.display = 'none';
+}
+
+async function runMigrationIfNeeded() {
+  const banner = showMigrationBanner();
+  try {
+    // 1. Read config/access for existing family data
+    const configDoc = await db.collection('config').doc('access').get();
+    const configData = configDoc.exists ? configDoc.data() : {};
+
+    // 2. Create family document
+    const familyDocRef = await db.collection('families').add({
+      name: configData.familyName || 'Ma famille',
+      pin:  configData.pin || '',
+      inviteCode: configData.inviteCode || generateInviteCode(),
+      migratedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    const familyId = familyDocRef.id;
+
+    // 3. Migrate all cars
+    const carsSnap = await db.collection('cars').get();
+    for (const carDoc of carsSnap.docs) {
+      await db.collection('families').doc(familyId).collection('cars').doc(carDoc.id).set(carDoc.data());
+    }
+
+    // 4. Migrate all bookings
+    const bookingsSnap = await db.collection('bookings').get();
+    for (const bDoc of bookingsSnap.docs) {
+      await db.collection('families').doc(familyId).collection('bookings').doc(bDoc.id).set(bDoc.data());
+    }
+
+    // 5. Migrate all users to members + stamp familyId on each global user doc
+    const usersSnap = await db.collection('users').get();
+    for (const uDoc of usersSnap.docs) {
+      const ud = uDoc.data();
+      await db.collection('families').doc(familyId).collection('members').doc(uDoc.id).set({
+        name:  ud.name  || '',
+        email: ud.email || '',
+        photo: ud.photo || null,
+        createdAt: ud.createdAt || null
+      });
+      await db.collection('users').doc(uDoc.id).update({ familyId });
+    }
+
+    // 6. Update currentUser in memory and localStorage
+    currentUser.familyId = familyId;
+    localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+
+    hideMigrationBanner(banner);
+    loadCars();
+    enterApp();
+    showToast('Migration terminée — bienvenue dans la nouvelle version !');
+  } catch (e) {
+    hideMigrationBanner(banner);
+    document.getElementById('login-error').textContent = 'Erreur de migration — réessayez';
+    showWelcomeScreen();
+    console.error('Migration failed:', e);
+  }
+}
+
+// ==========================================
 // INIT
 // ==========================================
-loadCars();
 
 // Lien d'invitation : ?join= → pré-remplir le signup
 const _joinCode = new URLSearchParams(location.search).get('join');
 
-// Wrap in DOMContentLoaded so that #welcome-screen and other overlay divs
-// (defined after this <script> block) are available in the DOM before we
-// try to show/hide them.
 document.addEventListener('DOMContentLoaded', () => {
-  if (currentUser) {
+  if (currentUser?.familyId) {
+    loadCars();
     enterApp();
+  } else if (currentUser) {
+    // Logged-in user without familyId → needs one-time migration
+    runMigrationIfNeeded();
   } else {
     showWelcomeScreen();
     if (_joinCode) {
@@ -3257,5 +3353,13 @@ function swApplyUpdate() {
   }
 }
 </script>
+
+<!-- Migration overlay (shown during one-time data migration) -->
+<div id="migration-overlay" style="display:none;position:fixed;inset:0;background:var(--bg, white);z-index:600;flex-direction:column;align-items:center;justify-content:center;gap:20px">
+  <div class="spinner" style="width:36px;height:36px;border-width:3px"></div>
+  <p style="font-size:16px;font-weight:500;color:var(--text, #1a1a1a)">Migration des données en cours…</p>
+  <p style="font-size:13px;color:var(--text-light, #888)">Cela ne prend que quelques secondes</p>
+</div>
 </body>
 </html>
+
