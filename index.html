@@ -2949,45 +2949,57 @@ function hideMigrationBanner(el) {
 async function runMigrationIfNeeded() {
   const banner = showMigrationBanner();
   try {
-    // 1. Read config/access for existing family data
-    const configDoc = await db.collection('config').doc('access').get();
-    const configData = configDoc.exists ? configDoc.data() : {};
+    // 1. Check if migration already completed for this user (idempotency guard)
+    const userDoc = await db.collection('users').doc(currentUser.id).get();
+    const existingFamilyId = userDoc.exists ? userDoc.data().familyId : null;
 
-    // 2. Create family document
-    const familyDocRef = await db.collection('families').add({
-      name: configData.familyName || 'Ma famille',
-      pin:  configData.pin || '',
-      inviteCode: configData.inviteCode || generateInviteCode(),
-      migratedAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    const familyId = familyDocRef.id;
-
-    // 3. Migrate all cars
-    const carsSnap = await db.collection('cars').get();
-    for (const carDoc of carsSnap.docs) {
-      await db.collection('families').doc(familyId).collection('cars').doc(carDoc.id).set(carDoc.data());
+    let familyId;
+    if (existingFamilyId) {
+      // Migration already stamped familyId on this user — just resume from there
+      familyId = existingFamilyId;
+    } else {
+      // No family yet — read legacy config and create one
+      const configDoc = await db.collection('config').doc('access').get();
+      const configData = configDoc.exists ? configDoc.data() : {};
+      const familyDocRef = await db.collection('families').add({
+        name: configData.familyName || 'Ma famille',
+        pin:  configData.pin || '',
+        inviteCode: configData.inviteCode || generateInviteCode(),
+        migratedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      familyId = familyDocRef.id;
     }
 
-    // 4. Migrate all bookings
-    const bookingsSnap = await db.collection('bookings').get();
-    for (const bDoc of bookingsSnap.docs) {
-      await db.collection('families').doc(familyId).collection('bookings').doc(bDoc.id).set(bDoc.data());
+    // 2. Copy cars only if the subcollection is still empty (partial migration guard)
+    const existingCarsSnap = await db.collection('families').doc(familyId).collection('cars').limit(1).get();
+    if (existingCarsSnap.empty) {
+      const carsSnap = await db.collection('cars').get();
+      for (const carDoc of carsSnap.docs) {
+        await db.collection('families').doc(familyId).collection('cars').doc(carDoc.id).set(carDoc.data());
+      }
+      // Copy bookings together with cars (both or neither)
+      const bookingsSnap = await db.collection('bookings').get();
+      for (const bDoc of bookingsSnap.docs) {
+        await db.collection('families').doc(familyId).collection('bookings').doc(bDoc.id).set(bDoc.data());
+      }
     }
 
-    // 5. Migrate all users to members + stamp familyId on each global user doc
+    // 3. Stamp familyId only on users that don't have it yet + create member docs
     const usersSnap = await db.collection('users').get();
     for (const uDoc of usersSnap.docs) {
       const ud = uDoc.data();
-      await db.collection('families').doc(familyId).collection('members').doc(uDoc.id).set({
-        name:  ud.name  || '',
-        email: ud.email || '',
-        photo: ud.photo || null,
-        createdAt: ud.createdAt || null
-      });
-      await db.collection('users').doc(uDoc.id).update({ familyId });
+      if (!ud.familyId) {
+        await db.collection('families').doc(familyId).collection('members').doc(uDoc.id).set({
+          name:  ud.name  || '',
+          email: ud.email || '',
+          photo: ud.photo || null,
+          createdAt: ud.createdAt || null
+        });
+        await db.collection('users').doc(uDoc.id).update({ familyId });
+      }
     }
 
-    // 6. Update currentUser in memory and localStorage
+    // 4. Update currentUser in memory and localStorage
     currentUser.familyId = familyId;
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
 
@@ -2997,9 +3009,9 @@ async function runMigrationIfNeeded() {
     showToast('Migration terminée — bienvenue dans la nouvelle version !');
   } catch (e) {
     hideMigrationBanner(banner);
-    document.getElementById('login-error').textContent = 'Erreur de migration — réessayez';
-    showWelcomeScreen();
     console.error('Migration failed:', e);
+    showWelcomeScreen();
+    setTimeout(() => showToast('Erreur migration : ' + (e.message || String(e))), 300);
   }
 }
 
