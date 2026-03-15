@@ -1650,7 +1650,10 @@ function getXpForAllTime() {
   const seen = new Set(); let xp = 0;
   Object.values(bookings).forEach(b => {
     if (b.userId === currentUser.id && !seen.has(b.id)) {
-      seen.add(b.id); xp += 20 + Math.round(estimateDistanceForBooking(b) / 25);
+      seen.add(b.id);
+      xp += 20 + Math.round(estimateDistanceForBooking(b) / 25);
+      const fuel = getFuelReturnLevelForBooking(b);
+      if (fuel !== null) xp += fuel >= 50 ? 10 : 5;
     }
   });
   return xp;
@@ -2073,17 +2076,10 @@ async function confirmFuelAfterTrip(bookingId) {
     await db.collection('cars').doc(selectedCar).update({ fuelLevel: level });
 
     const booking = getUniqueBookingsSorted().find(b => b.id === bookingId);
-    await db.collection('fuelReports').doc(bookingId).set({
-      bookingId,
-      carId: selectedCar,
-      userId: currentUser?.id || null,
-      userName: currentUser?.name || null,
-      date: booking?.date || booking?.startDate || null,
-      destination: getBookingDestinationLabel(booking),
-      distanceKm: estimateDistanceForBooking(booking || {}),
+    await db.collection('bookings').doc(bookingId).update({
       fuelReturnLevel: level,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+      fuelUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
     const car = cars.find(c => c.id === selectedCar);
     if (car) car.fuelLevel = level;
@@ -2092,10 +2088,11 @@ async function confirmFuelAfterTrip(bookingId) {
 
     closeSheet();
     renderExperiencePanels();
+    const xpFuel = level >= 50 ? 10 : 5;
     if (level >= 50) {
-      celebrate('✓', 'Merci ! Réservoir mis à jour', '', 'Le prochain conducteur voit le bon niveau');
+      celebrate('✓', 'Merci ! Réservoir mis à jour', `+${xpFuel} XP`, 'Le prochain conducteur voit le bon niveau');
     } else {
-      showToast('Niveau enregistré. Pense à refaire le plein avant la prochaine sortie');
+      celebrate('✓', 'Niveau enregistré', `+${xpFuel} XP`, 'Pense à refaire le plein avant la prochaine sortie');
     }
   } catch(e) { showToast('Erreur — réessayez'); }
 }
