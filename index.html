@@ -3009,9 +3009,9 @@ async function runMigrationIfNeeded() {
     showToast('Migration terminée — bienvenue dans la nouvelle version !');
   } catch (e) {
     hideMigrationBanner(banner);
-    document.getElementById('login-error').textContent = 'Erreur de migration — réessayez';
-    showWelcomeScreen();
     console.error('Migration failed:', e);
+    showWelcomeScreen();
+    setTimeout(() => showToast('Erreur migration : ' + (e.message || String(e))), 300);
   }
 }
 
