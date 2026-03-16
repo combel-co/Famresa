@@ -15,6 +15,13 @@ let unsubscribeFuelReports = null;
 let pendingFuelPromptBookingId = null;
 let suPendingFamilyId = null;
 
+// Keep --header-h in sync on resize / orientation change
+window.addEventListener('resize', function () {
+  var h = document.getElementById('app-header');
+  if (h && h.offsetHeight > 0)
+    document.documentElement.style.setProperty('--header-h', h.offsetHeight + 'px');
+}, { passive: true });
+
 // ==========================================
 // ANIMATED TABS — collapse icons on scroll
 // Touch: progressive follow, snap only on finger lift
@@ -22,10 +29,10 @@ let suPendingFamilyId = null;
 // ==========================================
 (function () {
   const FULL_FONT   = 32;  // px — must match CSS
-  const FULL_HEIGHT = 42;  // px
-  const FULL_MARGIN = 2;   // px (margin-bottom)
-  const FULL_PAD    = 14;  // px (tabs padding-top)
-  const RANGE       = 60;  // px of scroll to go full→compact
+  const FULL_HEIGHT = 40;  // px — must match CSS
+  const FULL_MARGIN = 3;   // px (margin-bottom) — must match CSS
+  const FULL_PAD    = 12;  // px (tabs padding-top) — must match CSS
+  const RANGE       = 55;  // px of scroll to go full→compact
 
   let _touching = false;
   let _compact  = false;

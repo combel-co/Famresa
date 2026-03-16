@@ -64,9 +64,17 @@ function updateUserPill() {
   }
 }
 
+function _syncHeaderHeight() {
+  var h = document.getElementById('app-header');
+  if (h && h.offsetHeight > 0)
+    document.documentElement.style.setProperty('--header-h', h.offsetHeight + 'px');
+}
+
 function enterApp() {
   document.getElementById('app-header').style.display = 'flex';
   document.getElementById('app-main').style.display = 'block';
+  // Sync CSS variable to actual rendered header height (fixes sticky gap on all screen sizes)
+  requestAnimationFrame(_syncHeaderHeight);
   updateUserPill();
   loadFamilyName();
   switchTab(activeTab || 'dashboard');
