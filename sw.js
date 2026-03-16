@@ -1,5 +1,5 @@
-const CACHE_VERSION = 'v1';
-const CACHE_NAME = 'famcar-' + CACHE_VERSION;
+const CACHE_VERSION = 'v2';
+const CACHE_NAME = 'famresa-' + CACHE_VERSION;
 
 // On install: cache the app shell
 self.addEventListener('install', event => {
@@ -21,7 +21,7 @@ self.addEventListener('activate', event => {
     caches.keys().then(keys =>
       Promise.all(
         keys
-          .filter(key => key.startsWith('famcar-') && key !== CACHE_NAME)
+          .filter(key => (key.startsWith('famcar-') || key.startsWith('famresa-')) && key !== CACHE_NAME)
           .map(key => caches.delete(key))
       )
     ).then(() => self.clients.claim())
