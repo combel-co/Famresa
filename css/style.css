@@ -3,6 +3,7 @@
     --text: #1a1a1a;
     --text-light: #888888;
     --border: #e8e8e8;
+    --header-h: 83px;
     --accent: #2563eb;
     --accent-light: #eff4ff;
     --danger: #ef4444;
@@ -73,7 +74,7 @@
   .user-pill .avatar img { width: 100%; height: 100%; object-fit: cover; }
 
   /* ---- MAIN ---- */
-  main { max-width: 520px; margin: 0 auto; padding: 32px 20px 100px; }
+  main { max-width: 520px; margin: 0 auto; padding: 0 20px 100px; }
 
   /* ---- MONTH NAV ---- */
   .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; gap: 10px; }
@@ -344,7 +345,7 @@
   .mini-item strong { font-size: 14px; }
 
   .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
+  .tab-panel.active { display: block; padding-top: 20px; }
 
   .bottom-nav {
     position: fixed; left: 50%; transform: translateX(-50%);
@@ -940,6 +941,7 @@
   .resource-tabs {
     display: flex; gap: 24px; justify-content: center;
     padding: 12px 20px 0; border-bottom: 1px solid var(--border);
+    position: sticky; top: var(--header-h); z-index: 99;
     background: white;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
