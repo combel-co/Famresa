@@ -39,22 +39,35 @@
     z-index: 100;
   }
 
-  .logo {
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 700;
-    font-size: 22px;
-    letter-spacing: -0.5px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  /* ---- FAMILY PILL (header left) ---- */
+  .family-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px 7px 14px; border-radius: 100px;
+    border: 1px solid var(--border); cursor: pointer;
+    background: white; font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 600; color: var(--text);
+    transition: all 0.2s;
   }
+  .family-pill:hover { border-color: #ccc; box-shadow: var(--shadow-sm); }
+  .family-chevron { font-size: 11px; opacity: 0.55; margin-left: 1px; }
 
-  .logo-icon {
-    width: 32px; height: 32px;
-    background: var(--text); border-radius: 9px;
-    display: flex; align-items: center; justify-content: center;
-    color: white; font-size: 16px;
+  /* ---- FAMILY PICKER DROPDOWN ---- */
+  .family-picker-dropdown {
+    display: none;
+    position: fixed; top: calc(var(--header-h) + 6px); left: 28px;
+    background: white; border: 1px solid var(--border);
+    border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    z-index: 200; min-width: 190px; overflow: hidden;
   }
+  .family-picker-item {
+    padding: 14px 16px; display: flex; align-items: center;
+    justify-content: space-between; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: background 0.1s; gap: 12px;
+  }
+  .family-picker-item:hover { background: #f7f7f7; }
+  .family-picker-item.active { font-weight: 700; }
+  .family-picker-check { color: var(--accent); font-size: 15px; flex-shrink: 0; }
+  .family-picker-divider { height: 1px; background: var(--border); margin: 0; }
 
   .user-pill {
     display: flex; align-items: center; gap: 10px;
@@ -950,15 +963,27 @@
 
   .resource-tab {
     display: flex; flex-direction: column; align-items: center;
-    gap: 4px; cursor: pointer; padding-bottom: 10px;
+    gap: 0; cursor: pointer; padding-bottom: 10px;
     border-bottom: 2px solid transparent;
-    transition: all 0.15s; opacity: 0.5;
+    transition: opacity 0.15s; opacity: 0.5;
     flex-shrink: 0;
   }
   .resource-tab.active { opacity: 1; border-bottom-color: var(--text); }
   .resource-tab:hover:not(.placeholder) { opacity: 0.8; }
 
-  .resource-tab-icon { font-size: 28px; line-height: 1.3; }
+  .resource-tab-icon {
+    font-size: 28px; line-height: 36px;
+    height: 36px; overflow: hidden; display: block; text-align: center;
+    margin-bottom: 4px;
+    transition: height 0.25s ease, opacity 0.25s ease,
+                margin-bottom 0.25s ease, font-size 0.2s ease;
+  }
+  /* ---- COMPACT STATE (on scroll) ---- */
+  .resource-tabs.compact { padding-top: 0; }
+  .resource-tabs.compact .resource-tab-icon {
+    height: 0; opacity: 0; margin-bottom: 0; font-size: 0;
+  }
+  .resource-tabs.compact .resource-tab { padding-bottom: 8px; }
 
   .resource-tab-label {
     font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap;

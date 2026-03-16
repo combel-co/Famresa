@@ -16,6 +16,71 @@ let pendingFuelPromptBookingId = null;
 let suPendingFamilyId = null;
 
 // ==========================================
+// ANIMATED TABS — collapse icons on scroll
+// ==========================================
+(function () {
+  let _compact = false;
+  window.addEventListener('scroll', function () {
+    const tabs = document.getElementById('resource-tabs');
+    if (!tabs) return;
+    const compact = window.scrollY > 50;
+    if (compact !== _compact) {
+      _compact = compact;
+      tabs.classList.toggle('compact', compact);
+    }
+  }, { passive: true });
+})();
+
+// ==========================================
+// FAMILY SELECTOR
+// ==========================================
+let _currentFamilyName = 'Famille';
+const _MOCK_FAMILIES = ['Famille Berton', 'Famille Dupont'];
+
+function updateFamilyPill(name) {
+  _currentFamilyName = name || 'Famille';
+  const el = document.getElementById('family-name-display');
+  if (el) el.textContent = _currentFamilyName;
+}
+
+async function loadFamilyName() {
+  if (!currentUser?.familyId) return;
+  try {
+    const doc = await db.collection('families').doc(currentUser.familyId).get();
+    if (doc.exists && doc.data().name) updateFamilyPill(doc.data().name);
+  } catch (e) { /* silent fallback */ }
+}
+
+function toggleFamilyPicker() {
+  const picker = document.getElementById('family-picker-dropdown');
+  if (!picker) return;
+  if (picker.style.display === 'block') { picker.style.display = 'none'; return; }
+  picker.innerHTML = _MOCK_FAMILIES.map((f, i) => {
+    const active = f === _currentFamilyName;
+    return `<div class="family-picker-item${active ? ' active' : ''}" onclick="selectFamily(${i})">
+      <span>${f}</span>
+      ${active ? '<span class="family-picker-check">✓</span>' : ''}
+    </div>${i < _MOCK_FAMILIES.length - 1 ? '<div class="family-picker-divider"></div>' : ''}`;
+  }).join('');
+  picker.style.display = 'block';
+}
+
+function selectFamily(index) {
+  updateFamilyPill(_MOCK_FAMILIES[index]);
+  const picker = document.getElementById('family-picker-dropdown');
+  if (picker) picker.style.display = 'none';
+}
+
+document.addEventListener('click', function (e) {
+  const picker = document.getElementById('family-picker-dropdown');
+  const pill   = document.getElementById('family-pill');
+  if (picker && picker.style.display === 'block') {
+    if (!picker.contains(e.target) && !pill.contains(e.target))
+      picker.style.display = 'none';
+  }
+});
+
+// ==========================================
 // TAB SWITCHING
 // ==========================================
 function switchTab(tab) {

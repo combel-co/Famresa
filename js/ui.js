@@ -68,6 +68,7 @@ function enterApp() {
   document.getElementById('app-header').style.display = 'flex';
   document.getElementById('app-main').style.display = 'block';
   updateUserPill();
+  loadFamilyName();
   switchTab(activeTab || 'dashboard');
   renderCalendar();
   setTimeout(() => maybePromptPendingFuel(), 350);

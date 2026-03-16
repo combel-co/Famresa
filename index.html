@@ -15,12 +15,16 @@
 <body>
 
 <header id="app-header" style="display:none;">
-  <div class="logo"><div class="logo-icon">🏠</div> FamResa</div>
+  <button class="family-pill" id="family-pill" onclick="toggleFamilyPicker()">
+    <span id="family-name-display">Famille</span>
+    <span class="family-chevron">▾</span>
+  </button>
   <div class="user-pill" id="user-pill" onclick="showProfile()">
     <div class="avatar" id="header-avatar">?</div>
     <span id="header-name">Se connecter</span>
   </div>
 </header>
+<div class="family-picker-dropdown" id="family-picker-dropdown"></div>
 
 <main id="app-main" style="display:none;">
 

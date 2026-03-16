@@ -53,22 +53,34 @@ function renderResourceTabs() {
   const container = document.getElementById('resource-tabs');
   if (!container) return;
 
-  let html = resources.map(r => {
-    const isActive = r.id === selectedResource;
-    return `<div class="resource-tab${isActive ? ' active' : ''}" onclick="selectResource('${r.id}')">
-      <span class="resource-tab-icon">${r.emoji || (r.type === 'house' ? '🏠' : '🚗')}</span>
-      <span class="resource-tab-label">${r.name}</span>
+  const cars   = resources.filter(r => r.type !== 'house');
+  const houses = resources.filter(r => r.type === 'house');
+  const activeRes  = resources.find(r => r.id === selectedResource);
+  const activeType = activeRes?.type === 'house' ? 'house' : 'car';
+
+  const tab = (icon, label, type, hasItems) => {
+    const isActive = activeType === type && hasItems;
+    const cls = `resource-tab${isActive ? ' active' : ''}${!hasItems ? ' placeholder' : ''}`;
+    const click = hasItems ? `onclick="selectResourceType('${type}')"` : '';
+    return `<div class="${cls}" ${click}>
+      <span class="resource-tab-icon">${icon}</span>
+      <span class="resource-tab-label">${label}</span>
     </div>`;
-  }).join('');
+  };
 
-  // Always add the "Coming soon" placeholder
-  html += `<div class="resource-tab placeholder">
-    <span class="resource-tab-icon">➕</span>
-    <span class="resource-tab-label">Bientôt</span>
-    <span class="resource-tab-badge">À venir</span>
-  </div>`;
+  container.innerHTML =
+    tab('🚗', 'Voitures', 'car',   cars.length   > 0) +
+    tab('🏠', 'Maison',   'house', houses.length > 0) +
+    `<div class="resource-tab placeholder" style="position:relative;">
+      <span class="resource-tab-icon">✨</span>
+      <span class="resource-tab-label">Autres</span>
+      <span class="resource-tab-badge">Bientôt</span>
+    </div>`;
+}
 
-  container.innerHTML = html;
+function selectResourceType(type) {
+  const match = resources.find(r => (type === 'house' ? r.type === 'house' : r.type !== 'house'));
+  if (match) selectResource(match.id);
 }
 
 // ==========================================
