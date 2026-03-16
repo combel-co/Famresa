@@ -358,7 +358,7 @@
   .mini-item strong { font-size: 14px; }
 
   .tab-panel { display: none; }
-  .tab-panel.active { display: block; padding-top: 20px; }
+  .tab-panel.active { display: block; padding-top: 24px; }
 
   .bottom-nav {
     position: fixed; left: 50%; transform: translateX(-50%);
@@ -952,8 +952,8 @@
 
   /* ---- RESOURCE TABS (Airbnb-style) ---- */
   .resource-tabs {
-    display: flex; gap: 24px; justify-content: center;
-    padding: 12px 20px 0; border-bottom: 1px solid var(--border);
+    display: flex; gap: 0; justify-content: space-around;
+    padding: 14px 20px 0; border-bottom: 1px solid var(--border);
     position: sticky; top: var(--header-h); z-index: 99;
     background: white;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
@@ -963,18 +963,18 @@
 
   .resource-tab {
     display: flex; flex-direction: column; align-items: center;
-    gap: 0; cursor: pointer; padding-bottom: 10px;
-    border-bottom: 2px solid transparent;
-    transition: opacity 0.15s; opacity: 0.5;
-    flex-shrink: 0;
+    gap: 0; cursor: pointer; padding-bottom: 12px;
+    border-bottom: 2.5px solid transparent;
+    transition: opacity 0.15s; opacity: 0.45;
+    flex: 1; min-width: 80px;
   }
   .resource-tab.active { opacity: 1; border-bottom-color: var(--text); }
-  .resource-tab:hover:not(.placeholder) { opacity: 0.8; }
+  .resource-tab:hover:not(.placeholder) { opacity: 0.75; }
 
   .resource-tab-icon {
-    font-size: 28px; line-height: 36px;
-    height: 36px; overflow: hidden; display: block; text-align: center;
-    margin-bottom: 4px;
+    font-size: 40px; line-height: 52px;
+    height: 52px; overflow: hidden; display: block; text-align: center;
+    margin-bottom: 6px;
     transition: height 0.25s ease, opacity 0.25s ease,
                 margin-bottom 0.25s ease, font-size 0.2s ease;
   }
@@ -983,17 +983,17 @@
   .resource-tabs.compact .resource-tab-icon {
     height: 0; opacity: 0; margin-bottom: 0; font-size: 0;
   }
-  .resource-tabs.compact .resource-tab { padding-bottom: 8px; }
+  .resource-tabs.compact .resource-tab { padding-bottom: 10px; }
 
   .resource-tab-label {
-    font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap;
+    font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap;
   }
 
   .resource-tab.placeholder {
-    pointer-events: none; opacity: 0.35; position: relative;
+    pointer-events: none; opacity: 0.3; position: relative;
   }
   .resource-tab-badge {
-    position: absolute; top: -6px; right: -12px;
+    position: absolute; top: -4px; right: -8px;
     background: var(--border); color: var(--text-light);
     font-size: 8px; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.3px; padding: 2px 6px; border-radius: 999px;
