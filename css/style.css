@@ -358,7 +358,7 @@
   .mini-item strong { font-size: 14px; }
 
   .tab-panel { display: none; }
-  .tab-panel.active { display: block; padding-top: 24px; }
+  .tab-panel.active { display: block; padding-top: 14px; }
 
   .bottom-nav {
     position: fixed; left: 50%; transform: translateX(-50%);
@@ -954,10 +954,11 @@
   .resource-tabs {
     display: flex; gap: 0; justify-content: space-around;
     padding: 14px 20px 0; border-bottom: 1px solid var(--border);
-    position: sticky; top: var(--header-h); z-index: 99;
+    position: sticky; top: calc(var(--header-h) - 1px); z-index: 100;
     background: white;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    transition: padding-top 0.2s ease;
   }
   .resource-tabs::-webkit-scrollbar { display: none; }
 
@@ -972,9 +973,9 @@
   .resource-tab:hover:not(.placeholder) { opacity: 0.75; }
 
   .resource-tab-icon {
-    font-size: 40px; line-height: 52px;
-    height: 52px; overflow: hidden; display: block; text-align: center;
-    margin-bottom: 6px;
+    font-size: 32px; line-height: 42px;
+    height: 42px; overflow: hidden; display: block; text-align: center;
+    margin-bottom: 2px;
     transition: height 0.25s ease, opacity 0.25s ease,
                 margin-bottom 0.25s ease, font-size 0.2s ease;
   }

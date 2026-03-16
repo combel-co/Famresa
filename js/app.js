@@ -17,16 +17,82 @@ let suPendingFamilyId = null;
 
 // ==========================================
 // ANIMATED TABS — collapse icons on scroll
+// Touch: progressive follow, snap only on finger lift
+// Mouse/keyboard: snap at threshold
 // ==========================================
 (function () {
-  let _compact = false;
-  window.addEventListener('scroll', function () {
-    const tabs = document.getElementById('resource-tabs');
+  const FULL_FONT   = 32;  // px — must match CSS
+  const FULL_HEIGHT = 42;  // px
+  const FULL_MARGIN = 2;   // px (margin-bottom)
+  const FULL_PAD    = 14;  // px (tabs padding-top)
+  const RANGE       = 60;  // px of scroll to go full→compact
+
+  let _touching = false;
+  let _compact  = false;
+
+  function setProgress(tabs, p) {
+    const s = 1 - p;
+    tabs.style.paddingTop = (FULL_PAD * s) + 'px';
+    tabs.querySelectorAll('.resource-tab-icon').forEach(function (icon) {
+      icon.style.transition  = 'none';
+      icon.style.fontSize    = (FULL_FONT   * s) + 'px';
+      icon.style.height      = (FULL_HEIGHT * s) + 'px';
+      icon.style.lineHeight  = (FULL_HEIGHT * s) + 'px';
+      icon.style.marginBottom= (FULL_MARGIN * s) + 'px';
+      icon.style.opacity     = s;
+      icon.style.overflow    = 'hidden';
+    });
+  }
+
+  function clearInline(tabs) {
+    tabs.style.removeProperty('padding-top');
+    tabs.querySelectorAll('.resource-tab-icon').forEach(function (icon) {
+      icon.style.cssText = '';
+    });
+  }
+
+  function applyCompact(tabs, compact) {
+    if (compact === _compact) return;
+    _compact = compact;
+    tabs.classList.toggle('compact', compact);
+  }
+
+  window.addEventListener('touchstart', function () {
+    _touching = true;
+  }, { passive: true });
+
+  window.addEventListener('touchend', function () {
+    _touching = false;
+    var tabs = document.getElementById('resource-tabs');
     if (!tabs) return;
-    const compact = window.scrollY > 50;
-    if (compact !== _compact) {
-      _compact = compact;
-      tabs.classList.toggle('compact', compact);
+    // Clear inline overrides (re-enable CSS transitions)
+    clearInline(tabs);
+    // Snap: if icons not fully gone yet → return to full
+    var p = Math.min(1, Math.max(0, window.scrollY / RANGE));
+    applyCompact(tabs, p >= 1);
+  }, { passive: true });
+
+  window.addEventListener('scroll', function () {
+    var tabs = document.getElementById('resource-tabs');
+    if (!tabs) return;
+    var p = Math.min(1, Math.max(0, window.scrollY / RANGE));
+
+    if (_touching) {
+      // Progressive: follow scroll proportionally while finger is down
+      if (p >= 1) {
+        clearInline(tabs);
+        applyCompact(tabs, true);
+      } else if (p <= 0) {
+        clearInline(tabs);
+        applyCompact(tabs, false);
+      } else {
+        if (_compact) { clearInline(tabs); _compact = false; tabs.classList.remove('compact'); }
+        setProgress(tabs, p);
+      }
+    } else {
+      // Mouse / keyboard: simple snap at midpoint
+      clearInline(tabs);
+      applyCompact(tabs, p > 0.5);
     }
   }, { passive: true });
 })();
