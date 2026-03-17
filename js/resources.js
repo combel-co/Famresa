@@ -512,6 +512,312 @@ async function rejectResourceAccess(accessId) {
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 
+// ==========================================
+// RESOURCE MANAGE PAGE
+// ==========================================
+function hideResourceManagePage() {
+  document.getElementById('resource-manage-overlay')?.classList.add('hidden');
+}
+
+async function showResourceManagePage(resourceId) {
+  const res = resources.find(r => r.id === resourceId);
+  if (!res) return;
+  const myRole = window._myResourceRoles?.[resourceId] || 'member';
+  const isAdmin = myRole === 'admin';
+
+  const overlay = document.getElementById('resource-manage-overlay');
+  const content = document.getElementById('resource-manage-content');
+  if (!overlay || !content) return;
+
+  // Show overlay with loading state
+  overlay.classList.remove('hidden');
+  content.innerHTML = `
+    <div class="rm-page-header">
+      <button class="rm-back-btn" onclick="hideResourceManagePage()">‹</button>
+      <div>
+        <div class="rm-page-title">${res.name}</div>
+        <div class="rm-page-sub">Chargement…</div>
+      </div>
+    </div>`;
+
+  // Load data in parallel
+  const [allEntries, bookingsSnap, familyDoc, inviteCode] = await Promise.all([
+    getAccessEntriesForResource(resourceId),
+    familyRef().collection('bookings').where('resourceId', '==', resourceId).get().catch(() => ({ size: 0 })),
+    familyRef().get().catch(() => null),
+    isAdmin ? _getOrCreateResourceInviteCode(resourceId) : Promise.resolve(null)
+  ]);
+
+  const familyName = familyDoc?.exists ? (familyDoc.data().name || 'Famille') : 'Famille';
+  const accepted = allEntries.filter(e => e.status === 'accepted');
+  const pending  = allEntries.filter(e => e.status === 'pending');
+  const totalBookings = bookingsSnap.size || 0;
+
+  // Fetch member details for all entries
+  const memberDetails = {};
+  await Promise.all(allEntries.map(async e => {
+    try {
+      const doc = await familyRef().collection('members').doc(e.profileId).get();
+      if (doc.exists) memberDetails[e.profileId] = { name: doc.data().name || '?', photo: doc.data().photo || null, createdAt: doc.data().createdAt };
+      else memberDetails[e.profileId] = { name: e.profileId.slice(0, 8), photo: null, createdAt: null };
+    } catch(_) { memberDetails[e.profileId] = { name: '?', photo: null, createdAt: null }; }
+  }));
+
+  function fmtJoined(entry) {
+    const member = memberDetails[entry.profileId];
+    const ts = entry.accepted_at || member?.createdAt;
+    if (!ts) return 'Récemment';
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return 'Depuis ' + d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+  }
+
+  function avatarHtml(profileId, extraClass = '') {
+    const m = memberDetails[profileId];
+    const initials = (m?.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    if (m?.photo) return `<div class="rm-m-avatar ${extraClass}"><img src="${m.photo}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>`;
+    return `<div class="rm-m-avatar ${extraClass}">${initials}</div>`;
+  }
+
+  function pendingAvatarHtml(profileId) {
+    const m = memberDetails[profileId];
+    const initials = (m?.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    if (m?.photo) return `<div class="rm-p-avatar"><img src="${m.photo}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>`;
+    return `<div class="rm-p-avatar">${initials}</div>`;
+  }
+
+  const roleLabelMap = { admin: 'Admin', member: 'Membre', guest: 'Invité' };
+
+  // ── Pending section ──
+  let pendingHtml = '';
+  if (pending.length) {
+    pendingHtml = `
+      <div class="rm-section-lbl">Demandes en attente</div>
+      <div class="rm-pending-group">
+        <div class="rm-pending-header">
+          <div class="rm-pending-label">${pending.length} demande${pending.length > 1 ? 's' : ''} à valider</div>
+          <div class="rm-pending-count">${pending.length}</div>
+        </div>
+        ${pending.map(e => {
+          const name = memberDetails[e.profileId]?.name || e.profileId;
+          const ts = e.invited_at?.toDate ? e.invited_at.toDate() : null;
+          const meta = ts ? 'Via lien · ' + _relativeTime(ts) : 'Via lien';
+          return `<div class="rm-pending-row" id="pending-row-${e.id}">
+            ${pendingAvatarHtml(e.profileId)}
+            <div class="rm-p-info">
+              <div class="rm-p-name">${name}</div>
+              <div class="rm-p-meta">${meta}</div>
+            </div>
+            <div class="rm-p-actions">
+              <button class="rm-p-btn-accept" onclick="_rmApprove('${e.id}','${name}','${resourceId}')">Accepter</button>
+              <button class="rm-p-btn-reject" onclick="_rmReject('${e.id}','${resourceId}')">Refuser</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  // ── Members section ──
+  const membersHtml = accepted.map(e => {
+    const isMe = e.profileId === currentUser?.id;
+    const name = memberDetails[e.profileId]?.name || e.profileId;
+    const displayName = isMe ? `${name} · moi` : name;
+    const avClass = isMe ? 'me' : (e.role === 'guest' ? 'guest-av' : '');
+    const pillClass = e.role === 'admin' ? 'admin' : (e.role === 'guest' ? 'guest-pill' : '');
+    const menuBtn = isAdmin && !isMe
+      ? `<div class="rm-m-menu" onclick="_rmMemberMenu('${e.id}','${name}','${resourceId}')">···</div>`
+      : '';
+    return `<div class="rm-member-row">
+      ${avatarHtml(e.profileId, avClass)}
+      <div class="rm-m-info">
+        <div class="rm-m-name">${displayName}</div>
+        <div class="rm-m-joined">${fmtJoined(e)}</div>
+      </div>
+      <div class="rm-role-pill ${pillClass}">${roleLabelMap[e.role] || e.role}</div>
+      ${menuBtn}
+    </div>`;
+  }).join('');
+
+  // ── Invite section (admin only) ──
+  let inviteHtml = '';
+  if (isAdmin && inviteCode) {
+    const link = `${location.origin}${location.pathname}?resource_join=${inviteCode}`;
+    const shortLink = `famresa.app/join/${res.name.toLowerCase().replace(/\s+/g, '')}/${inviteCode.slice(0, 6)}`;
+    inviteHtml = `
+      <div class="rm-section-lbl">Inviter quelqu'un</div>
+      <div class="rm-invite-card">
+        <div class="rm-invite-title">Ajouter un membre à cette ressource</div>
+        <div class="rm-invite-row">
+          <input class="rm-invite-input" type="email" id="rm-invite-email-${resourceId}" placeholder="prenom@email.com">
+          <button class="rm-copy-link-btn" onclick="_rmSendInviteEmail('${resourceId}')">Envoyer</button>
+        </div>
+        <div class="rm-share-link-row" onclick="navigator.clipboard?.writeText('${link}').then(()=>showToast('Lien copié !'))">
+          <div class="rm-share-link-url">${shortLink}</div>
+          <div class="rm-share-link-copy">Copier le lien</div>
+        </div>
+      </div>`;
+  }
+
+  // ── Danger zone (admin only) ──
+  let dangerHtml = '';
+  if (isAdmin) {
+    dangerHtml = `
+      <div class="rm-section-lbl">Gestion</div>
+      <div class="rm-danger-card">
+        <div class="rm-danger-title">Zone admin</div>
+        <div class="rm-danger-row">
+          <div class="rm-danger-label">Modifier les infos</div>
+          <button class="rm-danger-btn neutral" onclick="hideResourceManagePage();showCarInfo()">Modifier</button>
+        </div>
+        <div style="height:8px"></div>
+        <div class="rm-danger-row">
+          <div class="rm-danger-label">Supprimer la ressource</div>
+          <button class="rm-danger-btn" onclick="_rmDeleteResource('${resourceId}')">Supprimer</button>
+        </div>
+      </div>`;
+  }
+
+  const roleBadgeClass = myRole === 'admin' ? 'admin' : (myRole === 'guest' ? 'guest' : 'member');
+  const roleBadgeLabel = roleLabelMap[myRole] || myRole;
+  const resTypeSub = res.type === 'house'
+    ? (res.address ? res.address : 'Maison de famille')
+    : (res.plaque || 'Voiture');
+  const resTypeDetail = res.type === 'house' ? 'Maison' : 'Voiture';
+
+  content.innerHTML = `
+    <div class="rm-page-header">
+      <button class="rm-back-btn" onclick="hideResourceManagePage()">‹</button>
+      <div>
+        <div class="rm-page-title">${res.name}</div>
+        <div class="rm-page-sub">${familyName}</div>
+      </div>
+    </div>
+    <div class="rm-scroll-area">
+      <!-- Hero -->
+      <div class="rm-resource-hero">
+        <div class="rm-resource-big-icon">${res.emoji || (res.type === 'house' ? '🏠' : '🚗')}</div>
+        <div class="rm-resource-info">
+          <div class="rm-resource-name">${res.name}</div>
+          <div class="rm-resource-family">${resTypeSub}</div>
+          <div style="margin-top:6px;font-size:11px;color:var(--color-text-tertiary)">${resTypeDetail}</div>
+        </div>
+        <div class="rm-resource-role-badge ${roleBadgeClass}">${roleBadgeLabel}</div>
+      </div>
+      <!-- Stats -->
+      <div class="rm-stats-row">
+        <div class="rm-stat-card">
+          <div class="rm-stat-val">${accepted.length}</div>
+          <div class="rm-stat-lbl">Membres</div>
+        </div>
+        <div class="rm-stat-card">
+          <div class="rm-stat-val">${totalBookings}</div>
+          <div class="rm-stat-lbl">Réservations</div>
+        </div>
+        <div class="rm-stat-card">
+          <div class="rm-stat-val">${pending.length}</div>
+          <div class="rm-stat-lbl">En attente</div>
+        </div>
+      </div>
+      ${inviteHtml}
+      ${pendingHtml}
+      <!-- Members -->
+      <div class="rm-section-lbl">Membres actifs</div>
+      <div class="rm-members-group" id="rm-members-group-${resourceId}">
+        ${membersHtml || '<div style="padding:14px;color:var(--color-text-tertiary);font-size:13px">Aucun membre</div>'}
+      </div>
+      ${dangerHtml}
+    </div>`;
+}
+
+function _relativeTime(date) {
+  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (diff < 3600) return `il y a ${Math.max(1, Math.floor(diff / 60))} min`;
+  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`;
+  if (diff < 172800) return 'hier';
+  return `il y a ${Math.floor(diff / 86400)} j`;
+}
+
+async function _rmApprove(accessId, userName, resourceId) {
+  try {
+    await updateResourceAccessStatus(accessId, 'accepted');
+    showToast(`${userName} a accès ✓`);
+    document.getElementById(`pending-row-${accessId}`)?.remove();
+    // Refresh the page
+    showResourceManagePage(resourceId);
+  } catch(e) { showToast('Erreur — réessayez'); }
+}
+
+async function _rmReject(accessId, resourceId) {
+  try {
+    await updateResourceAccessStatus(accessId, 'rejected');
+    showToast('Demande refusée');
+    document.getElementById(`pending-row-${accessId}`)?.remove();
+    showResourceManagePage(resourceId);
+  } catch(e) { showToast('Erreur — réessayez'); }
+}
+
+function _rmSendInviteEmail(resourceId) {
+  const emailEl = document.getElementById(`rm-invite-email-${resourceId}`);
+  const email = (emailEl?.value || '').trim().toLowerCase();
+  if (!email || !email.includes('@')) { showToast('Email invalide'); return; }
+  // Copy invite link as fallback (no server-side email)
+  const res = resources.find(r => r.id === resourceId);
+  const inviteCode = res?.inviteCode;
+  if (inviteCode) {
+    const link = `${location.origin}${location.pathname}?resource_join=${inviteCode}`;
+    navigator.clipboard?.writeText(link).then(() => showToast(`Lien copié — envoyez-le à ${email}`));
+  } else {
+    showToast(`Envoyez le lien d'invitation à ${email}`);
+  }
+  if (emailEl) emailEl.value = '';
+}
+
+async function _rmMemberMenu(accessId, memberName, resourceId) {
+  document.getElementById('sheet-content').innerHTML = `
+    <div class="login-sheet">
+      <h2>${memberName}</h2>
+      <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Gérer les droits de ce membre</p>
+      <button class="btn btn-primary" onclick="closeSheet()" style="margin-bottom:10px">Promouvoir admin</button>
+      <button class="btn btn-danger" onclick="_rmRemoveMember('${accessId}','${memberName}','${resourceId}');closeSheet()">Retirer l'accès</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Annuler</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+
+async function _rmRemoveMember(accessId, memberName, resourceId) {
+  try {
+    await updateResourceAccessStatus(accessId, 'rejected');
+    showToast(`${memberName} retiré(e)`);
+    showResourceManagePage(resourceId);
+  } catch(e) { showToast('Erreur — réessayez'); }
+}
+
+async function _rmDeleteResource(resourceId) {
+  const res = resources.find(r => r.id === resourceId);
+  if (!res) return;
+  document.getElementById('sheet-content').innerHTML = `
+    <div class="login-sheet">
+      <h2>Supprimer ${res.name} ?</h2>
+      <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Cette action est irréversible. Les réservations existantes seront conservées.</p>
+      <button class="btn btn-danger" onclick="_rmConfirmDelete('${resourceId}');closeSheet()">Oui, supprimer</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Annuler</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+
+async function _rmConfirmDelete(resourceId) {
+  try {
+    await familyRef().collection('resources').doc(resourceId).delete();
+    resources = resources.filter(r => r.id !== resourceId);
+    hideResourceManagePage();
+    if (resources.length > 0) {
+      selectResource(resources[0].id);
+    } else {
+      renderNoAccessState();
+    }
+    showToast('Ressource supprimée');
+  } catch(e) { showToast('Erreur — réessayez'); }
+}
+
 // Called when user visits ?resource_join=CODE (after being logged in)
 async function handleResourceJoinCode(code) {
   if (!currentUser?.familyId) return;

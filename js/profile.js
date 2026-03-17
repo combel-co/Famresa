@@ -76,7 +76,7 @@ function renderProfileTab() {
       const isAdmin = role === 'admin';
       const adminBtn = isAdmin
         ? `<div style="margin-top:8px;font-size:11px;color:var(--accent);font-weight:600;cursor:pointer"
-              onclick="event.stopPropagation();showResourceAccessSheet('${res.id}')">Gérer l'accès ›</div>`
+              onclick="event.stopPropagation();showResourceManagePage('${res.id}')">Gérer l'accès ›</div>`
         : '';
 
       return `<div class="pf-resource-card" onclick="selectResource('${res.id}');switchTab('dashboard')">
@@ -143,9 +143,7 @@ async function _renderAdminPendingSection() {
           <div style="font-size:12px;color:var(--text-light);margin-bottom:12px">Demande d'accès · ${resName}</div>
           <div style="display:flex;gap:8px">
             <button class="btn btn-primary" style="flex:1;padding:8px;font-size:13px"
-              onclick="approveResourceAccess('${item.id}','${userName}');this.closest('div[style]').remove()">✓ Approuver</button>
-            <button class="btn btn-danger" style="flex:1;padding:8px;font-size:13px"
-              onclick="rejectResourceAccess('${item.id}');this.closest('div[style]').remove()">✕ Refuser</button>
+              onclick="showResourceManagePage('${item.resourceId}')">Voir →</button>
           </div>
         </div>`;
       }).join('')}`;
