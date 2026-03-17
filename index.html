@@ -156,13 +156,14 @@
     <div id="history-full"></div>
   </section>
 
-  <nav class="bottom-nav" aria-label="Navigation principale">
-    <button type="button" id="nav-dashboard" class="active" data-icon="🏠" onclick="switchTab('dashboard')">Dashboard</button>
-    <button type="button" id="nav-calendar" data-icon="📅" onclick="switchTab('calendar')">Planning</button>
-    <button type="button" id="nav-leaderboard" data-icon="🏆" onclick="switchTab('leaderboard')">Classement</button>
-    <button type="button" id="nav-history" data-icon="⚙️" onclick="switchTab('history')">Historique</button>
-  </nav>
 </main>
+
+<nav class="bottom-nav" aria-label="Navigation principale">
+  <button type="button" id="nav-dashboard" class="active" data-icon="🏠" onclick="switchTab('dashboard')">Dashboard</button>
+  <button type="button" id="nav-calendar" data-icon="📅" onclick="switchTab('calendar')">Planning</button>
+  <button type="button" id="nav-leaderboard" data-icon="🏆" onclick="switchTab('leaderboard')">Classement</button>
+  <button type="button" id="nav-history" data-icon="⚙️" onclick="switchTab('history')">Historique</button>
+</nav>
 
 <div class="overlay" id="overlay" onclick="closeSheet()">
   <div class="sheet" id="sheet" onclick="event.stopPropagation()">

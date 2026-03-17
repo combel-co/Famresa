@@ -76,6 +76,9 @@ window.addEventListener('resize', function () {
     tabs.classList.toggle('compact', compact);
   }
 
+  // Le scroll se passe maintenant sur <main>, pas window
+  function getScrollEl() { return document.getElementById('app-main'); }
+
   window.addEventListener('touchstart', function () {
     _touching = true;
   }, { passive: true });
@@ -83,37 +86,39 @@ window.addEventListener('resize', function () {
   window.addEventListener('touchend', function () {
     _touching = false;
     var tabs = document.getElementById('resource-tabs');
-    if (!tabs) return;
-    // Clear inline overrides (re-enable CSS transitions)
+    var scrollEl = getScrollEl();
+    if (!tabs || !scrollEl) return;
     clearInline(tabs);
-    // Snap: if icons not fully gone yet → return to full
-    var p = Math.min(1, Math.max(0, window.scrollY / RANGE));
+    var p = Math.min(1, Math.max(0, scrollEl.scrollTop / RANGE));
     applyCompact(tabs, p >= 1);
   }, { passive: true });
 
-  window.addEventListener('scroll', function () {
-    var tabs = document.getElementById('resource-tabs');
-    if (!tabs) return;
-    var p = Math.min(1, Math.max(0, window.scrollY / RANGE));
+  // Écoute le scroll sur main (pas window)
+  document.addEventListener('DOMContentLoaded', function () {
+    var scrollEl = getScrollEl();
+    if (!scrollEl) return;
+    scrollEl.addEventListener('scroll', function () {
+      var tabs = document.getElementById('resource-tabs');
+      if (!tabs) return;
+      var p = Math.min(1, Math.max(0, scrollEl.scrollTop / RANGE));
 
-    if (_touching) {
-      // Progressive: follow scroll proportionally while finger is down
-      if (p >= 1) {
-        clearInline(tabs);
-        applyCompact(tabs, true);
-      } else if (p <= 0) {
-        clearInline(tabs);
-        applyCompact(tabs, false);
+      if (_touching) {
+        if (p >= 1) {
+          clearInline(tabs);
+          applyCompact(tabs, true);
+        } else if (p <= 0) {
+          clearInline(tabs);
+          applyCompact(tabs, false);
+        } else {
+          if (_compact) { clearInline(tabs); _compact = false; tabs.classList.remove('compact'); }
+          setProgress(tabs, p);
+        }
       } else {
-        if (_compact) { clearInline(tabs); _compact = false; tabs.classList.remove('compact'); }
-        setProgress(tabs, p);
+        clearInline(tabs);
+        applyCompact(tabs, p > 0.5);
       }
-    } else {
-      // Mouse / keyboard: simple snap at midpoint
-      clearInline(tabs);
-      applyCompact(tabs, p > 0.5);
-    }
-  }, { passive: true });
+    }, { passive: true });
+  });
 })();
 
 // ==========================================
