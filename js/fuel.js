@@ -30,6 +30,19 @@ function getFuelBarFull(level) {
   </div>`;
 }
 
+// Barre pour la grille info ccv2
+function getFuelBarGrid(level) {
+  if (level === null || level === undefined) {
+    return '<span style="color:#9b9b9b;font-size:12px">Inconnu</span>';
+  }
+  const color = FUEL_COLORS[level] || '#84cc16';
+  const label = FUEL_LABELS[level] || (level + '%');
+  return `<div class="ccv2-fuel-bar">
+    <div class="ccv2-fuel-track"><div class="ccv2-fuel-fill" style="width:${level}%;background:${color}"></div></div>
+    <span style="font-size:12px;font-weight:500;color:${color}">${label}</span>
+  </div>`;
+}
+
 // ==========================================
 // FUEL RETURN SHEET
 // ==========================================

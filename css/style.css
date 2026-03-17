@@ -735,6 +735,45 @@
   .btn-reserve:hover { background: #1d4ed8; box-shadow: 0 6px 20px rgba(37,99,235,0.4); }
   .btn-reserve:active { transform: scale(0.97) translateY(1px); box-shadow: 0 2px 8px rgba(37,99,235,0.25); }
 
+  /* ---- CAR CARD V2 (ccv2) ---- */
+  .ccv2-card { margin-bottom:12px; background:#f7f6f2; border:0.5px solid #e5e4df; border-radius:20px; overflow:hidden; }
+  .ccv2-top { display:flex; justify-content:space-between; align-items:flex-start; padding:16px 16px 0; }
+  .ccv2-name { font-size:17px; font-weight:500; color:#1a1a1a; line-height:1.2; }
+  .ccv2-model { font-size:12px; color:#6b6b6b; margin-top:2px; }
+  .ccv2-badge { display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:500; }
+  .ccv2-badge.available { background:#dcfce7; color:#15803d; border:0.5px solid #bbf7d0; }
+  .ccv2-badge.reserved { background:#fff7ed; color:#9a3412; border:0.5px solid #fed7aa; }
+  .ccv2-dot { width:5px; height:5px; border-radius:50%; }
+  .ccv2-badge.available .ccv2-dot { background:#16a34a; }
+  .ccv2-badge.reserved .ccv2-dot { background:#ea580c; }
+  .ccv2-illustration { text-align:center; padding:10px 0 8px; font-size:64px; line-height:1; }
+  .ccv2-grid { display:grid; grid-template-columns:1fr 1fr; gap:1px; background:#e5e4df; border-top:0.5px solid #e5e4df; cursor:pointer; }
+  .ccv2-cell { background:#fff; padding:10px 14px; }
+  .ccv2-cell.full { grid-column:1/-1; }
+  .ccv2-label { font-size:10px; font-weight:500; color:#9b9b9b; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:3px; }
+  .ccv2-value { font-size:13px; font-weight:500; color:#1a1a1a; }
+  .ccv2-value.warn { color:#b45309; }
+  .ccv2-value.ok { color:#15803d; }
+  .ccv2-fuel-bar { display:flex; align-items:center; gap:8px; margin-top:4px; }
+  .ccv2-fuel-track { flex:1; height:6px; background:#e5e4df; border-radius:3px; overflow:hidden; }
+  .ccv2-fuel-fill { height:100%; border-radius:3px; }
+  .ccv2-reserve-wrap { padding:10px 14px 0; }
+  .ccv2-btn-reserve { width:100%; padding:14px; background:#1a1a1a; color:#fff; border:none; border-radius:14px; font-size:15px; font-weight:500; font-family:'DM Sans',sans-serif; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .ccv2-btn-reserve:active { opacity:0.8; }
+  .ccv2-next-slot { padding:6px 14px 14px; text-align:center; font-size:11px; color:#9b9b9b; }
+  .ccv2-section-label { font-size:11px; font-weight:500; color:#6b6b6b; padding:10px 0 6px; text-transform:uppercase; letter-spacing:0.4px; }
+  .ccv2-booking-row { display:flex; align-items:center; gap:10px; padding:10px 12px; background:#f7f6f2; border:0.5px solid #e5e4df; border-radius:12px; margin-bottom:6px; }
+  .ccv2-booking-av { width:30px; height:30px; border-radius:50%; background:#dbeafe; color:#2563eb; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; flex-shrink:0; overflow:hidden; }
+  .ccv2-booking-av.me { background:#fff; border:1.5px solid #e5e4df; color:#1a1a1a; }
+  .ccv2-booking-av img { width:100%; height:100%; object-fit:cover; }
+  .ccv2-booking-info { flex:1; min-width:0; }
+  .ccv2-booking-name { font-size:13px; font-weight:500; color:#1a1a1a; }
+  .ccv2-booking-dest { font-size:11px; color:#6b6b6b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ccv2-booking-date { font-size:11px; color:#9b9b9b; white-space:nowrap; }
+  /* Resource pills */
+  .resource-pill-dot { width:6px; height:6px; border-radius:50%; background:#e5e4df; flex-shrink:0; }
+  .resource-tab .resource-pill-dot.available { background:#16a34a; }
+
   .post-trip-card {
     border: 1px solid #facc15; border-radius: 16px;
     background: #fffbeb; padding: 14px; margin-bottom: 14px;
@@ -986,9 +1025,7 @@
   @media (max-width: 480px) {
     header { padding: 16px 18px; }
     main { padding: 0 14px 20px; }
-    .resource-tabs { margin-left: -14px; margin-right: -14px; }
-    .resource-tab-icon { font-size: 36px; height: 44px; line-height: 44px; }
-    .resource-tab-icon-wrap { margin-bottom: 5px; }
+    .resource-tabs { margin-left: -14px; margin-right: -14px; padding-left: 14px; padding-right: 14px; }
     :root { --header-h: 77px; }  /* mobile: padding 16+16 + content 44 + border 1 */
     .month-title { font-size: 22px; }
     .active-car-badge { max-width: 170px; font-size: 11px; padding: 5px 10px; }
@@ -1020,75 +1057,37 @@
   .ob-emoji-btn { font-size: 28px; background: var(--surface); border: 2px solid var(--border); border-radius: 12px; width: 56px; height: 56px; cursor: pointer; transition: all 0.15s; }
   .ob-emoji-btn.active { border-color: var(--accent); background: rgba(99,102,241,0.08); }
 
-  /* ---- RESOURCE TABS (Airbnb-style) ---- */
+  /* ---- RESOURCE TABS (pills) ---- */
   .resource-tabs {
-    display: flex;
-    padding: 14px 0 0;
+    display: flex; flex-wrap: nowrap; gap: 6px;
+    padding: 10px 0;
     position: sticky; top: -1px; z-index: 100;
     background: white;
     margin-left: -20px; margin-right: -20px;
+    padding-left: 20px; padding-right: 20px;
     border-bottom: 1px solid var(--border);
-    transition: padding-top 0.2s ease;
-    /* GPU layer → élimine le jitter sub-pixel lors du scroll */
-    will-change: transform;
-    transform: translateZ(0);
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    will-change: transform; transform: translateZ(0);
   }
+  .resource-tabs::-webkit-scrollbar { display: none; }
 
   .resource-tab {
-    flex: 1; min-width: 0;
-    display: flex; flex-direction: column; align-items: center;
-    cursor: pointer; position: relative;
+    display: flex; align-items: center; gap: 6px;
+    flex-shrink: 0;
+    padding: 6px 14px; border-radius: 999px;
+    border: 1px solid #e5e4df;
+    background: #f7f6f2;
+    font-size: 13px; font-weight: 500; color: #6b6b6b;
+    cursor: pointer; white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
   }
-  .resource-tab:hover:not(.placeholder):not(.active) .resource-tab-label { color: #555; }
-
-  /* Icon wrapper — contains icon + badge; both collapse together on scroll */
-  .resource-tab-icon-wrap {
-    position: relative;
-    display: inline-block;
-    margin-bottom: 4px;  /* icon→label gap */
-    transition: height 0.25s ease, opacity 0.25s ease, margin-bottom 0.25s ease;
-    overflow: visible;
+  .resource-tab.active {
+    background: #1a1a1a; border-color: #1a1a1a; color: #fff;
   }
-
-  .resource-tab-icon {
-    font-size: 40px; line-height: 48px;
-    height: 48px; display: block; text-align: center;
-    transition: font-size 0.2s ease, height 0.25s ease, line-height 0.25s ease;
-  }
-
-  /* Label: border-bottom only as wide as the text = Airbnb active indicator */
-  .resource-tab-label {
-    font-size: 13px; font-weight: 600; color: #888;
-    display: inline-block; white-space: nowrap;
-    padding-bottom: 5px; margin-bottom: -1px;  /* label→bar gap réduit */
-    border-bottom: 3px solid transparent;
-  }
-  .resource-tab.active .resource-tab-label {
-    color: var(--text); font-weight: 700;
-    border-bottom-color: var(--text);
-  }
-
-  /* ---- COMPACT STATE ---- */
-  .resource-tabs.compact { padding-top: 0; }
-  .resource-tabs.compact .resource-tab-icon-wrap {
-    height: 0; opacity: 0; margin-bottom: 0; overflow: hidden;
-  }
-  .resource-tabs.compact .resource-tab-icon { height: 0; font-size: 0; line-height: 0; }
-  /* Gap au-dessus du label quand replié */
-  .resource-tabs.compact .resource-tab-label { padding-top: 8px; }
-
-  .resource-tab.placeholder { pointer-events: none; }
-  .resource-tab.placeholder .resource-tab-label { color: #bbb; }
-
-  /* Badge inside icon-wrap → collapses with icon automatically */
-  .resource-tab-badge {
-    position: absolute; top: -8px; left: 50%;
-    transform: translateX(4px);
-    background: #3a3a3a; color: #fff;
-    font-size: 9px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.4px; padding: 3px 8px; border-radius: 999px;
-    white-space: nowrap; pointer-events: none;
-  }
+  .resource-tab.active .resource-pill-dot { background: #4ade80; }
+  .resource-tab:hover:not(.active) { background: #eeeee9; }
 
   /* ---- STAY / HOUSE MODULE ---- */
   .stay-checklist-row {

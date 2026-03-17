@@ -53,31 +53,24 @@ function renderResourceTabs() {
   const container = document.getElementById('resource-tabs');
   if (!container) return;
 
-  const cars   = resources.filter(r => r.type !== 'house');
-  const houses = resources.filter(r => r.type === 'house');
-  const activeRes  = resources.find(r => r.id === selectedResource);
-  const activeType = activeRes?.type === 'house' ? 'house' : 'car';
+  const todayStr = new Date().toISOString().slice(0, 10);
 
-  const tab = (icon, label, type, hasItems) => {
-    const isActive = activeType === type && hasItems;
-    const cls = `resource-tab${isActive ? ' active' : ''}${!hasItems ? ' placeholder' : ''}`;
-    const click = hasItems ? `onclick="selectResourceType('${type}')"` : '';
-    return `<div class="${cls}" ${click}>
-      <span class="resource-tab-icon-wrap"><span class="resource-tab-icon">${icon}</span></span>
-      <span class="resource-tab-label">${label}</span>
+  const pills = resources.map(res => {
+    const isActive = res.id === selectedResource;
+    const isAvailable = !bookings[todayStr] || (bookings[todayStr] && bookings[todayStr].resourceId !== res.id);
+    const dotCls = `resource-pill-dot${isAvailable ? ' available' : ''}`;
+    const cls = `resource-tab${isActive ? ' active' : ''}`;
+    return `<div class="${cls}" onclick="selectResource('${res.id}')">
+      <div class="${dotCls}"></div>
+      <span>${res.name}</span>
     </div>`;
-  };
+  });
 
-  container.innerHTML =
-    tab('🚗', 'Voitures', 'car',   cars.length   > 0) +
-    tab('🏠', 'Maison',   'house', houses.length > 0) +
-    `<div class="resource-tab placeholder">
-      <span class="resource-tab-icon-wrap">
-        <span class="resource-tab-icon">✨</span>
-        <span class="resource-tab-badge">Bientôt</span>
-      </span>
-      <span class="resource-tab-label">Autres</span>
-    </div>`;
+  pills.push(`<div class="resource-tab" onclick="showAddResourceSheet()">
+    <span>+ Ajouter</span>
+  </div>`);
+
+  container.innerHTML = pills.join('');
 }
 
 function selectResourceType(type) {

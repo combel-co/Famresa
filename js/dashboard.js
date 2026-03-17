@@ -1,93 +1,112 @@
 // ==========================================
 // DASHBOARD — EXPERIENCE PANELS
 // ==========================================
+function formatRelativeDate(dateStr) {
+  if (!dateStr) return '';
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const tomorrow = new Date(today.getTime() + 86400000);
+  const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+  if (dateStr === todayStr) return "Aujourd'hui";
+  if (dateStr === tomorrowStr) return 'Demain';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+}
+
+function getNextFreeDate() {
+  const d = new Date();
+  for (let i = 0; i < 60; i++) {
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (!bookings[ds]) return ds;
+    d.setDate(d.getDate() + 1);
+  }
+  return null;
+}
+
+function renderUpcomingBookings() {
+  const el = document.getElementById('upcoming-bookings');
+  const label = document.getElementById('upcoming-label');
+  if (!el) return;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const unique = getUniqueBookingsSorted().filter(b => (b.endDate || b.startDate || b.date || '') >= todayStr);
+  if (!unique.length) {
+    if (label) label.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+  if (label) label.style.display = '';
+  el.innerHTML = unique.slice(0, 5).map(b => {
+    const isMe = currentUser && b.userId === currentUser.id;
+    const avClass = `ccv2-booking-av${isMe ? ' me' : ''}`;
+    const av = b.photo ? `<img src="${b.photo}" alt="">` : getInitials(b.userName || 'C');
+    const dateLabel = formatRelativeDate(b.startDate || b.date || '');
+    const dest = getBookingDestinationLabel(b);
+    return `<div class="ccv2-booking-row">
+      <div class="${avClass}">${av}</div>
+      <div class="ccv2-booking-info">
+        <div class="ccv2-booking-name">${b.userName || 'Utilisateur'}</div>
+        <div class="ccv2-booking-dest">${dest}</div>
+      </div>
+      <div class="ccv2-booking-date">${dateLabel}</div>
+    </div>`;
+  }).join('');
+}
+
 function renderExperiencePanels() {
   const monthEntries = getMonthBookingEntries();
   const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
   const todayBooking = bookings[todayStr];
   const res = resources.find(r => r.id === selectedResource);
-
-  const activeResource = resources.find(r => r.id === selectedResource);
   const isHouse = res && res.type === 'house';
 
-  // ── Nom, emoji et plaque de la ressource ──
+  // ── Nom, emoji, sous-titre ──
   const cardEmoji = document.getElementById('resource-card-emoji');
   const cardTitle = document.getElementById('resource-card-title');
-  const cardPlaque = document.getElementById('resource-card-plaque');
+  const cardSubtitle = document.getElementById('resource-card-subtitle');
   if (cardEmoji) cardEmoji.textContent = res?.emoji || (isHouse ? '🏠' : '🚗');
   if (cardTitle) cardTitle.textContent = res?.name || (isHouse ? 'Maison' : 'Voiture');
-  if (cardPlaque) {
-    const plaque = (!isHouse && res?.plaque) ? res.plaque : '';
-    cardPlaque.textContent = plaque;
-    cardPlaque.classList.toggle('hidden', !plaque);
-  }
-  // Hero banner : dégradé adapté selon type
-  const heroBanner = document.getElementById('resource-main-card')?.querySelector('.car-hero-banner');
-  if (heroBanner) {
-    heroBanner.style.background = isHouse
-      ? 'linear-gradient(135deg, #fef9f0 0%, #fde8cc 100%)'
-      : 'linear-gradient(135deg, #eff4ff 0%, #dde7ff 100%)';
+  if (cardSubtitle) {
+    if (!isHouse && res?.plaque) cardSubtitle.textContent = res.plaque;
+    else if (isHouse && res?.address) cardSubtitle.textContent = res.address;
+    else cardSubtitle.textContent = isHouse ? 'Maison de famille' : 'Voiture familiale';
   }
 
   // ── Badge disponibilité ──
   const badge = document.getElementById('availability-badge');
-  const statusDot = document.getElementById('car-status-dot');
   const statusText = document.getElementById('car-status-text');
-  if (badge && statusDot && statusText) {
+  if (badge && statusText) {
     if (todayBooking) {
-      badge.className = 'availability-badge reserved';
-      statusDot.className = 'dot-warn';
+      badge.className = 'ccv2-badge reserved';
       statusText.textContent = isHouse ? `Séjour de ${todayBooking.userName}` : `En cours · ${todayBooking.userName}`;
     } else {
-      badge.className = 'availability-badge available';
-      statusDot.className = 'dot-ok';
-      statusText.textContent = isHouse ? 'Maison disponible' : 'Disponible maintenant';
+      badge.className = 'ccv2-badge available';
+      statusText.textContent = isHouse ? 'Disponible' : 'Disponible';
     }
   }
 
-  // ── Lignes de détail (qui a réservé, jusqu'à quand, prochaine dispo) ──
-  const detailRows = document.getElementById('resource-detail-rows');
-  if (detailRows) {
-    let html = '';
-    if (todayBooking) {
-      // Jusqu'à quand
-      const endDateStr = todayBooking.endDate || todayBooking.startDate || todayStr;
-      if (endDateStr && endDateStr !== todayStr) {
-        const endDate = new Date(endDateStr + 'T00:00:00');
-        const prettyEnd = endDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
-        html += `<div class="resource-detail-row"><span>📅</span><span>Jusqu'au ${prettyEnd}</span></div>`;
-      }
-      // Prochaine dispo : lendemain du endDate
-      const nextDay = new Date((endDateStr || todayStr) + 'T00:00:00');
-      nextDay.setDate(nextDay.getDate() + 1);
-      const prettyNext = nextDay.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
-      html += `<div class="resource-detail-row"><span>✅</span><span>Disponible dès le ${prettyNext}</span></div>`;
-    }
-    detailRows.innerHTML = html;
-  }
+  // ── Info grid (voiture) ──
+  const infoGrid = document.getElementById('car-info-grid');
+  if (infoGrid) infoGrid.style.display = isHouse ? 'none' : '';
 
-  // ── Réservoir (voiture seulement) ──
+  const infoPlaque = document.getElementById('info-plaque');
+  const infoAssurance = document.getElementById('info-assurance');
+  const infoCt = document.getElementById('info-ct');
+  const infoKmOdo = document.getElementById('info-km-odo');
+  if (infoPlaque) infoPlaque.textContent = res?.plaque || '—';
+  if (infoAssurance) infoAssurance.textContent = res?.assurance || '—';
+  if (infoCt) infoCt.textContent = res?.ct || '—';
+  if (infoKmOdo) infoKmOdo.textContent = res?.kmOdometer ? `${Number(res.kmOdometer).toLocaleString('fr-FR')} km` : '—';
+
+  // ── Réservoir ──
   const fuelDisplay = document.getElementById('car-fuel-display');
-  const fuelCard = document.getElementById('car-fuel-row');
+  const fuelCell = document.getElementById('car-fuel-row');
   if (fuelDisplay) {
     if (!isHouse) {
-      fuelDisplay.innerHTML = getFuelBarFull(activeResource?.fuelLevel ?? null);
-      if (fuelCard) fuelCard.style.display = '';
+      fuelDisplay.innerHTML = getFuelBarGrid(res?.fuelLevel ?? null);
+      if (fuelCell) fuelCell.style.display = '';
     } else {
       fuelDisplay.innerHTML = '';
-      if (fuelCard) fuelCard.style.display = 'none';
-    }
-  }
-
-  // ── Info button ──
-  const carInfoBtn = document.getElementById('car-info-btn');
-  if (carInfoBtn) {
-    if (isHouse) {
-      carInfoBtn.textContent = 'Info maison';
-      carInfoBtn.onclick = showHouseInfo;
-    } else {
-      carInfoBtn.textContent = 'Info voiture';
-      carInfoBtn.onclick = showCarInfo;
+      if (fuelCell) fuelCell.style.display = 'none';
     }
   }
 
@@ -95,13 +114,23 @@ function renderExperiencePanels() {
   const reserveBtn = document.getElementById('reserve-cta-btn');
   if (reserveBtn) reserveBtn.textContent = isHouse ? 'Réserver la maison' : 'Réserver la voiture';
 
-  // KPI cards — hide km/co2 for houses
+  // ── Prochain créneau libre ──
+  const nextSlot = document.getElementById('next-slot-text');
+  if (nextSlot) {
+    const freeDate = getNextFreeDate();
+    nextSlot.textContent = freeDate ? `Prochain créneau libre · ${formatRelativeDate(freeDate)}` : '';
+  }
+
+  // ── Prochaines réservations ──
+  renderUpcomingBookings();
+
+  // KPI hidden elements (backward compat)
   const kpiKmCard = document.getElementById('kpi-km-card');
   const kpiCo2Card = document.getElementById('kpi-co2-card');
-  if (kpiKmCard) kpiKmCard.style.display = (!res || res.type === 'car') ? '' : 'none';
-  if (kpiCo2Card) kpiCo2Card.style.display = (!res || res.type === 'car') ? '' : 'none';
+  if (kpiKmCard) kpiKmCard.style.display = 'none';
+  if (kpiCo2Card) kpiCo2Card.style.display = 'none';
 
-  // Points accumulator (for leaderboard)
+  // Points accumulator (for leaderboard / history tabs)
   const points = {};
   monthEntries.forEach(b => {
     const key = b.userId || b.userName || 'inconnu';
@@ -113,7 +142,6 @@ function renderExperiencePanels() {
   });
   const ranking = Object.values(points).sort((a,b)=>b.score-a.score);
 
-  // Quick stats
   const myMonthRides = monthEntries.filter(b => currentUser && b.userId === currentUser.id).length;
   const myRank = ranking.findIndex(r => currentUser && r.label === currentUser.name) + 1;
   const qsRides = document.getElementById('qs-rides');
@@ -121,16 +149,9 @@ function renderExperiencePanels() {
   if (qsRides) qsRides.textContent = String(myMonthRides);
   if (qsRank) qsRank.textContent = myRank > 0 ? `#${myRank}` : '#—';
 
-  // XP hero card
   renderXpHeroCard();
-
-  // Leaderboard podium
   renderLeaderboard(ranking);
-
-  // History
   renderHistoryList();
-
-  // Post-trip reminder (car only)
   renderPostTripReminder();
 }
 

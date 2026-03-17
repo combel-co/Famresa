@@ -32,85 +32,76 @@
   <div class="resource-tabs" id="resource-tabs"></div>
 
   <section class="tab-panel active" id="tab-dashboard">
-    <!-- XP Hero Card (compact) -->
-    <article class="xp-hero-card" id="xp-hero-card">
-      <div class="xp-hero-top">
-        <div class="xp-avatar" id="xp-avatar"></div>
-        <div class="xp-info">
-          <div class="xp-name" id="xp-name">—</div>
-          <div class="xp-level-badge" id="xp-level-badge">Niveau 1 · Apprenti</div>
+    <!-- XP elements (cachés, maintenus pour la gamification/leaderboard) -->
+    <div style="display:none" aria-hidden="true">
+      <article id="xp-hero-card">
+        <div class="xp-hero-top">
+          <div id="xp-avatar"></div>
+          <div class="xp-info"><div id="xp-name"></div><div id="xp-level-badge"></div></div>
+          <div id="xp-streak"></div>
         </div>
-        <div class="xp-streak" id="xp-streak">🔥 0</div>
-      </div>
-      <div class="xp-bar-label">
-        <span id="xp-current">0 XP</span>
-        <span id="xp-next">sur 100 XP</span>
-      </div>
-      <div class="xp-bar-track">
-        <div class="xp-bar-fill" id="xp-bar-fill" style="width:0%"></div>
-      </div>
-    </article>
+        <span id="xp-current"></span><span id="xp-next"></span>
+        <div class="xp-bar-track"><div class="xp-bar-fill" id="xp-bar-fill" style="width:0%"></div></div>
+      </article>
+    </div>
 
-    <!-- Ressource principale : hero + dispo + carburant -->
-    <div class="car-status-card" id="resource-main-card">
-      <div class="car-hero-banner">
-        <span class="car-hero-emoji" id="resource-card-emoji">🚗</span>
-        <span class="car-hero-name" id="resource-card-title">Voiture</span>
-        <span class="car-hero-plaque hidden" id="resource-card-plaque"></span>
-      </div>
-      <div class="car-card-body">
-        <div class="car-status-header">
-          <div class="availability-badge available" id="availability-badge">
-            <span class="dot-ok" id="car-status-dot"></span>
-            <span class="car-status-label" id="car-status-text">Disponible</span>
-          </div>
-          <button class="car-info-btn" id="car-info-btn" onclick="showCarInfo()">Info voiture</button>
+    <!-- Carte voiture v2 (inline design) -->
+    <div class="ccv2-card" id="resource-main-card">
+      <div class="ccv2-top">
+        <div>
+          <div class="ccv2-name" id="resource-card-title">Voiture</div>
+          <div class="ccv2-model" id="resource-card-subtitle">—</div>
         </div>
-        <div id="resource-detail-rows"></div>
-        <div id="car-fuel-row">
+        <div class="ccv2-badge available" id="availability-badge">
+          <div class="ccv2-dot" id="car-status-dot"></div>
+          <span id="car-status-text">Disponible</span>
+        </div>
+      </div>
+      <div class="ccv2-illustration"><span id="resource-card-emoji">🚗</span></div>
+      <div class="ccv2-grid" id="car-info-grid" onclick="showCarInfo()">
+        <div class="ccv2-cell" id="cell-plaque">
+          <div class="ccv2-label">Immatriculation</div>
+          <div class="ccv2-value" id="info-plaque">—</div>
+        </div>
+        <div class="ccv2-cell" id="cell-assurance">
+          <div class="ccv2-label">Assurance</div>
+          <div class="ccv2-value" id="info-assurance">—</div>
+        </div>
+        <div class="ccv2-cell" id="cell-ct">
+          <div class="ccv2-label">Contrôle technique</div>
+          <div class="ccv2-value" id="info-ct">—</div>
+        </div>
+        <div class="ccv2-cell" id="cell-km-odo">
+          <div class="ccv2-label">Kilométrage</div>
+          <div class="ccv2-value" id="info-km-odo">—</div>
+        </div>
+        <div class="ccv2-cell full" id="car-fuel-row">
+          <div class="ccv2-label">Réservoir</div>
           <div id="car-fuel-display"></div>
         </div>
       </div>
+      <div class="ccv2-reserve-wrap">
+        <button class="ccv2-btn-reserve" id="reserve-cta-btn" onclick="openBookingModal()">Réserver la voiture</button>
+      </div>
+      <div class="ccv2-next-slot" id="next-slot-text">Prochain créneau libre · Aujourd'hui</div>
     </div>
 
     <div id="post-trip-reminder"></div>
 
-    <!-- Bouton Réserver — mis en avant, avant les stats -->
-    <button class="btn btn-reserve" id="reserve-cta-btn" onclick="openBookingModal()">Réserver la voiture</button>
+    <!-- Prochaines réservations -->
+    <div class="ccv2-section-label" id="upcoming-label">Prochaines réservations</div>
+    <div id="upcoming-bookings" style="margin-bottom:24px"></div>
 
-    <!-- Quick Stats -->
-    <div class="quick-stats-row">
-      <div class="quick-stat">
-        <div class="quick-stat-value" id="qs-rides">0</div>
-        <div class="quick-stat-label">mes trajets ce mois</div>
-      </div>
-      <div class="quick-stat">
-        <div class="quick-stat-value" id="qs-rank">#—</div>
-        <div class="quick-stat-label">mon classement</div>
-      </div>
+    <!-- Éléments KPI/stats masqués (compatibilité JS) -->
+    <div style="display:none" aria-hidden="true">
+      <span id="qs-rides"></span><span id="qs-rank"></span>
+      <span id="kpi-bookings"></span><span id="kpi-bookings-sub"></span>
+      <span id="kpi-occupancy"></span><span id="kpi-occupancy-sub"></span>
+      <article id="kpi-km-card"><span id="kpi-km"></span></article>
+      <article id="kpi-co2-card"><span id="kpi-co2"></span></article>
+      <span id="resource-card-plaque"></span>
+      <button id="car-info-btn" onclick="showCarInfo()"></button>
     </div>
-
-    <!-- KPI Grid -->
-    <section class="kpi-grid" aria-label="Indicateurs mensuels" style="margin-bottom:130px">
-      <article class="kpi-card">
-        <span class="kpi-value" id="kpi-bookings">0</span>
-        <div class="kpi-label">trajets ce mois</div>
-        <div class="kpi-sub" id="kpi-bookings-sub"></div>
-      </article>
-      <article class="kpi-card">
-        <span class="kpi-value" id="kpi-occupancy">0%</span>
-        <div class="kpi-label">occupation</div>
-        <div class="kpi-sub" id="kpi-occupancy-sub"></div>
-      </article>
-      <article class="kpi-card" id="kpi-km-card">
-        <span class="kpi-value" id="kpi-km">0</span>
-        <div class="kpi-label">kilomètres</div>
-      </article>
-      <article class="kpi-card" id="kpi-co2-card">
-        <span class="kpi-value" id="kpi-co2">0</span>
-        <div class="kpi-label">kg CO₂</div>
-      </article>
-    </section>
   </section>
 
   <section class="tab-panel" id="tab-calendar">
