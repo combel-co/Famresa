@@ -17,13 +17,18 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  html { overflow-x: hidden; }  /* bloque le scroll horizontal sans casser sticky/fixed */
-
   body {
     font-family: 'DM Sans', -apple-system, sans-serif;
     background: var(--bg);
     color: var(--text);
-    min-height: 100vh;
+    /* Layout mobile : body occupe exactement la hauteur du viewport.
+       Seul <main> scrolle. Header et nav ne bougent jamais. */
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;       /* dvh = dynamic viewport height, correct sur iOS Safari */
+    height: 100vh;        /* fallback navigateurs anciens */
+    height: 100dvh;       /* réécrit pour prendre dvh si supporté */
+    overflow: hidden;     /* body lui-même ne scrolle pas */
     -webkit-font-smoothing: antialiased;
   }
 
@@ -34,13 +39,10 @@
     justify-content: space-between;
     padding: 20px 28px;
     border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
     background: white;
     z-index: 100;
-    /* Taille fixe — GPU layer pour éviter le jitter iOS Safari au scroll */
-    will-change: transform;
-    transform: translateZ(0);
+    /* Pas de sticky/fixed nécessaire : header est un flex item au-dessus
+       du scroll container (<main>). Il ne peut jamais bouger. */
     flex-shrink: 0;
   }
 
@@ -92,7 +94,15 @@
   .user-pill .avatar img { width: 100%; height: 100%; object-fit: cover; }
 
   /* ---- MAIN ---- */
-  main { max-width: 520px; margin: 0 auto; padding: 0 20px calc(80px + env(safe-area-inset-bottom, 0px)); }
+  main {
+    flex: 1;              /* occupe tout l'espace entre header et nav */
+    overflow-y: auto;     /* seule zone de scroll de la page */
+    overflow-x: hidden;
+    max-width: 520px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 20px 20px;
+  }
 
   /* ---- MONTH NAV ---- */
   .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; gap: 10px; }
@@ -366,14 +376,12 @@
   .tab-panel.active { display: block; padding-top: 14px; }
 
   .bottom-nav {
-    position: fixed; left: 50%;
-    /* translateX + translateZ : GPU layer → taille fixe, pas de saut au scroll */
-    transform: translateX(-50%) translateZ(0);
-    will-change: transform;
-    bottom: 0; width: 100%; max-width: 580px;
+    /* Pas de position:fixed nécessaire : nav est un flex item sous <main>.
+       Il ne peut jamais bouger, même sur iOS Safari. */
+    flex-shrink: 0;
+    width: 100%;
     background: #ffffff;
-    border: 1.5px solid var(--border);
-    border-bottom: none;
+    border-top: 1.5px solid var(--border);
     border-radius: 44px 44px 0 0;
     box-shadow: 0 -8px 40px rgba(0,0,0,0.10);
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
@@ -927,7 +935,7 @@
   /* ---- RESPONSIVE ---- */
   @media (max-width: 480px) {
     header { padding: 16px 18px; }
-    main { padding: 0 14px calc(80px + env(safe-area-inset-bottom, 0px)); }
+    main { padding: 0 14px 20px; }
     .resource-tabs { margin-left: -14px; margin-right: -14px; }
     .resource-tab-icon { font-size: 36px; height: 44px; line-height: 44px; }
     .resource-tab-icon-wrap { margin-bottom: 5px; }
@@ -966,7 +974,7 @@
   .resource-tabs {
     display: flex;
     padding: 14px 0 0;
-    position: sticky; top: var(--header-h); z-index: 100;
+    position: sticky; top: 0; z-index: 100;
     background: white;
     margin-left: -20px; margin-right: -20px;
     border-bottom: 1px solid var(--border);
