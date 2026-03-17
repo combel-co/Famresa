@@ -976,7 +976,7 @@
   .resource-tab-icon-wrap {
     position: relative;
     display: inline-block;
-    margin-bottom: 6px;
+    margin-bottom: 4px;  /* icon→label gap */
     transition: height 0.25s ease, opacity 0.25s ease, margin-bottom 0.25s ease;
     overflow: visible;
   }
@@ -991,7 +991,7 @@
   .resource-tab-label {
     font-size: 13px; font-weight: 600; color: #888;
     display: inline-block; white-space: nowrap;
-    padding-bottom: 10px; margin-bottom: -1px;
+    padding-bottom: 5px; margin-bottom: -1px;  /* label→bar gap réduit */
     border-bottom: 3px solid transparent;
   }
   .resource-tab.active .resource-tab-label {
@@ -1005,6 +1005,8 @@
     height: 0; opacity: 0; margin-bottom: 0; overflow: hidden;
   }
   .resource-tabs.compact .resource-tab-icon { height: 0; font-size: 0; line-height: 0; }
+  /* Gap au-dessus du label quand replié */
+  .resource-tabs.compact .resource-tab-label { padding-top: 8px; }
 
   .resource-tab.placeholder { pointer-events: none; }
   .resource-tab.placeholder .resource-tab-label { color: #bbb; }
