@@ -7,30 +7,57 @@ function renderExperiencePanels() {
   const todayBooking = bookings[todayStr];
   const res = resources.find(r => r.id === selectedResource);
 
-  // Car status / resource status card
+  const activeResource = resources.find(r => r.id === selectedResource);
+  const isHouse = res && res.type === 'house';
+
+  // ── Nom et emoji de la ressource ──
+  const cardEmoji = document.getElementById('resource-card-emoji');
+  const cardTitle = document.getElementById('resource-card-title');
+  if (cardEmoji) cardEmoji.textContent = res?.emoji || (isHouse ? '🏠' : '🚗');
+  if (cardTitle) cardTitle.textContent = res?.name || (isHouse ? 'Maison' : 'Voiture');
+
+  // ── Badge disponibilité ──
+  const badge = document.getElementById('availability-badge');
   const statusDot = document.getElementById('car-status-dot');
   const statusText = document.getElementById('car-status-text');
-  const fuelDisplay = document.getElementById('car-fuel-display');
-  const activeResource = resources.find(r => r.id === selectedResource);
-
-  if (statusDot && statusText) {
+  if (badge && statusDot && statusText) {
     if (todayBooking) {
+      badge.className = 'availability-badge reserved';
       statusDot.className = 'dot-warn';
-      if (res && res.type === 'house') {
-        statusText.textContent = `Séjour en cours : ${todayBooking.userName}`;
-      } else {
-        statusText.textContent = `Utilisée par ${todayBooking.userName}${todayBooking.destination ? ' · ' + todayBooking.destination : ''}`;
-      }
+      statusText.textContent = isHouse ? `Séjour de ${todayBooking.userName}` : `En cours · ${todayBooking.userName}`;
     } else {
+      badge.className = 'availability-badge available';
       statusDot.className = 'dot-ok';
-      statusText.textContent = res && res.type === 'house' ? 'Maison disponible' : 'Voiture disponible';
+      statusText.textContent = isHouse ? 'Maison disponible' : 'Disponible maintenant';
     }
   }
 
-  // Fuel display — only for cars
+  // ── Lignes de détail (qui a réservé, jusqu'à quand, prochaine dispo) ──
+  const detailRows = document.getElementById('resource-detail-rows');
+  if (detailRows) {
+    let html = '';
+    if (todayBooking) {
+      // Jusqu'à quand
+      const endDateStr = todayBooking.endDate || todayBooking.startDate || todayStr;
+      if (endDateStr && endDateStr !== todayStr) {
+        const endDate = new Date(endDateStr + 'T00:00:00');
+        const prettyEnd = endDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+        html += `<div class="resource-detail-row"><span>📅</span><span>Jusqu'au ${prettyEnd}</span></div>`;
+      }
+      // Prochaine dispo : lendemain du endDate
+      const nextDay = new Date((endDateStr || todayStr) + 'T00:00:00');
+      nextDay.setDate(nextDay.getDate() + 1);
+      const prettyNext = nextDay.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+      html += `<div class="resource-detail-row"><span>✅</span><span>Disponible dès le ${prettyNext}</span></div>`;
+    }
+    detailRows.innerHTML = html;
+  }
+
+  // ── Réservoir (voiture seulement) ──
+  const fuelDisplay = document.getElementById('car-fuel-display');
   const fuelCard = document.getElementById('car-fuel-row');
   if (fuelDisplay) {
-    if (!res || res.type === 'car') {
+    if (!isHouse) {
       fuelDisplay.innerHTML = getFuelBar(activeResource?.fuelLevel ?? null);
       if (fuelCard) fuelCard.style.display = '';
     } else {
@@ -39,11 +66,10 @@ function renderExperiencePanels() {
     }
   }
 
-  // Car info button — only for cars
+  // ── Info button ──
   const carInfoBtn = document.getElementById('car-info-btn');
   if (carInfoBtn) {
-    carInfoBtn.style.display = (!res || res.type === 'car') ? '' : 'none';
-    if (res && res.type === 'house') {
+    if (isHouse) {
       carInfoBtn.textContent = 'Info maison';
       carInfoBtn.onclick = showHouseInfo;
     } else {
@@ -52,17 +78,9 @@ function renderExperiencePanels() {
     }
   }
 
-  // Status label
-  const carStatusLabel = document.getElementById('car-status-label-text');
-  if (carStatusLabel) {
-    carStatusLabel.textContent = res && res.type === 'house' ? 'Maison' : 'Voiture';
-  }
-
-  // Reserve CTA label
-  const reserveLabel = document.querySelector('.reserve-cta-label');
-  const reserveBtn = document.querySelector('.reserve-cta .btn');
-  if (reserveLabel) reserveLabel.textContent = res && res.type === 'house' ? 'Réserver la maison' : 'Réserver la voiture';
-  if (reserveBtn) reserveBtn.textContent = res && res.type === 'house' ? 'Réserver la maison →' : 'Réserver la voiture →';
+  // ── Bouton Réserver ──
+  const reserveBtn = document.getElementById('reserve-cta-btn');
+  if (reserveBtn) reserveBtn.textContent = isHouse ? 'Réserver la maison' : 'Réserver la voiture';
 
   // KPI cards — hide km/co2 for houses
   const kpiKmCard = document.getElementById('kpi-km-card');

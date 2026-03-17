@@ -32,7 +32,7 @@
   <div class="resource-tabs" id="resource-tabs"></div>
 
   <section class="tab-panel active" id="tab-dashboard">
-    <!-- XP Hero Card -->
+    <!-- XP Hero Card (compact) -->
     <article class="xp-hero-card" id="xp-hero-card">
       <div class="xp-hero-top">
         <div class="xp-avatar" id="xp-avatar"></div>
@@ -51,22 +51,30 @@
       </div>
     </article>
 
-    <!-- Statut ressource card -->
-    <div class="car-status-card">
+    <!-- Ressource principale : nom, dispo, carburant -->
+    <div class="car-status-card" id="resource-main-card">
       <div class="car-status-header">
-        <div class="car-status-left">
-          <span class="dot-ok" id="car-status-dot"></span>
-          <span class="car-status-label" id="car-status-text">Disponible</span>
+        <div class="resource-name-row">
+          <span class="resource-card-emoji" id="resource-card-emoji">🚗</span>
+          <span class="resource-card-title" id="resource-card-title">Voiture</span>
         </div>
         <button class="car-info-btn" id="car-info-btn" onclick="showCarInfo()">Info voiture</button>
       </div>
+      <div class="availability-badge available" id="availability-badge">
+        <span class="dot-ok" id="car-status-dot"></span>
+        <span class="car-status-label" id="car-status-text">Disponible</span>
+      </div>
+      <div id="resource-detail-rows"></div>
       <div class="car-status-fuel" id="car-fuel-row">
-        <span id="car-status-label-text">Voiture</span>
+        <span id="car-status-label-text">Réservoir</span>
         <div id="car-fuel-display"></div>
       </div>
     </div>
 
     <div id="post-trip-reminder"></div>
+
+    <!-- Bouton Réserver — mis en avant, avant les stats -->
+    <button class="btn btn-reserve" id="reserve-cta-btn" onclick="openBookingModal()">Réserver la voiture</button>
 
     <!-- Quick Stats -->
     <div class="quick-stats-row">
@@ -78,12 +86,6 @@
         <div class="quick-stat-value" id="qs-rank">#—</div>
         <div class="quick-stat-label">mon classement</div>
       </div>
-    </div>
-
-    <!-- Reserve CTA -->
-    <div class="reserve-cta">
-      <div class="reserve-cta-label">Réserver la voiture</div>
-      <button class="btn btn-primary" style="width:100%" onclick="openBookingModal()">Réserver la voiture →</button>
     </div>
 
     <!-- KPI Grid -->
