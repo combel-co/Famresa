@@ -479,27 +479,27 @@
   /* ---- GAMIFICATION ---- */
   .xp-hero-card {
     background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    border-radius: 20px; padding: 20px; color: white; margin-bottom: 14px;
+    border-radius: 16px; padding: 12px 16px; color: white; margin-bottom: 14px;
   }
-  .xp-hero-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .xp-hero-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
   .xp-avatar {
-    width: 48px; height: 48px; border-radius: 50%;
+    width: 36px; height: 36px; border-radius: 50%;
     background: rgba(255,255,255,0.2);
     display: flex; align-items: center; justify-content: center;
     overflow: hidden; flex-shrink: 0;
-    font-size: 16px; font-weight: 700; color: white;
+    font-size: 13px; font-weight: 700; color: white;
   }
   .xp-info { flex: 1; min-width: 0; }
-  .xp-name { font-size: 17px; font-weight: 600; }
-  .xp-level-badge { font-size: 12px; opacity: 0.8; margin-top: 2px; }
-  .xp-streak { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; white-space: nowrap; }
+  .xp-name { font-size: 14px; font-weight: 600; }
+  .xp-level-badge { font-size: 11px; opacity: 0.75; margin-top: 1px; }
+  .xp-streak { font-size: 17px; font-weight: 700; letter-spacing: -0.5px; white-space: nowrap; }
   .xp-bar-label {
     display: flex; justify-content: space-between;
-    font-size: 12px; opacity: 0.8; margin-bottom: 6px;
+    font-size: 11px; opacity: 0.75; margin-bottom: 5px;
   }
   .xp-bar-track {
     background: rgba(255,255,255,0.25); border-radius: 999px;
-    height: 8px; overflow: hidden;
+    height: 6px; overflow: hidden;
   }
   .xp-bar-fill {
     height: 100%; background: var(--xp-color); border-radius: 999px;
@@ -663,27 +663,46 @@
   }
   .car-status-header {
     display: flex; align-items: center;
-    justify-content: space-between; margin-bottom: 12px;
+    justify-content: space-between; margin-bottom: 10px;
   }
-  .car-status-left { display: flex; align-items: center; gap: 8px; }
-  .car-status-label { font-size: 14px; font-weight: 600; color: var(--text); }
+  /* Nom + emoji de la ressource */
+  .resource-name-row { display: flex; align-items: center; gap: 8px; }
+  .resource-card-emoji { font-size: 20px; line-height: 1; }
+  .resource-card-title { font-size: 16px; font-weight: 700; color: var(--text); }
+  /* Badge disponibilité */
+  .availability-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 999px;
+    font-size: 13px; font-weight: 600; margin-bottom: 10px;
+  }
+  .availability-badge.available { background: #dcfce7; color: #166534; }
+  .availability-badge.reserved  { background: #fff7ed; color: #9a3412; }
+  .car-status-label { font-size: 13px; font-weight: 600; }
   .car-info-btn {
     font-size: 12px; font-weight: 600; color: var(--accent);
     background: var(--accent-light); border: none; border-radius: 8px;
     padding: 6px 12px; cursor: pointer; font-family: 'DM Sans', sans-serif;
     white-space: nowrap; flex-shrink: 0;
   }
+  /* Lignes de détail (qui / jusqu'au / prochaine dispo) */
+  .resource-detail-row {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--text-light); margin-bottom: 6px;
+  }
   .car-status-fuel {
     display: flex; align-items: center; justify-content: space-between;
-    font-size: 13px; color: var(--text-light);
+    font-size: 13px; color: var(--text-light); margin-top: 8px;
   }
 
-  /* ---- RESERVE CTA ---- */
-  .reserve-cta {
-    border: 1px solid var(--border); border-radius: 16px;
-    padding: 16px; margin-bottom: 14px; background: white;
+  /* ---- BOUTON RÉSERVER (prominent) ---- */
+  .btn-reserve {
+    width: 100%; padding: 17px; border: none; border-radius: 14px;
+    font-size: 16px; font-weight: 700; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; margin-bottom: 14px; transition: background 0.15s;
+    background: var(--accent); color: white;
+    letter-spacing: 0.1px;
   }
-  .reserve-cta-label { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: var(--text); }
+  .btn-reserve:hover { background: #5b21b6; }
 
   .post-trip-card {
     border: 1px solid #facc15; border-radius: 16px;
