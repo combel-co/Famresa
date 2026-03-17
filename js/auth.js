@@ -54,9 +54,13 @@ async function loginUser() {
     if (!familyId) {
       await runMigrationIfNeeded();
     } else {
-      loadResources();
+      await loadResources();
       enterApp();
       showToast(`Bonjour ${currentUser.name} !`);
+      if (_pendingResourceJoinCode) {
+        await handleResourceJoinCode(_pendingResourceJoinCode);
+        _pendingResourceJoinCode = null;
+      }
     }
   } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
 }
@@ -151,6 +155,7 @@ async function signupCreateAdvance() {
   try {
     const familyDocRef = await db.collection('families').add({
       name: familyName, pin, inviteCode,
+      created_by: null, // set after user profile is created
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     suPendingFamilyId = familyDocRef.id;
@@ -205,10 +210,22 @@ async function signupProfileAdvance() {
       name, email, photo: suTempPhoto || null,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    // If user created the family (not joining), mark them as admin
+    const familyDoc = await db.collection('families').doc(suPendingFamilyId).get();
+    if (familyDoc.exists && familyDoc.data().created_by === null) {
+      await db.collection('families').doc(suPendingFamilyId).update({ created_by: ref.id });
+    }
     currentUser = { id: ref.id, name, email, photo: suTempPhoto || null, familyId: suPendingFamilyId };
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
     document.getElementById('signup-overlay').classList.add('hidden');
-    loadResources();
+    // Handle pending resource invite if any
+    if (_pendingResourceJoinCode) {
+      await loadResources();
+      await handleResourceJoinCode(_pendingResourceJoinCode);
+      _pendingResourceJoinCode = null;
+    } else {
+      loadResources();
+    }
     enterApp();
     celebrate('🎉', `Bienvenue ${name} !`, '+50 XP', 'Tu fais partie de la famille !');
   } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
@@ -497,11 +514,18 @@ function logout() {
 // INIT
 // ==========================================
 const _joinCode = new URLSearchParams(location.search).get('join');
+const _resourceJoinCodeFromUrl = new URLSearchParams(location.search).get('resource_join');
+let _pendingResourceJoinCode = _resourceJoinCodeFromUrl || null;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   if (currentUser?.familyId) {
-    loadResources();
+    await loadResources();
     enterApp();
+    // Handle pending resource invite for already-logged-in users
+    if (_pendingResourceJoinCode) {
+      await handleResourceJoinCode(_pendingResourceJoinCode);
+      _pendingResourceJoinCode = null;
+    }
   } else if (currentUser) {
     runMigrationIfNeeded();
   } else {

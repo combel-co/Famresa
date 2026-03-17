@@ -2,6 +2,9 @@
 // RESOURCES — MULTI-RESOURCE SUPPORT
 // ==========================================
 
+// Roles map: resourceId → role ('admin'|'member'|'guest')
+window._myResourceRoles = {};
+
 // Load resources from Firestore (replaces loadCars)
 // Reads from 'resources' collection; auto-migrates from 'cars' if empty
 async function loadResources() {
@@ -22,18 +25,52 @@ async function loadResources() {
       }
     }
 
-    resources = [];
-    snap.forEach(doc => resources.push({ id: doc.id, ...doc.data() }));
+    let allResources = [];
+    snap.forEach(doc => allResources.push({ id: doc.id, ...doc.data() }));
 
-    if (resources.length === 0) {
+    if (allResources.length === 0) {
       const ref = await familyRef().collection('resources').add({
         name: 'Voiture familiale', emoji: '🚗', type: 'car', fuelLevel: null
       });
-      resources = [{ id: ref.id, name: 'Voiture familiale', emoji: '🚗', type: 'car', fuelLevel: null }];
+      allResources = [{ id: ref.id, name: 'Voiture familiale', emoji: '🚗', type: 'car', fuelLevel: null }];
     }
 
     // Ensure all resources have a type
-    resources = resources.map(r => ({ ...r, type: r.type || 'car' }));
+    allResources = allResources.map(r => ({ ...r, type: r.type || 'car' }));
+
+    // ── Resource Access Check ──
+    const myAccessEntries = await getMyResourceAccessEntries(currentUser.id, currentUser.familyId);
+
+    if (myAccessEntries.length === 0) {
+      // No access entries yet → migrate: grant access to all existing resources
+      const familyDoc = await familyRef().get();
+      const isAdmin = familyDoc.exists && familyDoc.data().created_by === currentUser.id;
+      const role = isAdmin ? 'admin' : 'member';
+      const now = firebase.firestore.FieldValue.serverTimestamp();
+      const batch = db.batch();
+      for (const res of allResources) {
+        const ref = db.collection('resource_access').doc();
+        batch.set(ref, {
+          resourceId: res.id, profileId: currentUser.id,
+          familyId: currentUser.familyId, role, status: 'accepted',
+          invited_at: now, accepted_at: now
+        });
+        window._myResourceRoles[res.id] = role;
+      }
+      await batch.commit();
+      resources = allResources;
+    } else {
+      // Filter resources by accepted access entries
+      window._myResourceRoles = {};
+      myAccessEntries.forEach(e => { window._myResourceRoles[e.resourceId] = e.role; });
+      const acceptedIds = new Set(myAccessEntries.filter(e => e.status === 'accepted').map(e => e.resourceId));
+      resources = allResources.filter(r => acceptedIds.has(r.id));
+    }
+
+    if (resources.length === 0) {
+      renderNoAccessState();
+      return;
+    }
 
     selectedResource = resources[0].id;
     renderResourceTabs();
@@ -44,6 +81,33 @@ async function loadResources() {
     document.getElementById('cal-grid').innerHTML =
       '<div class="loading" style="flex-direction:column;gap:8px;color:var(--danger)">⚠️ Connexion impossible<br><small style="color:var(--text-light)">Vérifiez votre connexion ou Firebase.</small></div>';
   }
+}
+
+// Show waiting state when user has no accessible resources
+function renderNoAccessState() {
+  const tabsEl = document.getElementById('resource-tabs');
+  if (tabsEl) tabsEl.innerHTML = '';
+
+  const mainCard = document.getElementById('resource-main-card');
+  if (mainCard) {
+    mainCard.innerHTML = `
+      <div style="padding:40px 24px;text-align:center">
+        <div style="font-size:52px;margin-bottom:16px">⏳</div>
+        <div style="font-weight:700;font-size:20px;margin-bottom:8px">En attente d'accès</div>
+        <div style="color:var(--text-light);font-size:14px;line-height:1.6;margin-bottom:24px">
+          Tu es membre de la famille, mais tu n'as pas encore accès à une ressource.<br>
+          Demande à un admin de t'envoyer un lien d'invitation spécifique.
+        </div>
+        <div style="background:#f0f4ff;border:1px solid #c7d2fe;border-radius:12px;padding:16px;font-size:13px;color:#4338ca;line-height:1.5">
+          🔗 L'admin doit aller dans Profil → ressource → <strong>Inviter</strong>
+        </div>
+      </div>`;
+  }
+
+  const upcomingLabel = document.getElementById('upcoming-label');
+  if (upcomingLabel) upcomingLabel.style.display = 'none';
+  const upcomingBookings = document.getElementById('upcoming-bookings');
+  if (upcomingBookings) upcomingBookings.innerHTML = '';
 }
 
 // ==========================================
@@ -218,7 +282,19 @@ async function confirmAddResource() {
       name, type, emoji,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    resources.push({ id: ref.id, name, type, emoji });
+    const newRes = { id: ref.id, name, type, emoji };
+    resources.push(newRes);
+
+    // Auto-grant admin access to the creator
+    const now = firebase.firestore.FieldValue.serverTimestamp();
+    await db.collection('resource_access').add({
+      resourceId: ref.id, profileId: currentUser.id,
+      familyId: currentUser.familyId, role: 'admin',
+      status: 'accepted', invited_at: now, accepted_at: now
+    });
+    if (!window._myResourceRoles) window._myResourceRoles = {};
+    window._myResourceRoles[ref.id] = 'admin';
+
     closeSheet();
     selectResource(ref.id);
     showToast(`${emoji} ${name} ajouté(e)`);
@@ -323,4 +399,145 @@ async function saveHouseInfo() {
     closeSheet();
     showToast('Infos maison enregistrées ✓');
   } catch(e) { showToast('Erreur — réessayez'); }
+}
+
+// ==========================================
+// RESOURCE INVITE & ACCESS MANAGEMENT
+// ==========================================
+function _generateResourceInviteCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+async function _getOrCreateResourceInviteCode(resourceId) {
+  const res = resources.find(r => r.id === resourceId);
+  if (res?.inviteCode) return res.inviteCode;
+  const code = _generateResourceInviteCode();
+  await familyRef().collection('resources').doc(resourceId).update({ inviteCode: code });
+  if (res) res.inviteCode = code;
+  return code;
+}
+
+async function showResourceAccessSheet(resourceId) {
+  const res = resources.find(r => r.id === resourceId);
+  if (!res) return;
+  const role = window._myResourceRoles?.[resourceId];
+  if (role !== 'admin') { showToast('Accès admin requis'); return; }
+
+  document.getElementById('sheet-content').innerHTML = `
+    <div class="login-sheet">
+      <h2>Accès · ${res.emoji || ''} ${res.name}</h2>
+      <p style="color:var(--text-light);font-size:14px;margin-bottom:16px">Invitez des membres par lien spécifique à cette ressource.</p>
+      <div id="resource-invite-section">
+        <div style="color:var(--text-light);font-size:13px;text-align:center;padding:12px">Chargement...</div>
+      </div>
+      <div id="pending-requests-section" style="margin-top:20px"></div>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:16px" onclick="closeSheet()">Fermer</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+
+  const code = await _getOrCreateResourceInviteCode(resourceId);
+  const link = `${location.origin}${location.pathname}?resource_join=${code}`;
+  document.getElementById('resource-invite-section').innerHTML = `
+    <div class="input-group">
+      <label>Lien d'invitation</label>
+      <div style="display:flex;gap:8px;align-items:stretch">
+        <input type="text" value="${link}" readonly style="font-size:11px;flex:1;background:#f8f9fa;color:var(--text-light)">
+        <button class="btn btn-primary" style="padding:10px 14px;white-space:nowrap;font-size:13px"
+          onclick="navigator.clipboard?.writeText('${link}').then(()=>showToast('Lien copié !'))">Copier</button>
+      </div>
+    </div>`;
+
+  const allEntries = await getAccessEntriesForResource(resourceId);
+  const pending = allEntries.filter(e => e.status === 'pending');
+  const accepted = allEntries.filter(e => e.status === 'accepted' && e.profileId !== currentUser.id);
+  const pendingEl = document.getElementById('pending-requests-section');
+
+  let html = '';
+  if (pending.length) {
+    // Load user names for pending
+    const userNames = {};
+    await Promise.all(pending.map(async item => {
+      try {
+        const memberDoc = await familyRef().collection('members').doc(item.profileId).get();
+        userNames[item.profileId] = memberDoc.exists ? (memberDoc.data().name || item.profileId) : item.profileId;
+      } catch(e) { userNames[item.profileId] = item.profileId; }
+    }));
+
+    html += `<div style="font-weight:700;font-size:14px;margin-bottom:8px">⏳ Demandes en attente (${pending.length})</div>`;
+    html += pending.map(item => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;margin-bottom:8px">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:13px">${userNames[item.profileId] || item.profileId}</div>
+          <div style="font-size:11px;color:var(--text-light)">Demande en attente</div>
+        </div>
+        <button class="btn btn-primary" style="padding:6px 10px;font-size:12px"
+          onclick="approveResourceAccess('${item.id}','${userNames[item.profileId] || ''}')">✓ Approuver</button>
+        <button class="btn btn-danger" style="padding:6px 10px;font-size:12px"
+          onclick="rejectResourceAccess('${item.id}')">✕</button>
+      </div>`).join('');
+  }
+
+  if (accepted.length) {
+    html += `<div style="font-weight:700;font-size:14px;margin-top:12px;margin-bottom:8px">✓ Membres avec accès</div>`;
+    html += accepted.map(item => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;margin-bottom:6px">
+        <div style="flex:1;font-size:13px;font-weight:500">${item.profileId}</div>
+        <div style="font-size:11px;color:#16a34a;font-weight:600">${item.role}</div>
+      </div>`).join('');
+  }
+
+  if (!pending.length && !accepted.length) {
+    html = '<div style="color:var(--text-light);font-size:13px">Aucun membre invité pour l'instant.</div>';
+  }
+
+  pendingEl.innerHTML = html;
+}
+
+async function approveResourceAccess(accessId, userName) {
+  try {
+    await updateResourceAccessStatus(accessId, 'accepted');
+    showToast(`Accès approuvé${userName ? ' pour ' + userName : ''} ✓`);
+    closeSheet();
+  } catch(e) { showToast('Erreur — réessayez'); }
+}
+
+async function rejectResourceAccess(accessId) {
+  try {
+    await updateResourceAccessStatus(accessId, 'rejected');
+    showToast('Demande refusée');
+    closeSheet();
+  } catch(e) { showToast('Erreur — réessayez'); }
+}
+
+// Called when user visits ?resource_join=CODE (after being logged in)
+async function handleResourceJoinCode(code) {
+  if (!currentUser?.familyId) return;
+  try {
+    const snap = await familyRef().collection('resources').where('inviteCode', '==', code).limit(1).get();
+    if (snap.empty) { showToast('Lien invalide ou expiré'); return; }
+    const resourceId = snap.docs[0].id;
+
+    // Check for existing access entry
+    const existing = await db.collection('resource_access')
+      .where('resourceId', '==', resourceId)
+      .where('profileId', '==', currentUser.id)
+      .limit(1).get();
+
+    if (!existing.empty) {
+      const status = existing.docs[0].data().status;
+      if (status === 'accepted') { showToast('Tu as déjà accès à cette ressource'); return; }
+      if (status === 'pending') { showToast('Ta demande est déjà en attente d'approbation'); return; }
+    }
+
+    await db.collection('resource_access').add({
+      resourceId, profileId: currentUser.id, familyId: currentUser.familyId,
+      role: 'member', status: 'pending',
+      invited_at: firebase.firestore.FieldValue.serverTimestamp(),
+      accepted_at: null
+    });
+    showToast('Demande envoyée — en attente d'approbation par l'admin');
+  } catch(e) { console.error(e); showToast('Erreur — réessayez'); }
 }
