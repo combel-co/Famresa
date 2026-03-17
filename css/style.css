@@ -974,11 +974,14 @@
   .resource-tabs {
     display: flex;
     padding: 14px 0 0;
-    position: sticky; top: 0; z-index: 100;
+    position: sticky; top: -1px; z-index: 100;
     background: white;
     margin-left: -20px; margin-right: -20px;
     border-bottom: 1px solid var(--border);
     transition: padding-top 0.2s ease;
+    /* GPU layer → élimine le jitter sub-pixel lors du scroll */
+    will-change: transform;
+    transform: translateZ(0);
   }
 
   .resource-tab {

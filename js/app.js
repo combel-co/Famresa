@@ -97,26 +97,32 @@ window.addEventListener('resize', function () {
   document.addEventListener('DOMContentLoaded', function () {
     var scrollEl = getScrollEl();
     if (!scrollEl) return;
+    var _rafPending = false;
     scrollEl.addEventListener('scroll', function () {
-      var tabs = document.getElementById('resource-tabs');
-      if (!tabs) return;
-      var p = Math.min(1, Math.max(0, scrollEl.scrollTop / RANGE));
+      if (_rafPending) return;
+      _rafPending = true;
+      requestAnimationFrame(function () {
+        _rafPending = false;
+        var tabs = document.getElementById('resource-tabs');
+        if (!tabs) return;
+        var p = Math.min(1, Math.max(0, scrollEl.scrollTop / RANGE));
 
-      if (_touching) {
-        if (p >= 1) {
-          clearInline(tabs);
-          applyCompact(tabs, true);
-        } else if (p <= 0) {
-          clearInline(tabs);
-          applyCompact(tabs, false);
+        if (_touching) {
+          if (p >= 1) {
+            clearInline(tabs);
+            applyCompact(tabs, true);
+          } else if (p <= 0) {
+            clearInline(tabs);
+            applyCompact(tabs, false);
+          } else {
+            if (_compact) { clearInline(tabs); _compact = false; tabs.classList.remove('compact'); }
+            setProgress(tabs, p);
+          }
         } else {
-          if (_compact) { clearInline(tabs); _compact = false; tabs.classList.remove('compact'); }
-          setProgress(tabs, p);
+          clearInline(tabs);
+          applyCompact(tabs, p > 0.5);
         }
-      } else {
-        clearInline(tabs);
-        applyCompact(tabs, p > 0.5);
-      }
+      });
     }, { passive: true });
   });
 })();
