@@ -10,11 +10,24 @@ function renderExperiencePanels() {
   const activeResource = resources.find(r => r.id === selectedResource);
   const isHouse = res && res.type === 'house';
 
-  // ── Nom et emoji de la ressource ──
+  // ── Nom, emoji et plaque de la ressource ──
   const cardEmoji = document.getElementById('resource-card-emoji');
   const cardTitle = document.getElementById('resource-card-title');
+  const cardPlaque = document.getElementById('resource-card-plaque');
   if (cardEmoji) cardEmoji.textContent = res?.emoji || (isHouse ? '🏠' : '🚗');
   if (cardTitle) cardTitle.textContent = res?.name || (isHouse ? 'Maison' : 'Voiture');
+  if (cardPlaque) {
+    const plaque = (!isHouse && res?.plaque) ? res.plaque : '';
+    cardPlaque.textContent = plaque;
+    cardPlaque.classList.toggle('hidden', !plaque);
+  }
+  // Hero banner : dégradé adapté selon type
+  const heroBanner = document.getElementById('resource-main-card')?.querySelector('.car-hero-banner');
+  if (heroBanner) {
+    heroBanner.style.background = isHouse
+      ? 'linear-gradient(135deg, #fef9f0 0%, #fde8cc 100%)'
+      : 'linear-gradient(135deg, #eff4ff 0%, #dde7ff 100%)';
+  }
 
   // ── Badge disponibilité ──
   const badge = document.getElementById('availability-badge');
@@ -58,7 +71,7 @@ function renderExperiencePanels() {
   const fuelCard = document.getElementById('car-fuel-row');
   if (fuelDisplay) {
     if (!isHouse) {
-      fuelDisplay.innerHTML = getFuelBar(activeResource?.fuelLevel ?? null);
+      fuelDisplay.innerHTML = getFuelBarFull(activeResource?.fuelLevel ?? null);
       if (fuelCard) fuelCard.style.display = '';
     } else {
       fuelDisplay.innerHTML = '';

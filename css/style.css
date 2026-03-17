@@ -657,23 +657,43 @@
 
   /* ---- CAR STATUS CARD ---- */
   .car-status-card {
-    border: 1px solid var(--border); border-radius: 16px;
-    padding: 16px; margin-bottom: 14px;
-    background: white; box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border); border-radius: 20px;
+    margin-bottom: 14px; background: white;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    overflow: hidden;
   }
+  /* Hero banner : emoji centré sur fond dégradé */
+  .car-hero-banner {
+    background: linear-gradient(135deg, #eff4ff 0%, #dde7ff 100%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 24px 16px 18px;
+  }
+  .car-hero-emoji {
+    font-size: 72px; line-height: 1;
+    filter: drop-shadow(0 6px 16px rgba(37,99,235,0.18));
+  }
+  .car-hero-name {
+    font-size: 19px; font-weight: 700; color: var(--text);
+    text-align: center; letter-spacing: -0.3px; margin-top: 10px;
+  }
+  .car-hero-plaque {
+    font-size: 12px; font-weight: 700; color: var(--accent);
+    background: rgba(99,102,241,0.10); border: 1px solid rgba(99,102,241,0.18);
+    border-radius: 6px; padding: 3px 10px; letter-spacing: 0.5px; margin-top: 6px;
+  }
+  .car-hero-plaque.hidden { display: none; }
+  /* Body sous le hero */
+  .car-card-body { padding: 14px 16px 16px; }
   .car-status-header {
     display: flex; align-items: center;
     justify-content: space-between; margin-bottom: 10px;
   }
-  /* Nom + emoji de la ressource */
-  .resource-name-row { display: flex; align-items: center; gap: 8px; }
-  .resource-card-emoji { font-size: 20px; line-height: 1; }
-  .resource-card-title { font-size: 16px; font-weight: 700; color: var(--text); }
   /* Badge disponibilité */
   .availability-badge {
     display: inline-flex; align-items: center; gap: 6px;
     padding: 5px 12px; border-radius: 999px;
-    font-size: 13px; font-weight: 600; margin-bottom: 10px;
+    font-size: 13px; font-weight: 600;
   }
   .availability-badge.available { background: #dcfce7; color: #166534; }
   .availability-badge.reserved  { background: #fff7ed; color: #9a3412; }
@@ -689,20 +709,31 @@
     display: flex; align-items: center; gap: 6px;
     font-size: 13px; color: var(--text-light); margin-bottom: 6px;
   }
-  .car-status-fuel {
+  /* Barre carburant pleine largeur */
+  .fuel-full-bar { margin-top: 12px; }
+  .fuel-full-bar-label {
     display: flex; align-items: center; justify-content: space-between;
-    font-size: 13px; color: var(--text-light); margin-top: 8px;
+    font-size: 12px; font-weight: 600; color: var(--text-light); margin-bottom: 6px;
   }
+  .fuel-full-value { font-weight: 700; }
+  .fuel-full-track {
+    width: 100%; height: 10px; background: #f0f0f0;
+    border-radius: 999px; overflow: hidden;
+  }
+  .fuel-full-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
 
   /* ---- BOUTON RÉSERVER (prominent) ---- */
   .btn-reserve {
     width: 100%; padding: 17px; border: none; border-radius: 14px;
     font-size: 16px; font-weight: 700; font-family: 'DM Sans', sans-serif;
-    cursor: pointer; margin-bottom: 14px; transition: background 0.15s;
+    cursor: pointer; margin-bottom: 14px; letter-spacing: 0.1px;
     background: var(--accent); color: white;
-    letter-spacing: 0.1px;
+    box-shadow: 0 4px 16px rgba(37,99,235,0.35);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s;
+    -webkit-tap-highlight-color: transparent;
   }
-  .btn-reserve:hover { background: #5b21b6; }
+  .btn-reserve:hover { background: #1d4ed8; box-shadow: 0 6px 20px rgba(37,99,235,0.4); }
+  .btn-reserve:active { transform: scale(0.97) translateY(1px); box-shadow: 0 2px 8px rgba(37,99,235,0.25); }
 
   .post-trip-card {
     border: 1px solid #facc15; border-radius: 16px;

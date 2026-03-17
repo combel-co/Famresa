@@ -244,8 +244,9 @@ async function showCarInfo() {
   const observations = res.observations || '';
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
-      <h2>Info voiture</h2>
-      <div style="color:var(--text-light);font-size:13px;margin-bottom:20px">${res.emoji || '🚗'} ${res.name}</div>
+      <div style="font-size:52px;line-height:1;margin-bottom:8px;filter:drop-shadow(0 4px 10px rgba(37,99,235,0.15))">${res.emoji || '🚗'}</div>
+      <h2 style="margin:0 0 4px">${res.name}</h2>
+      ${plaque ? `<div style="display:inline-block;font-size:12px;font-weight:700;color:var(--accent);background:rgba(99,102,241,0.10);border:1px solid rgba(99,102,241,0.18);border-radius:6px;padding:3px 10px;letter-spacing:0.5px;margin-bottom:20px">${plaque}</div>` : '<div style="margin-bottom:20px"></div>'}
       <div class="input-group">
         <label>Plaque d'immatriculation</label>
         <input type="text" id="car-plaque" placeholder="Ex: AB-123-CD" value="${plaque}" style="text-transform:uppercase">

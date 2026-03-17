@@ -14,6 +14,22 @@ function getFuelBar(level) {
   </div>`;
 }
 
+// Barre pleine largeur pour la carte dashboard
+function getFuelBarFull(level) {
+  if (level === null || level === undefined) {
+    return `<div class="fuel-full-bar">
+      <div class="fuel-full-bar-label"><span>Réservoir</span><span class="fuel-full-value" style="color:var(--text-light)">Inconnu</span></div>
+      <div class="fuel-full-track"><div class="fuel-full-fill" style="width:0%;background:#e5e7eb"></div></div>
+    </div>`;
+  }
+  const color = FUEL_COLORS[level] || '#84cc16';
+  const label = FUEL_LABELS[level] || (level + '%');
+  return `<div class="fuel-full-bar">
+    <div class="fuel-full-bar-label"><span>Réservoir</span><span class="fuel-full-value" style="color:${color}">${label}</span></div>
+    <div class="fuel-full-track"><div class="fuel-full-fill" style="width:${level}%;background:${color}"></div></div>
+  </div>`;
+}
+
 // ==========================================
 // FUEL RETURN SHEET
 // ==========================================

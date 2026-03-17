@@ -51,23 +51,25 @@
       </div>
     </article>
 
-    <!-- Ressource principale : nom, dispo, carburant -->
+    <!-- Ressource principale : hero + dispo + carburant -->
     <div class="car-status-card" id="resource-main-card">
-      <div class="car-status-header">
-        <div class="resource-name-row">
-          <span class="resource-card-emoji" id="resource-card-emoji">🚗</span>
-          <span class="resource-card-title" id="resource-card-title">Voiture</span>
+      <div class="car-hero-banner">
+        <span class="car-hero-emoji" id="resource-card-emoji">🚗</span>
+        <span class="car-hero-name" id="resource-card-title">Voiture</span>
+        <span class="car-hero-plaque hidden" id="resource-card-plaque"></span>
+      </div>
+      <div class="car-card-body">
+        <div class="car-status-header">
+          <div class="availability-badge available" id="availability-badge">
+            <span class="dot-ok" id="car-status-dot"></span>
+            <span class="car-status-label" id="car-status-text">Disponible</span>
+          </div>
+          <button class="car-info-btn" id="car-info-btn" onclick="showCarInfo()">Info voiture</button>
         </div>
-        <button class="car-info-btn" id="car-info-btn" onclick="showCarInfo()">Info voiture</button>
-      </div>
-      <div class="availability-badge available" id="availability-badge">
-        <span class="dot-ok" id="car-status-dot"></span>
-        <span class="car-status-label" id="car-status-text">Disponible</span>
-      </div>
-      <div id="resource-detail-rows"></div>
-      <div class="car-status-fuel" id="car-fuel-row">
-        <span id="car-status-label-text">Réservoir</span>
-        <div id="car-fuel-display"></div>
+        <div id="resource-detail-rows"></div>
+        <div id="car-fuel-row">
+          <div id="car-fuel-display"></div>
+        </div>
       </div>
     </div>
 
