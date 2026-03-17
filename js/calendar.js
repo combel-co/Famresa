@@ -157,6 +157,7 @@ function onDayClick(dateStr, isPast) {
           <div class="info">${booking.userName}<small>${isMine ? 'Votre réservation' : 'A réservé ce jour'}</small></div>
         </div>
       </div>
+      ${isMine ? `<button class="btn btn-danger" style="margin-top:4px" onclick="showDeleteBookingSheet('${booking.id}','${dateStr}')">Gérer / Annuler</button>` : ''}
       <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Fermer</button>`;
   } else {
     const activeResource = resources.find(r => r.id === selectedResource);

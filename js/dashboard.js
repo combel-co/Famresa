@@ -139,6 +139,7 @@ function renderHistoryList() {
     }).join('');
   } else {
     // Car history
+    const today = new Date().toISOString().slice(0, 10);
     historyEl.innerHTML = history.map(h => {
       const av = h.photo ? `<img src="${h.photo}" alt="" style="width:100%;height:100%;object-fit:cover">` : getInitials(h.userName || 'C');
       const dateFormatted = formatBookingDateRange(h);
@@ -146,6 +147,11 @@ function renderHistoryList() {
       const km = estimateDistanceForBooking(h);
       const fuelLevel = getFuelReturnLevelForBooking(h);
       const fuelLeft = (fuelLevel !== undefined && fuelLevel !== null) ? getFuelBar(fuelLevel) : '<span style="color:#b45309;font-size:12px">Donnée manquante</span>';
+      const isFuture = (h.endDate || h.startDate || h.date || '') >= today;
+      const isOwn = currentUser && h.userId === currentUser.id;
+      const cancelBtn = (isFuture && isOwn)
+        ? `<button class="btn btn-danger" style="margin-top:8px;font-size:12px;padding:6px 12px;width:100%" onclick="event.stopPropagation();showDeleteBookingSheet('${h.id}','${h.startDate || h.date}')">Annuler la réservation</button>`
+        : '';
       return `<div class="history-card">
         <div class="history-left">
           <div class="history-avatar-sm">${av}</div>
@@ -158,6 +164,7 @@ function renderHistoryList() {
           <div style="margin-top:2px">${fuelLeft}</div>
           <div class="history-dest" style="margin-top:4px">${km} km</div>
         </div>
+        ${cancelBtn ? `<div style="width:100%;padding:0 8px 8px">${cancelBtn}</div>` : ''}
       </div>`;
     }).join('');
   }

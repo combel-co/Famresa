@@ -695,7 +695,7 @@
 
   /* ---- HISTORY CARD ---- */
   .history-card {
-    display: flex; border: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; border: 1px solid var(--border);
     border-radius: 14px; overflow: hidden; margin-bottom: 10px; background: white;
   }
   .history-left {

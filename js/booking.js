@@ -380,3 +380,65 @@ async function cancelBooking(bookingId) {
     showToast('Réservation annulée');
   } catch(e) { showToast('Erreur — réessayez'); }
 }
+
+// Raccourcit une réservation voiture : met à jour endDate dans Firestore.
+// Le listener Firestore met automatiquement à jour le calendrier et l'historique.
+async function truncateCarBooking(bookingId, newEndDate) {
+  try {
+    await familyRef().collection('bookings').doc(bookingId).update({ endDate: newEndDate });
+    closeSheet();
+    showToast('Réservation raccourcie');
+  } catch(e) { showToast('Erreur — réessayez'); }
+}
+
+// Affiche la feuille de gestion d'une réservation future (annulation ou retour anticipé).
+// bookingId : id du document Firestore
+// dateStr   : jour cliqué "YYYY-MM-DD" (pour le retour anticipé)
+function showDeleteBookingSheet(bookingId, dateStr) {
+  const booking = Object.values(bookings).find(b => b && b.id === bookingId);
+  if (!booking) { showToast('Réservation introuvable'); return; }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const bookingEnd = booking.endDate || booking.startDate || booking.date || '';
+  if (bookingEnd < today) {
+    showToast('Impossible de modifier une réservation passée');
+    return;
+  }
+
+  const isMultiDay = booking.startDate && booking.endDate && booking.startDate !== booking.endDate;
+  // Retour anticipé : seulement si le jour cliqué n'est pas le premier jour
+  const canTruncate = isMultiDay && dateStr > booking.startDate;
+
+  const date = new Date(dateStr + 'T00:00:00');
+  const prettyDate = date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  let truncateSection = '';
+  if (canTruncate) {
+    const prevDate = new Date(dateStr + 'T00:00:00');
+    prevDate.setDate(prevDate.getDate() - 1);
+    const newEndStr = prevDate.toISOString().slice(0, 10);
+    const prettyNewEnd = prevDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+    truncateSection = `
+      <div style="margin:0 0 12px;padding:14px;background:#fff8ed;border-radius:12px;border:1px solid #fde68a">
+        <div style="font-weight:600;margin-bottom:4px">Retour anticipé</div>
+        <div style="font-size:13px;color:var(--text-light);margin-bottom:10px">La voiture est rendue le ${prettyNewEnd}. Les jours suivants sont libérés.</div>
+        <button class="btn btn-primary" onclick="truncateCarBooking('${booking.id}','${newEndStr}')">Rendre la voiture le ${prettyNewEnd}</button>
+      </div>`;
+  }
+
+  const html = `
+    <div class="login-sheet">
+      <h2>Gérer la réservation</h2>
+      <div style="color:var(--text-light);font-size:14px;margin-bottom:16px">${prettyDate}</div>
+      ${truncateSection}
+      <div style="margin:0 0 12px;padding:14px;background:#fff0f0;border-radius:12px;border:1px solid #fecaca">
+        <div style="font-weight:600;margin-bottom:4px">${isMultiDay ? 'Annuler toute la réservation' : 'Annuler la réservation'}</div>
+        <div style="font-size:13px;color:var(--text-light);margin-bottom:10px">Cette action est irréversible.</div>
+        <button class="btn btn-danger" onclick="cancelBooking('${booking.id}')">${isMultiDay ? 'Annuler toute la réservation' : 'Confirmer l\'annulation'}</button>
+      </div>
+      <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Retour</button>
+    </div>`;
+
+  document.getElementById('sheet-content').innerHTML = html;
+  document.getElementById('overlay').classList.add('open');
+}
