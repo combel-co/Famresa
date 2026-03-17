@@ -87,7 +87,8 @@ function switchTab(tab) {
     document.getElementById(`tab-${name}`)?.classList.toggle('active', name === tab);
     document.getElementById(`nav-${name}`)?.classList.toggle('active', name === tab);
   });
-  if (tab === 'leaderboard' || tab === 'history' || tab === 'dashboard') renderExperiencePanels();
+  if (tab === 'leaderboard' || tab === 'dashboard') renderExperiencePanels();
+  if (tab === 'history') renderProfileTab();
 }
 
 // ==========================================

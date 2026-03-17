@@ -141,14 +141,106 @@
   </section>
 
   <section class="tab-panel" id="tab-history" style="margin-bottom:130px">
-    <div class="settings-section-title">Inviter un membre</div>
-    <div class="car-status-card" style="margin-bottom:16px">
-      <p style="font-size:14px;color:var(--text-light);margin-bottom:12px">Partagez ce lien pour qu'un nouveau membre rejoigne votre famille.</p>
-      <div id="invite-link-display" style="font-size:13px;color:var(--accent);word-break:break-all;background:var(--accent-light);padding:10px 12px;border-radius:10px;margin-bottom:12px;min-height:36px"></div>
-      <button class="btn btn-primary" onclick="loadAndCopyInviteLink()" style="width:100%">Copier le lien d'invitation</button>
+    <div class="pf-page-header">
+      <div class="pf-page-title">Profil</div>
     </div>
-    <div class="settings-section-title" style="margin-top:8px">Historique des réservations</div>
-    <div id="history-full"></div>
+
+    <!-- Hero card -->
+    <div class="pf-hero-card">
+      <div class="pf-hero-top">
+        <div class="pf-hero-avatar" id="pf-avatar">?</div>
+        <div class="pf-hero-meta">
+          <div class="pf-hero-name" id="pf-name">—</div>
+          <div class="pf-hero-sub" id="pf-sub">—</div>
+        </div>
+        <button class="pf-edit-btn" onclick="showProfile()">Modifier</button>
+      </div>
+      <!-- Family pills -->
+      <div class="pf-family-pills">
+        <div class="pf-family-pill active">
+          <div class="pf-f-dot"></div>
+          <span id="pf-family-name">Famille</span>
+        </div>
+        <div class="pf-family-pill pf-add-pill" onclick="loadAndCopyInviteLink()">+ Rejoindre</div>
+      </div>
+      <!-- KPIs -->
+      <div class="pf-kpi-row">
+        <div class="pf-kpi-item">
+          <div class="pf-kpi-val" id="pf-kpi-rides">—</div>
+          <div class="pf-kpi-lbl">Mes trajets</div>
+        </div>
+        <div class="pf-kpi-item">
+          <div class="pf-kpi-val" id="pf-kpi-total">—</div>
+          <div class="pf-kpi-lbl">Total famille</div>
+        </div>
+        <div class="pf-kpi-item">
+          <div class="pf-kpi-val" id="pf-kpi-seniority">—</div>
+          <div class="pf-kpi-lbl">Ancienneté</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ressources partagées -->
+    <div class="pf-section-lbl">Ressources partagées</div>
+    <div class="pf-resources-grid" id="pf-resources-grid"></div>
+
+    <!-- Promo invite -->
+    <div class="pf-promo-card" onclick="loadAndCopyInviteLink()">
+      <div class="pf-promo-icon">🔗</div>
+      <div class="pf-promo-text">
+        <div class="pf-promo-title">Inviter une famille</div>
+        <div class="pf-promo-desc">Partagez le lien. Quand ils activent, vous gagnez des avantages.</div>
+      </div>
+      <div class="pf-promo-chevron">›</div>
+    </div>
+
+    <!-- Compte -->
+    <div class="pf-section-lbl">Compte</div>
+    <div class="pf-settings-group">
+      <div class="pf-settings-row" onclick="showProfile()">
+        <div class="pf-row-icon">👤</div>
+        <div class="pf-row-label">Paramètres du compte</div>
+        <div class="pf-row-chevron">›</div>
+      </div>
+      <div class="pf-settings-row">
+        <div class="pf-row-icon">🔔</div>
+        <div class="pf-row-label">Notifications</div>
+        <div class="pf-row-chevron">›</div>
+      </div>
+      <div class="pf-settings-row">
+        <div class="pf-row-icon">🔒</div>
+        <div class="pf-row-label">Code personnel</div>
+        <div class="pf-row-chevron">›</div>
+      </div>
+    </div>
+
+    <!-- Aide -->
+    <div class="pf-section-lbl">Aide</div>
+    <div class="pf-settings-group">
+      <div class="pf-settings-row">
+        <div class="pf-row-icon">💡</div>
+        <div class="pf-row-label">Proposer une amélioration</div>
+        <div class="pf-row-chevron">›</div>
+      </div>
+      <div class="pf-settings-row">
+        <div class="pf-row-icon">❓</div>
+        <div class="pf-row-label">Aide & FAQ</div>
+        <div class="pf-row-chevron">›</div>
+      </div>
+    </div>
+
+    <div class="pf-settings-group" style="margin-bottom:14px">
+      <div class="pf-settings-row pf-row-danger" onclick="logout()">
+        <div class="pf-row-icon" style="background:#fff1f2">🚪</div>
+        <div class="pf-row-label">Se déconnecter</div>
+      </div>
+    </div>
+
+    <!-- Compat JS (hidden) -->
+    <div style="display:none" aria-hidden="true">
+      <div id="history-full"></div>
+      <div id="invite-link-display"></div>
+    </div>
   </section>
 
 </main>
@@ -157,7 +249,7 @@
   <button type="button" id="nav-dashboard" class="active" data-icon="🏠" onclick="switchTab('dashboard')">Dashboard</button>
   <button type="button" id="nav-calendar" data-icon="📅" onclick="switchTab('calendar')">Planning</button>
   <button type="button" id="nav-leaderboard" data-icon="🏆" onclick="switchTab('leaderboard')">Classement</button>
-  <button type="button" id="nav-history" data-icon="⚙️" onclick="switchTab('history')">Historique</button>
+  <button type="button" id="nav-history" data-icon="◉" onclick="switchTab('history')">Profil</button>
 </nav>
 
 <div class="overlay" id="overlay" onclick="closeSheet()">
@@ -588,6 +680,7 @@
 <script src="js/calendar.js"></script>
 <script src="js/leaderboard.js"></script>
 <script src="js/history.js"></script>
+<script src="js/profile.js"></script>
 <script src="js/resources.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/stay.js"></script>

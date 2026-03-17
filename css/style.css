@@ -774,6 +774,54 @@
   .resource-pill-dot { width:6px; height:6px; border-radius:50%; background:#e5e4df; flex-shrink:0; }
   .resource-tab .resource-pill-dot.available { background:#16a34a; }
 
+  /* ---- PROFIL TAB ---- */
+  .pf-page-header { display:flex; justify-content:space-between; align-items:flex-end; padding:8px 0 14px; }
+  .pf-page-title { font-size:28px; font-weight:500; color:#1a1a1a; letter-spacing:-0.5px; line-height:1; }
+  .pf-hero-card { background:#fff; border:0.5px solid #e5e4df; border-radius:20px; padding:16px; margin-bottom:10px; }
+  .pf-hero-top { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+  .pf-hero-avatar { width:56px; height:56px; border-radius:50%; background:#dbeafe; color:#2563eb; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:500; flex-shrink:0; border:0.5px solid #bfdbfe; overflow:hidden; }
+  .pf-hero-avatar img { width:100%; height:100%; object-fit:cover; }
+  .pf-hero-meta { flex:1; min-width:0; }
+  .pf-hero-name { font-size:18px; font-weight:500; color:#1a1a1a; line-height:1.2; }
+  .pf-hero-sub { font-size:12px; color:#6b6b6b; margin-top:2px; }
+  .pf-edit-btn { padding:6px 12px; border-radius:20px; border:0.5px solid #d4d4d0; background:transparent; font-size:12px; font-weight:500; color:#6b6b6b; cursor:pointer; white-space:nowrap; font-family:'DM Sans',sans-serif; -webkit-tap-highlight-color:transparent; }
+  .pf-family-pills { display:flex; gap:6px; margin-bottom:14px; overflow-x:auto; scrollbar-width:none; }
+  .pf-family-pills::-webkit-scrollbar { display:none; }
+  .pf-family-pill { display:flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; border:0.5px solid #e5e4df; font-size:12px; color:#6b6b6b; white-space:nowrap; cursor:pointer; background:transparent; }
+  .pf-family-pill.active { background:#fff; border-color:#1a1a1a; color:#1a1a1a; font-weight:500; }
+  .pf-family-pill .pf-f-dot { width:6px; height:6px; border-radius:50%; background:#d4d4d0; flex-shrink:0; }
+  .pf-family-pill.active .pf-f-dot { background:#2563eb; }
+  .pf-family-pill.pf-add-pill { border-style:dashed; color:#9b9b9b; }
+  .pf-kpi-row { display:flex; border-top:0.5px solid #e5e4df; padding-top:14px; }
+  .pf-kpi-item { flex:1; text-align:center; padding:0 8px; }
+  .pf-kpi-item + .pf-kpi-item { border-left:0.5px solid #e5e4df; }
+  .pf-kpi-val { font-size:20px; font-weight:500; color:#1a1a1a; line-height:1; }
+  .pf-kpi-lbl { font-size:10px; color:#9b9b9b; margin-top:3px; text-transform:uppercase; letter-spacing:0.3px; }
+  .pf-section-lbl { font-size:11px; font-weight:500; color:#9b9b9b; text-transform:uppercase; letter-spacing:0.4px; padding:14px 0 6px; }
+  .pf-resources-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .pf-resource-card { background:#fff; border:0.5px solid #e5e4df; border-radius:16px; padding:14px 12px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .pf-resource-card.pf-add-card { border-style:dashed; background:transparent; display:flex; flex-direction:column; align-items:flex-start; opacity:0.6; }
+  .pf-resource-icon { font-size:22px; margin-bottom:10px; line-height:1; }
+  .pf-resource-title { font-size:13px; font-weight:500; color:#1a1a1a; line-height:1.3; }
+  .pf-resource-sub { font-size:11px; color:#6b6b6b; margin-top:2px; }
+  .pf-resource-badge { display:inline-flex; align-items:center; gap:4px; margin-top:6px; padding:3px 8px; border-radius:10px; font-size:10px; font-weight:500; background:#dcfce7; color:#15803d; border:0.5px solid #bbf7d0; }
+  .pf-resource-badge .pf-bdot { width:4px; height:4px; border-radius:50%; background:#16a34a; }
+  .pf-add-card .pf-resource-title { color:#6b6b6b; }
+  .pf-add-plus { width:28px; height:28px; border-radius:8px; border:0.5px solid #d4d4d0; display:flex; align-items:center; justify-content:center; font-size:18px; color:#6b6b6b; margin-bottom:8px; }
+  .pf-promo-card { background:#fff; border:0.5px solid #e5e4df; border-radius:16px; padding:14px; display:flex; align-items:center; gap:12px; margin-bottom:10px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .pf-promo-icon { width:40px; height:40px; border-radius:12px; background:#f0fdf4; border:0.5px solid #bbf7d0; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .pf-promo-text { flex:1; min-width:0; }
+  .pf-promo-title { font-size:13px; font-weight:500; color:#1a1a1a; }
+  .pf-promo-desc { font-size:11px; color:#6b6b6b; margin-top:2px; line-height:1.4; }
+  .pf-promo-chevron { font-size:14px; color:#9b9b9b; }
+  .pf-settings-group { background:#fff; border:0.5px solid #e5e4df; border-radius:16px; overflow:hidden; margin-bottom:10px; }
+  .pf-settings-row { display:flex; align-items:center; gap:12px; padding:14px; border-bottom:0.5px solid #e5e4df; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .pf-settings-row:last-child { border-bottom:none; }
+  .pf-row-icon { width:30px; height:30px; border-radius:8px; background:#f7f6f2; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .pf-row-label { flex:1; font-size:14px; color:#1a1a1a; }
+  .pf-row-chevron { font-size:13px; color:#9b9b9b; }
+  .pf-row-danger .pf-row-label { color:#dc2626; }
+
   .post-trip-card {
     border: 1px solid #facc15; border-radius: 16px;
     background: #fffbeb; padding: 14px; margin-bottom: 14px;
