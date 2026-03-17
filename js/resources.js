@@ -63,7 +63,7 @@ function renderResourceTabs() {
     const cls = `resource-tab${isActive ? ' active' : ''}${!hasItems ? ' placeholder' : ''}`;
     const click = hasItems ? `onclick="selectResourceType('${type}')"` : '';
     return `<div class="${cls}" ${click}>
-      <span class="resource-tab-icon">${icon}</span>
+      <span class="resource-tab-icon-wrap"><span class="resource-tab-icon">${icon}</span></span>
       <span class="resource-tab-label">${label}</span>
     </div>`;
   };
@@ -71,10 +71,12 @@ function renderResourceTabs() {
   container.innerHTML =
     tab('🚗', 'Voitures', 'car',   cars.length   > 0) +
     tab('🏠', 'Maison',   'house', houses.length > 0) +
-    `<div class="resource-tab placeholder" style="position:relative;">
-      <span class="resource-tab-icon">✨</span>
+    `<div class="resource-tab placeholder">
+      <span class="resource-tab-icon-wrap">
+        <span class="resource-tab-icon">✨</span>
+        <span class="resource-tab-badge">Bientôt</span>
+      </span>
       <span class="resource-tab-label">Autres</span>
-      <span class="resource-tab-badge">Bientôt</span>
     </div>`;
 }
 

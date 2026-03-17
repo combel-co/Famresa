@@ -40,19 +40,27 @@ window.addEventListener('resize', function () {
   function setProgress(tabs, p) {
     const s = 1 - p;
     tabs.style.paddingTop = (FULL_PAD * s) + 'px';
+    // Animate the icon-wrap (contains icon + badge → both collapse together)
+    tabs.querySelectorAll('.resource-tab-icon-wrap').forEach(function (wrap) {
+      wrap.style.transition   = 'none';
+      wrap.style.height       = (FULL_HEIGHT * s) + 'px';
+      wrap.style.opacity      = s;
+      wrap.style.marginBottom = (FULL_MARGIN * s) + 'px';
+      wrap.style.overflow     = 'hidden';
+    });
     tabs.querySelectorAll('.resource-tab-icon').forEach(function (icon) {
-      icon.style.transition  = 'none';
-      icon.style.fontSize    = (FULL_FONT   * s) + 'px';
-      icon.style.height      = (FULL_HEIGHT * s) + 'px';
-      icon.style.lineHeight  = (FULL_HEIGHT * s) + 'px';
-      icon.style.marginBottom= (FULL_MARGIN * s) + 'px';
-      icon.style.opacity     = s;
-      icon.style.overflow    = 'hidden';
+      icon.style.transition = 'none';
+      icon.style.fontSize   = (FULL_FONT   * s) + 'px';
+      icon.style.height     = (FULL_HEIGHT * s) + 'px';
+      icon.style.lineHeight = (FULL_HEIGHT * s) + 'px';
     });
   }
 
   function clearInline(tabs) {
     tabs.style.removeProperty('padding-top');
+    tabs.querySelectorAll('.resource-tab-icon-wrap').forEach(function (wrap) {
+      wrap.style.cssText = '';
+    });
     tabs.querySelectorAll('.resource-tab-icon').forEach(function (icon) {
       icon.style.cssText = '';
     });
