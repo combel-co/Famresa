@@ -37,6 +37,10 @@
     top: 0;
     background: white;
     z-index: 100;
+    /* Taille fixe — GPU layer pour éviter le jitter iOS Safari au scroll */
+    will-change: transform;
+    transform: translateZ(0);
+    flex-shrink: 0;
   }
 
   /* ---- FAMILY PILL (header left) ---- */
@@ -87,7 +91,7 @@
   .user-pill .avatar img { width: 100%; height: 100%; object-fit: cover; }
 
   /* ---- MAIN ---- */
-  main { max-width: 520px; margin: 0 auto; padding: 0 20px 100px; }
+  main { max-width: 520px; margin: 0 auto; padding: 0 20px calc(80px + env(safe-area-inset-bottom, 0px)); }
 
   /* ---- MONTH NAV ---- */
   .month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; gap: 10px; }
@@ -361,7 +365,10 @@
   .tab-panel.active { display: block; padding-top: 14px; }
 
   .bottom-nav {
-    position: fixed; left: 50%; transform: translateX(-50%);
+    position: fixed; left: 50%;
+    /* translateX + translateZ : GPU layer → taille fixe, pas de saut au scroll */
+    transform: translateX(-50%) translateZ(0);
+    will-change: transform;
     bottom: 0; width: 100%; max-width: 580px;
     background: #ffffff;
     border: 1.5px solid var(--border);
@@ -369,7 +376,6 @@
     border-radius: 44px 44px 0 0;
     box-shadow: 0 -8px 40px rgba(0,0,0,0.10);
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
-    /* Réduit : plus compact, safe-area seulement pour encoche iPhone */
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 120;
   }
   .bottom-nav button {
@@ -920,7 +926,7 @@
   /* ---- RESPONSIVE ---- */
   @media (max-width: 480px) {
     header { padding: 16px 18px; }
-    main { padding: 0 14px 100px; }
+    main { padding: 0 14px calc(80px + env(safe-area-inset-bottom, 0px)); }
     .resource-tabs { margin-left: -14px; margin-right: -14px; }
     .resource-tab-icon { font-size: 36px; height: 44px; line-height: 44px; }
     .resource-tab-icon-wrap { margin-bottom: 5px; }
