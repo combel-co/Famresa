@@ -32,11 +32,8 @@ async function showChecklistSheet(groupId, type) {
   // Load statuses
   let doneIds = new Set();
   try {
-    const snap = await familyRef().collection('checklistStatus')
-      .where('groupId', '==', groupId)
-      .where('type', '==', type)
-      .get();
-    snap.forEach(doc => doneIds.add(doc.data().itemId));
+    const snap = await checklistStatutsRef().where('groupId', '==', groupId).get();
+    snap.docs.filter(d => d.data().type === type).forEach(d => doneIds.add(d.data().itemId));
   } catch(e) {}
 
   const renderItems = () => defs.map(def => {
@@ -64,13 +61,13 @@ async function toggleChecklistItem(groupId, type, itemId, el) {
   el.querySelector('.checklist-check').textContent = !isDone ? '✅' : '⬜';
   try {
     const docId = `${groupId}_${type}_${itemId}`;
-    const ref = familyRef().collection('checklistStatus').doc(docId);
+    const ref = checklistStatutsRef().doc(docId);
     if (!isDone) {
       await ref.set({
         groupId, type, itemId,
-        resourceId: selectedResource,
-        doneBy: currentUser?.id || null,
-        doneAt: firebase.firestore.FieldValue.serverTimestamp()
+        ressource_id: selectedResource,
+        profil_id: currentUser?.id || null,
+        doneAt: ts()
       });
     } else {
       await ref.delete();

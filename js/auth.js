@@ -31,29 +31,48 @@ async function loginUser() {
   if (pin.length < 4) { errEl.textContent = 'Entrez votre code à 4 chiffres'; return; }
   errEl.textContent = '';
   try {
-    const snap = await db.collection('users').where('email', '==', email).get();
-    if (snap.empty) { errEl.textContent = 'Email introuvable'; return; }
-    const doc = snap.docs[0];
-    const data = doc.data();
-    if (String(data.pin) !== pin) { errEl.textContent = 'Code incorrect'; return; }
-    const familyId = data.familyId || null;
-    let name = data.name || '';
+    // Try new collection first, fallback to legacy
+    let doc = null, data = null;
+    const newSnap = await profilsRef().where('email', '==', email).get();
+    if (!newSnap.empty) {
+      doc = newSnap.docs[0]; data = doc.data();
+      if (String(data.code_pin ?? data.pin) !== pin) { errEl.textContent = 'Code incorrect'; return; }
+    } else {
+      const oldSnap = await db.collection('users').where('email', '==', email).get();
+      if (oldSnap.empty) { errEl.textContent = 'Email introuvable'; return; }
+      doc = oldSnap.docs[0]; data = doc.data();
+      if (String(data.pin) !== pin) { errEl.textContent = 'Code incorrect'; return; }
+    }
+
+    const familyId = data.familyId || data.famille_id || null;
+    let name = data.nom || data.name || '';
     let photo = data.photo || null;
+
+    // Try to get richer profile from famille_membres
     if (familyId) {
       try {
-        const memberDoc = await db.collection('families').doc(familyId).collection('members').doc(doc.id).get();
-        if (memberDoc.exists) {
-          name  = memberDoc.data().name  || name;
-          photo = memberDoc.data().photo || photo;
+        const member = await getFamilleMember(familyId, doc.id);
+        if (member) {
+          name  = member.nom  || member.name  || name;
+          photo = member.photo || photo;
+        } else {
+          // Fallback: legacy members subcollection
+          const memberDoc = await db.collection('families').doc(familyId).collection('members').doc(doc.id).get();
+          if (memberDoc.exists) {
+            name  = memberDoc.data().name  || name;
+            photo = memberDoc.data().photo || photo;
+          }
         }
-      } catch(e) { /* fallback to global data */ }
+      } catch(e) { /* fallback to profil data */ }
     }
+
     currentUser = { id: doc.id, name, email: data.email, photo, familyId };
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
     document.getElementById('login-overlay').classList.add('hidden');
     if (!familyId) {
       await runMigrationIfNeeded();
     } else {
+      runV2MigrationIfNeeded().catch(e => console.warn('[migration]', e));
       await loadResources();
       enterApp();
       showToast(`Bonjour ${currentUser.name} !`);
@@ -62,7 +81,7 @@ async function loginUser() {
         _pendingResourceJoinCode = null;
       }
     }
-  } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
+  } catch(e) { console.error(e); errEl.textContent = 'Erreur — réessayez'; }
 }
 
 // ---- SIGNUP ----
@@ -127,7 +146,9 @@ async function signupJoinAdvance() {
   if (!code) { errEl.textContent = 'Lien invalide — paramètre ?join= manquant'; return; }
   errEl.textContent = '';
   try {
-    const snap = await db.collection('families').where('inviteCode', '==', code).limit(1).get();
+    // Try new collection first, fallback to legacy
+    let snap = await famillesRef().where('inviteCode', '==', code).limit(1).get();
+    if (snap.empty) snap = await db.collection('families').where('inviteCode', '==', code).limit(1).get();
     if (snap.empty) { errEl.textContent = 'Lien invalide ou expiré'; return; }
     suPendingFamilyId = snap.docs[0].id;
     showSignupStep(3);
@@ -153,10 +174,10 @@ async function signupCreateAdvance() {
   const inviteCode = generateSignupInviteCode();
   suInviteUrl = `${location.origin}${location.pathname}?join=${inviteCode}`;
   try {
-    const familyDocRef = await db.collection('families').add({
-      name: familyName, pin, inviteCode,
+    const familyDocRef = await famillesRef().add({
+      nom: familyName, pin, inviteCode,
       created_by: null, // set after user profile is created
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: ts()
     });
     suPendingFamilyId = familyDocRef.id;
     document.querySelectorAll('.su-step').forEach(s => s.classList.add('hidden'));
@@ -200,25 +221,46 @@ async function signupProfileAdvance() {
   if (pin.length < 4) { errEl.textContent = 'Entrez votre code secret (4 chiffres)'; return; }
   errEl.textContent = '';
   try {
-    const existing = await db.collection('users').where('email', '==', email).get();
-    if (!existing.empty) { errEl.textContent = 'Cet email est déjà utilisé'; return; }
-    const ref = await db.collection('users').add({
-      email, pin, familyId: suPendingFamilyId,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    // Check email uniqueness in new + legacy
+    const [newSnap, oldSnap] = await Promise.all([
+      profilsRef().where('email', '==', email).get(),
+      db.collection('users').where('email', '==', email).get()
+    ]);
+    if (!newSnap.empty || !oldSnap.empty) { errEl.textContent = 'Cet email est déjà utilisé'; return; }
+
+    // Create PROFIL
+    const ref = await profilsRef().add({
+      nom: name, email, code_pin: pin,
+      photo: suTempPhoto || null,
+      familyId: suPendingFamilyId,
+      createdAt: ts()
     });
-    await db.collection('families').doc(suPendingFamilyId).collection('members').doc(ref.id).set({
-      name, email, photo: suTempPhoto || null,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+
+    // Create FAMILLE_MEMBRE
+    await familleMembresRef().add({
+      famille_id: suPendingFamilyId,
+      profil_id: ref.id,
+      role: 'member', // overridden to admin below if they created the family
+      nom: name, email, photo: suTempPhoto || null,
+      createdAt: ts()
     });
-    // If user created the family (not joining), mark them as admin
-    const familyDoc = await db.collection('families').doc(suPendingFamilyId).get();
-    if (familyDoc.exists && familyDoc.data().created_by === null) {
-      await db.collection('families').doc(suPendingFamilyId).update({ created_by: ref.id });
+
+    // Mark as admin if they created the family
+    const familyDoc = await familleRef(suPendingFamilyId).get();
+    const isCreator = familyDoc.exists && familyDoc.data().created_by === null;
+    if (isCreator) {
+      await familleRef(suPendingFamilyId).update({ created_by: ref.id });
+      // Update the membre doc role to admin
+      const memSnap = await familleMembresRef()
+        .where('famille_id', '==', suPendingFamilyId)
+        .where('profil_id', '==', ref.id)
+        .get();
+      if (!memSnap.empty) await memSnap.docs[0].ref.update({ role: 'admin' });
     }
+
     currentUser = { id: ref.id, name, email, photo: suTempPhoto || null, familyId: suPendingFamilyId };
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
     document.getElementById('signup-overlay').classList.add('hidden');
-    // Handle pending resource invite if any
     if (_pendingResourceJoinCode) {
       await loadResources();
       await handleResourceJoinCode(_pendingResourceJoinCode);
@@ -228,7 +270,7 @@ async function signupProfileAdvance() {
     }
     enterApp();
     celebrate('🎉', `Bienvenue ${name} !`, '+50 XP', 'Tu fais partie de la famille !');
-  } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
+  } catch(e) { console.error(e); errEl.textContent = 'Erreur — réessayez'; }
 }
 
 // ==========================================
@@ -249,7 +291,7 @@ async function obStep4Advance() {
   errEl.textContent = '';
   try {
     if (selectedResource) {
-      await familyRef().collection('resources').doc(selectedResource).update({ name, emoji: selectedCarEmoji, plaque });
+      await ressourcesRef().doc(selectedResource).update({ nom: name, name, emoji: selectedCarEmoji, plaque });
       const res = resources.find(r => r.id === selectedResource);
       if (res) Object.assign(res, { name, emoji: selectedCarEmoji, plaque });
     }
@@ -265,9 +307,9 @@ async function obStep2Advance() {
   if (create !== confirm) { errEl.textContent = 'Les codes ne correspondent pas'; return; }
   errEl.textContent = '';
   try {
-    const familyDocRef = await db.collection('families').add({
-      pin: create, inviteCode: generateSignupInviteCode(),
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    const familyDocRef = await famillesRef().add({
+      nom: 'Ma famille', pin: create, inviteCode: generateSignupInviteCode(),
+      created_by: null, createdAt: ts()
     });
     suPendingFamilyId = familyDocRef.id;
     showOnboardingStep(3);
@@ -284,16 +326,20 @@ async function obStep3Advance() {
   if (pin.length < 4) { errEl.textContent = 'Entrez votre code à 4 chiffres'; return; }
   errEl.textContent = '';
   try {
-    const existing = await db.collection('users').where('email', '==', email).get();
-    if (!existing.empty) { errEl.textContent = 'Cet email est déjà utilisé'; return; }
-    const ref = await db.collection('users').add({
-      email, pin, familyId: suPendingFamilyId,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    const [newSnap, oldSnap] = await Promise.all([
+      profilsRef().where('email', '==', email).get(),
+      db.collection('users').where('email', '==', email).get()
+    ]);
+    if (!newSnap.empty || !oldSnap.empty) { errEl.textContent = 'Cet email est déjà utilisé'; return; }
+    const ref = await profilsRef().add({
+      nom: name, email, code_pin: pin,
+      photo: tempPhoto || null, familyId: suPendingFamilyId, createdAt: ts()
     });
-    await db.collection('families').doc(suPendingFamilyId).collection('members').doc(ref.id).set({
-      name, email, photo: tempPhoto || null,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    await familleMembresRef().add({
+      famille_id: suPendingFamilyId, profil_id: ref.id, role: 'admin',
+      nom: name, email, photo: tempPhoto || null, createdAt: ts()
     });
+    await familleRef(suPendingFamilyId).update({ created_by: ref.id });
     currentUser = { id: ref.id, name, email, photo: tempPhoto || null, familyId: suPendingFamilyId };
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
     showOnboardingStep(4);
@@ -393,6 +439,8 @@ async function runMigrationIfNeeded() {
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
 
     hideMigrationBanner(banner);
+    // Run v2 schema migration after v1 family migration
+    await runV2MigrationIfNeeded().catch(e => console.warn('[migration v2]', e));
     loadResources();
     enterApp();
     showToast('Migration terminée — bienvenue dans la nouvelle version !');
@@ -459,7 +507,10 @@ async function changeProfilePhoto(input) {
       ctx.drawImage(img, (img.width - min)/2, (img.height - min)/2, min, min, 0, 0, size, size);
       const photo = canvas.toDataURL('image/jpeg', 0.6);
       try {
-        await familyRef().collection('members').doc(currentUser.id).update({ photo });
+        // Update profil + famille_membre
+        await profilRef(currentUser.id).update({ photo });
+        const member = await getFamilleMember(currentUser.familyId, currentUser.id);
+        if (member) await familleMembresRef().doc(member.id).update({ photo });
         currentUser.photo = photo;
         localStorage.setItem('famcar_user', JSON.stringify(currentUser));
         updateUserPill();
@@ -496,7 +547,7 @@ async function saveNewPin() {
   const pin = Array.from(document.querySelectorAll('#change-pin-input input')).map(i => i.value.replace(/\D/g, '')).join('');
   if (pin.length < 4) { document.getElementById('change-pin-error').textContent = 'Entrez 4 chiffres'; return; }
   try {
-    await db.collection('users').doc(currentUser.id).update({ pin });
+    await profilRef(currentUser.id).update({ code_pin: pin });
     closeSheet();
     showToast('Code personnel mis à jour ✓');
   } catch (e) { document.getElementById('change-pin-error').textContent = 'Erreur — réessayez'; }
@@ -519,9 +570,10 @@ let _pendingResourceJoinCode = _resourceJoinCodeFromUrl || null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (currentUser?.familyId) {
+    // Run data migration in background (non-blocking)
+    runV2MigrationIfNeeded().catch(e => console.warn('[migration]', e));
     await loadResources();
     enterApp();
-    // Handle pending resource invite for already-logged-in users
     if (_pendingResourceJoinCode) {
       await handleResourceJoinCode(_pendingResourceJoinCode);
       _pendingResourceJoinCode = null;

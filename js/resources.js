@@ -5,89 +5,60 @@
 // Roles map: resourceId → role ('admin'|'member'|'guest')
 window._myResourceRoles = {};
 
-// Load resources from Firestore (replaces loadCars)
-// Reads from 'resources' collection; auto-migrates from 'cars' if empty
+// Load resources — reads from new 'ressources' top-level collection
 async function loadResources() {
   try {
-    let snap = await familyRef().collection('resources').orderBy('name').get();
+    let allResources = await getFamilleRessources(currentUser.familyId);
 
-    if (snap.empty) {
-      // Migrate cars → resources (collection entière vide)
-      const carsSnap = await familyRef().collection('cars').get();
-      if (!carsSnap.empty) {
-        const batch = db.batch();
-        carsSnap.forEach(doc => {
-          const ref = familyRef().collection('resources').doc(doc.id);
-          batch.set(ref, { ...doc.data(), type: 'car' }, { merge: true });
-        });
-        await batch.commit();
-        snap = await familyRef().collection('resources').orderBy('name').get();
-      }
-    }
+    // Normalise field names (nom → name for JS compat) + ensure type
+    allResources = allResources.map(r => ({
+      ...r,
+      name: r.name || r.nom || 'Ressource',
+      type: r.type || 'car'
+    }));
 
-    let allResources = [];
-    snap.forEach(doc => allResources.push({ id: doc.id, ...doc.data() }));
-
-    // Migrate cars → resources fields (cas où resource existe mais sans données car/voiture)
-    const bareCarResources = allResources.filter(r =>
-      r.type === 'car' && !r.plaque && !r.assurance && !r.observations
-    );
-    if (bareCarResources.length > 0) {
-      const carsSnap = await familyRef().collection('cars').get();
-      if (!carsSnap.empty) {
-        const carsById = {};
-        carsSnap.forEach(doc => { carsById[doc.id] = doc.data(); });
-        const batch = db.batch();
-        let migrated = false;
-        for (const res of bareCarResources) {
-          const carData = carsById[res.id];
-          if (carData && (carData.plaque || carData.assurance || carData.fuelLevel != null)) {
-            const ref = familyRef().collection('resources').doc(res.id);
-            batch.set(ref, { ...carData, type: 'car' }, { merge: true });
-            Object.assign(res, carData, { type: 'car' });
-            migrated = true;
-          }
-        }
-        if (migrated) await batch.commit();
-      }
-    }
-
+    // First load: create a default car if family has none
     if (allResources.length === 0) {
-      const ref = await familyRef().collection('resources').add({
-        name: 'Voiture familiale', emoji: '🚗', type: 'car', fuelLevel: null
+      const ref = await ressourcesRef().add({
+        famille_id: currentUser.familyId,
+        nom: 'Voiture familiale', name: 'Voiture familiale',
+        emoji: '🚗', type: 'car', fuelLevel: null,
+        createdAt: ts()
       });
       allResources = [{ id: ref.id, name: 'Voiture familiale', emoji: '🚗', type: 'car', fuelLevel: null }];
     }
-
-    // Ensure all resources have a type
-    allResources = allResources.map(r => ({ ...r, type: r.type || 'car' }));
 
     // ── Resource Access Check ──
     const myAccessEntries = await getMyResourceAccessEntries(currentUser.id, currentUser.familyId);
 
     if (myAccessEntries.length === 0) {
-      // No access entries yet → migrate: grant access to all existing resources
-      const familyDoc = await familyRef().get();
+      // No access entries yet → auto-grant access to all family resources
+      const familyDoc = await familleRef(currentUser.familyId).get();
       const isAdmin = familyDoc.exists && familyDoc.data().created_by === currentUser.id;
       const role = isAdmin ? 'admin' : 'member';
-      const now = firebase.firestore.FieldValue.serverTimestamp();
       const batch = db.batch();
       for (const res of allResources) {
-        const ref = db.collection('resource_access').doc();
+        const ref = accesRessourceRef().doc();
         batch.set(ref, {
-          resourceId: res.id, profileId: currentUser.id,
-          familyId: currentUser.familyId, role, status: 'accepted',
-          invited_at: now, accepted_at: now
+          ressource_id: res.id, profil_id: currentUser.id,
+          famille_id: currentUser.familyId, role, statut: 'accepted',
+          invited_at: ts(), accepted_at: ts()
         });
         window._myResourceRoles[res.id] = role;
       }
       await batch.commit();
       resources = allResources;
     } else {
-      // Filter resources by accepted access entries
       window._myResourceRoles = {};
-      myAccessEntries.forEach(e => { window._myResourceRoles[e.resourceId] = e.role; });
-      const acceptedIds = new Set(myAccessEntries.filter(e => e.status === 'accepted').map(e => e.resourceId));
+      myAccessEntries.forEach(e => {
+        const rid = e.ressource_id || e.resourceId;
+        window._myResourceRoles[rid] = e.role;
+      });
+      const acceptedIds = new Set(
+        myAccessEntries
+          .filter(e => (e.statut ?? e.status) === 'accepted')
+          .map(e => e.ressource_id || e.resourceId)
+      );
       resources = allResources.filter(r => acceptedIds.has(r.id));
     }
 
@@ -101,7 +72,7 @@ async function loadResources() {
     subscribeBookings();
     subscribeFuelReports();
   } catch (e) {
-    console.error('Firebase error:', e);
+    console.error('Firebase error (loadResources):', e);
     document.getElementById('cal-grid').innerHTML =
       '<div class="loading" style="flex-direction:column;gap:8px;color:var(--danger)">⚠️ Connexion impossible<br><small style="color:var(--text-light)">Vérifiez votre connexion ou Firebase.</small></div>';
   }
@@ -201,35 +172,18 @@ function cycleCar() {
 function subscribeBookings() {
   if (unsubscribe) unsubscribe();
 
-  // Query by resourceId (new), but also by carId (legacy) — merge results
-  const snap1 = familyRef().collection('bookings')
-    .where('resourceId', '==', selectedResource)
-    .onSnapshot(handleBookingsSnapshot);
+  // Subscribe to new reservations collection
+  const unsub1 = reservationsRef()
+    .where('ressource_id', '==', selectedResource)
+    .onSnapshot(snap => {
+      bookings = {};
+      snap.forEach(doc => expandBookingToMap(reservationToJS(doc.data(), doc.id)));
+      renderCalendar();
+      renderExperiencePanels();
+      if (document.getElementById('booking-modal')?.classList.contains('open')) renderBmCalendar();
+    });
 
-  // Also subscribe to legacy carId bookings (for backward compat during migration window)
-  let snap2 = null;
-  const hasLegacy = resources.some(r => r.id === selectedResource && r.type === 'car');
-  if (hasLegacy) {
-    snap2 = familyRef().collection('bookings')
-      .where('carId', '==', selectedResource)
-      .onSnapshot(snap => {
-        // Merge with existing bookings (only add new entries)
-        snap.forEach(doc => {
-          const d = { id: doc.id, ...doc.data() };
-          // Skip if already loaded via resourceId subscription
-          if (d.resourceId && d.resourceId === selectedResource) return;
-          expandBookingToMap(d);
-        });
-        renderCalendar();
-        renderExperiencePanels();
-        if (document.getElementById('booking-modal')?.classList.contains('open')) renderBmCalendar();
-      });
-  }
-
-  unsubscribe = () => {
-    snap1();
-    if (snap2) snap2();
-  };
+  unsubscribe = unsub1;
 }
 
 function handleBookingsSnapshot(snap) {
@@ -302,19 +256,19 @@ async function confirmAddResource() {
   if (!name) { if (errEl) errEl.textContent = 'Entrez un nom'; return; }
   try {
     const emoji = type === 'house' ? '🏠' : '🚗';
-    const ref = await familyRef().collection('resources').add({
-      name, type, emoji,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    const ref = await ressourcesRef().add({
+      famille_id: currentUser.familyId,
+      nom: name, name, type, emoji,
+      createdAt: ts()
     });
     const newRes = { id: ref.id, name, type, emoji };
     resources.push(newRes);
 
     // Auto-grant admin access to the creator
-    const now = firebase.firestore.FieldValue.serverTimestamp();
-    await db.collection('resource_access').add({
-      resourceId: ref.id, profileId: currentUser.id,
-      familyId: currentUser.familyId, role: 'admin',
-      status: 'accepted', invited_at: now, accepted_at: now
+    await accesRessourceRef().add({
+      ressource_id: ref.id, profil_id: currentUser.id,
+      famille_id: currentUser.familyId, role: 'admin',
+      statut: 'accepted', invited_at: ts(), accepted_at: ts()
     });
     if (!window._myResourceRoles) window._myResourceRoles = {};
     window._myResourceRoles[ref.id] = 'admin';
@@ -363,9 +317,7 @@ async function saveCarInfo() {
   const assurance = (document.getElementById('car-assurance')?.value || '').trim();
   const observations = (document.getElementById('car-observations')?.value || '').trim();
   try {
-    await familyRef().collection('resources').doc(selectedResource).update({ plaque, assurance, observations });
-    // Also update legacy cars collection
-    try { await familyRef().collection('cars').doc(selectedResource).update({ plaque, assurance, observations }); } catch(e) {}
+    await ressourcesRef().doc(selectedResource).update({ plaque, assurance, observations });
     const res = resources.find(r => r.id === selectedResource);
     if (res) Object.assign(res, { plaque, assurance, observations });
     closeSheet();
@@ -417,7 +369,7 @@ async function saveHouseInfo() {
   const address = (document.getElementById('house-address')?.value || '').trim();
   const observations = (document.getElementById('house-observations')?.value || '').trim();
   try {
-    await familyRef().collection('resources').doc(selectedResource).update({ address, observations });
+    await ressourcesRef().doc(selectedResource).update({ address, observations });
     const res = resources.find(r => r.id === selectedResource);
     if (res) Object.assign(res, { address, observations });
     closeSheet();
@@ -439,7 +391,7 @@ async function _getOrCreateResourceInviteCode(resourceId) {
   const res = resources.find(r => r.id === resourceId);
   if (res?.inviteCode) return res.inviteCode;
   const code = _generateResourceInviteCode();
-  await familyRef().collection('resources').doc(resourceId).update({ inviteCode: code });
+  await ressourcesRef().doc(resourceId).update({ inviteCode: code });
   if (res) res.inviteCode = code;
   return code;
 }
@@ -485,8 +437,13 @@ async function showResourceAccessSheet(resourceId) {
     const userNames = {};
     await Promise.all(pending.map(async item => {
       try {
-        const memberDoc = await familyRef().collection('members').doc(item.profileId).get();
-        userNames[item.profileId] = memberDoc.exists ? (memberDoc.data().name || item.profileId) : item.profileId;
+        const pid = item.profil_id || item.profileId;
+        const pDoc = await profilRef(pid).get();
+        if (pDoc.exists) { userNames[pid] = pDoc.data().nom || pDoc.data().name || pid; }
+        else {
+          const m = await getFamilleMember(currentUser.familyId, pid);
+          userNames[pid] = m?.nom || m?.name || pid;
+        }
       } catch(e) { userNames[item.profileId] = item.profileId; }
     }));
 
@@ -567,43 +524,52 @@ async function showResourceManagePage(resourceId) {
   // Load data in parallel
   const [allEntries, bookingsSnap, familyDoc, inviteCode] = await Promise.all([
     getAccessEntriesForResource(resourceId),
-    familyRef().collection('bookings').where('resourceId', '==', resourceId).get().catch(() => ({ size: 0 })),
-    familyRef().get().catch(() => null),
+    reservationsRef().where('ressource_id', '==', resourceId).get().catch(() => ({ size: 0 })),
+    familleRef(currentUser.familyId).get().catch(() => null),
     isAdmin ? _getOrCreateResourceInviteCode(resourceId) : Promise.resolve(null)
   ]);
 
-  const familyName = familyDoc?.exists ? (familyDoc.data().name || 'Famille') : 'Famille';
-  const accepted = allEntries.filter(e => e.status === 'accepted');
-  const pending  = allEntries.filter(e => e.status === 'pending');
+  const familyName = familyDoc?.exists ? (familyDoc.data().nom || familyDoc.data().name || 'Famille') : 'Famille';
+  const accepted = allEntries.filter(e => (e.statut ?? e.status) === 'accepted');
+  const pending  = allEntries.filter(e => (e.statut ?? e.status) === 'pending');
   const totalBookings = bookingsSnap.size || 0;
 
-  // Fetch member details for all entries
+  // Fetch member details for all entries (from profils collection)
   const memberDetails = {};
   await Promise.all(allEntries.map(async e => {
+    const pid = e.profil_id || e.profileId;
     try {
-      const doc = await familyRef().collection('members').doc(e.profileId).get();
-      if (doc.exists) memberDetails[e.profileId] = { name: doc.data().name || '?', photo: doc.data().photo || null, createdAt: doc.data().createdAt };
-      else memberDetails[e.profileId] = { name: e.profileId.slice(0, 8), photo: null, createdAt: null };
-    } catch(_) { memberDetails[e.profileId] = { name: '?', photo: null, createdAt: null }; }
+      // Try new profils collection first
+      const pDoc = await profilRef(pid).get();
+      if (pDoc.exists) {
+        memberDetails[pid] = { name: pDoc.data().nom || pDoc.data().name || '?', photo: pDoc.data().photo || null, createdAt: pDoc.data().createdAt };
+      } else {
+        // Fallback: famille_membres
+        const member = await getFamilleMember(currentUser.familyId, pid);
+        memberDetails[pid] = { name: member?.nom || member?.name || pid.slice(0, 8), photo: member?.photo || null, createdAt: member?.createdAt };
+      }
+    } catch(_) { memberDetails[pid] = { name: '?', photo: null, createdAt: null }; }
   }));
 
+  function pid(entry) { return entry.profil_id || entry.profileId; }
+
   function fmtJoined(entry) {
-    const member = memberDetails[entry.profileId];
-    const ts = entry.accepted_at || member?.createdAt;
-    if (!ts) return 'Récemment';
-    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    const member = memberDetails[pid(entry)];
+    const when = entry.accepted_at || member?.createdAt;
+    if (!when) return 'Récemment';
+    const d = when.toDate ? when.toDate() : new Date(when);
     return 'Depuis ' + d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
   }
 
-  function avatarHtml(profileId, extraClass = '') {
-    const m = memberDetails[profileId];
+  function avatarHtml(profilId, extraClass = '') {
+    const m = memberDetails[profilId];
     const initials = (m?.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
     if (m?.photo) return `<div class="rm-m-avatar ${extraClass}"><img src="${m.photo}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>`;
     return `<div class="rm-m-avatar ${extraClass}">${initials}</div>`;
   }
 
-  function pendingAvatarHtml(profileId) {
-    const m = memberDetails[profileId];
+  function pendingAvatarHtml(profilId) {
+    const m = memberDetails[profilId];
     const initials = (m?.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
     if (m?.photo) return `<div class="rm-p-avatar"><img src="${m.photo}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>`;
     return `<div class="rm-p-avatar">${initials}</div>`;
@@ -622,9 +588,9 @@ async function showResourceManagePage(resourceId) {
           <div class="rm-pending-count">${pending.length}</div>
         </div>
         ${pending.map(e => {
-          const name = memberDetails[e.profileId]?.name || e.profileId;
-          const ts = e.invited_at?.toDate ? e.invited_at.toDate() : null;
-          const meta = ts ? 'Via lien · ' + _relativeTime(ts) : 'Via lien';
+          const name = memberDetails[pid(e)]?.name || pid(e);
+          const when = e.invited_at?.toDate ? e.invited_at.toDate() : null;
+          const meta = when ? 'Via lien · ' + _relativeTime(when) : 'Via lien';
           return `<div class="rm-pending-row" id="pending-row-${e.id}">
             ${pendingAvatarHtml(e.profileId)}
             <div class="rm-p-info">
@@ -637,13 +603,15 @@ async function showResourceManagePage(resourceId) {
             </div>
           </div>`;
         }).join('')}
+
       </div>`;
   }
 
   // ── Members section ──
   const membersHtml = accepted.map(e => {
-    const isMe = e.profileId === currentUser?.id;
-    const name = memberDetails[e.profileId]?.name || e.profileId;
+    const profilId = pid(e);
+    const isMe = profilId === currentUser?.id;
+    const name = memberDetails[profilId]?.name || profilId;
     const displayName = isMe ? `${name} · moi` : name;
     const avClass = isMe ? 'me' : (e.role === 'guest' ? 'guest-av' : '');
     const pillClass = e.role === 'admin' ? 'admin' : (e.role === 'guest' ? 'guest-pill' : '');
@@ -651,7 +619,7 @@ async function showResourceManagePage(resourceId) {
       ? `<div class="rm-m-menu" onclick="_rmMemberMenu('${e.id}','${name}','${resourceId}')">···</div>`
       : '';
     return `<div class="rm-member-row">
-      ${avatarHtml(e.profileId, avClass)}
+      ${avatarHtml(profilId, avClass)}
       <div class="rm-m-info">
         <div class="rm-m-name">${displayName}</div>
         <div class="rm-m-joined">${fmtJoined(e)}</div>
@@ -830,7 +798,7 @@ async function _rmDeleteResource(resourceId) {
 
 async function _rmConfirmDelete(resourceId) {
   try {
-    await familyRef().collection('resources').doc(resourceId).delete();
+    await ressourcesRef().doc(resourceId).delete();
     resources = resources.filter(r => r.id !== resourceId);
     hideResourceManagePage();
     if (resources.length > 0) {
@@ -846,28 +814,28 @@ async function _rmConfirmDelete(resourceId) {
 async function handleResourceJoinCode(code) {
   if (!currentUser?.familyId) return;
   try {
-    const snap = await familyRef().collection('resources').where('inviteCode', '==', code).limit(1).get();
+    const snap = await ressourcesRef().where('inviteCode', '==', code).limit(1).get();
     if (snap.empty) { showToast('Lien invalide ou expiré'); return; }
     const resourceId = snap.docs[0].id;
 
     // Check for existing access entry
-    const existing = await db.collection('resource_access')
-      .where('resourceId', '==', resourceId)
-      .where('profileId', '==', currentUser.id)
-      .limit(1).get();
+    const existing = await accesRessourceRef()
+      .where('ressource_id', '==', resourceId)
+      .where('profil_id', '==', currentUser.id)
+      .get();
 
     if (!existing.empty) {
-      const status = existing.docs[0].data().status;
-      if (status === 'accepted') { showToast('Tu as déjà accès à cette ressource'); return; }
-      if (status === 'pending') { showToast('Ta demande est déjà en attente d\'approbation'); return; }
+      const statut = existing.docs[0].data().statut;
+      if (statut === 'accepted') { showToast('Tu as déjà accès à cette ressource'); return; }
+      if (statut === 'pending') { showToast('Ta demande est déjà en attente d\'approbation'); return; }
     }
 
-    await db.collection('resource_access').add({
-      resourceId, profileId: currentUser.id, familyId: currentUser.familyId,
-      role: 'member', status: 'pending',
-      invited_at: firebase.firestore.FieldValue.serverTimestamp(),
-      accepted_at: null
+    await accesRessourceRef().add({
+      ressource_id: resourceId, profil_id: currentUser.id,
+      famille_id: currentUser.familyId,
+      role: 'member', statut: 'pending',
+      invited_at: ts(), accepted_at: null
     });
-    showToast('Demande envoy\u00e9e \u2014 en attente d\'approbation par l\'admin');
+    showToast('Demande envoyée — en attente d\'approbation par l\'admin');
   } catch(e) { console.error(e); showToast('Erreur — réessayez'); }
 }

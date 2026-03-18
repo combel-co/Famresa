@@ -53,9 +53,8 @@ async function refreshEventsList(groupId) {
   const listEl = document.getElementById('events-list');
   if (!listEl) return;
   try {
-    const snap = await familyRef().collection('houseEvents')
+    const snap = await evenementsSejourRef()
       .where('groupId', '==', groupId)
-      .orderBy('createdAt', 'asc')
       .get();
     if (snap.empty) {
       listEl.innerHTML = '<div style="color:var(--text-light);font-size:14px">Aucune entrée pour ce séjour.</div>';
@@ -84,14 +83,14 @@ async function addEventEntry(groupId) {
   const text = (document.getElementById('event-text')?.value || '').trim();
   if (!text) { showToast('Entrez une description'); return; }
   try {
-    await familyRef().collection('houseEvents').add({
+    await evenementsSejourRef().add({
       groupId,
-      resourceId: selectedResource,
+      ressource_id: selectedResource,
       type: _selectedEventType,
       description: text,
-      userId: currentUser?.id || null,
+      profil_id: currentUser?.id || null,
       userName: currentUser?.name || 'Anonyme',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: ts()
     });
     document.getElementById('event-text').value = '';
     showToast('Entrée ajoutée ✓');
