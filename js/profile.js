@@ -79,7 +79,7 @@ function renderProfileTab() {
               onclick="event.stopPropagation();showResourceManagePage('${res.id}')">Gérer l'accès ›</div>`
         : '';
 
-      return `<div class="pf-resource-card" onclick="selectResource('${res.id}');switchTab('dashboard')">
+      return `<div class="pf-resource-card" onclick="selectResource('${res.id}');switchTab('resource')">
         <div class="pf-resource-icon">${res.emoji || '🚗'}</div>
         <div class="pf-resource-title">${res.name}</div>
         <div class="pf-resource-sub">${sub}</div>
