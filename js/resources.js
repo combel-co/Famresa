@@ -5,50 +5,94 @@
 // Roles map: resourceId → role ('admin'|'member'|'guest')
 window._myResourceRoles = {};
 
-// Load resources — reads from new 'ressources' top-level collection
+// Load resources — reads from new 'ressources' collection with fallback to legacy
 async function loadResources() {
   try {
-    let allResources = await getFamilleRessources(currentUser.familyId);
+    const familyId = currentUser.familyId;
 
-    // Normalise field names (nom → name for JS compat) + ensure type
+    // ── 1. Load resources (new collection first, legacy fallback) ──
+    let allResources = [];
+    try {
+      allResources = await getFamilleRessources(familyId);
+    } catch(_) {}
+
+    if (allResources.length === 0) {
+      // Fallback: legacy families/{id}/resources then cars
+      try {
+        const snap = await db.collection('families').doc(familyId).collection('resources').get();
+        snap.forEach(d => allResources.push({ id: d.id, ...d.data() }));
+      } catch(_) {}
+    }
+    if (allResources.length === 0) {
+      try {
+        const snap = await db.collection('families').doc(familyId).collection('cars').get();
+        snap.forEach(d => allResources.push({ id: d.id, type: 'car', ...d.data() }));
+      } catch(_) {}
+    }
+
+    // Normalise field names
     allResources = allResources.map(r => ({
       ...r,
       name: r.name || r.nom || 'Ressource',
       type: r.type || 'car'
     }));
 
-    // First load: create a default car if family has none
+    // If still empty, create a default car in new collection
     if (allResources.length === 0) {
-      const ref = await ressourcesRef().add({
-        famille_id: currentUser.familyId,
-        nom: 'Voiture familiale', name: 'Voiture familiale',
-        emoji: '🚗', type: 'car', fuelLevel: null,
-        createdAt: ts()
-      });
-      allResources = [{ id: ref.id, name: 'Voiture familiale', emoji: '🚗', type: 'car', fuelLevel: null }];
+      try {
+        const ref = await ressourcesRef().add({
+          famille_id: familyId,
+          nom: 'Voiture familiale', name: 'Voiture familiale',
+          emoji: '🚗', type: 'car', fuelLevel: null,
+          createdAt: ts()
+        });
+        allResources = [{ id: ref.id, name: 'Voiture familiale', emoji: '🚗', type: 'car', fuelLevel: null }];
+      } catch(_) {
+        // If write fails too, just work with nothing
+        allResources = [];
+      }
     }
 
-    // ── Resource Access Check ──
-    const myAccessEntries = await getMyResourceAccessEntries(currentUser.id, currentUser.familyId);
+    // ── 2. Access check (new collection first, legacy fallback) ──
+    let myAccessEntries = [];
+    try {
+      myAccessEntries = await getMyResourceAccessEntries(currentUser.id, familyId);
+    } catch(_) {}
 
     if (myAccessEntries.length === 0) {
-      // No access entries yet → auto-grant access to all family resources
-      const familyDoc = await familleRef(currentUser.familyId).get();
-      const isAdmin = familyDoc.exists && familyDoc.data().created_by === currentUser.id;
-      const role = isAdmin ? 'admin' : 'member';
-      const batch = db.batch();
-      for (const res of allResources) {
-        const ref = accesRessourceRef().doc();
-        batch.set(ref, {
-          ressource_id: res.id, profil_id: currentUser.id,
-          famille_id: currentUser.familyId, role, statut: 'accepted',
-          invited_at: ts(), accepted_at: ts()
-        });
-        window._myResourceRoles[res.id] = role;
-      }
-      await batch.commit();
+      // Fallback: legacy resource_access
+      try {
+        const snap = await db.collection('resource_access').where('profileId', '==', currentUser.id).get();
+        snap.forEach(d => myAccessEntries.push(accesRessourceToJS(d.data(), d.id)));
+        myAccessEntries = myAccessEntries.filter(e => e.familyId === familyId || e.famille_id === familyId);
+      } catch(_) {}
+    }
+
+    if (myAccessEntries.length === 0 && allResources.length > 0) {
+      // No access records yet — determine role from family created_by
+      let role = 'member';
+      try {
+        const famDoc = await db.collection('families').doc(familyId).get()
+          .catch(() => null) || await familleRef(familyId).get().catch(() => null);
+        if (famDoc?.exists && famDoc.data().created_by === currentUser.id) role = 'admin';
+      } catch(_) {}
+
+      // Try writing to new collection; silently ignore if not permitted yet
+      try {
+        const batch = db.batch();
+        for (const res of allResources) {
+          batch.set(accesRessourceRef().doc(), {
+            ressource_id: res.id, profil_id: currentUser.id,
+            famille_id: familyId, role, statut: 'accepted',
+            invited_at: ts(), accepted_at: ts()
+          });
+        }
+        await batch.commit();
+      } catch(_) {}
+
+      allResources.forEach(r => { window._myResourceRoles[r.id] = role; });
       resources = allResources;
-    } else {
+    } else if (myAccessEntries.length > 0) {
       window._myResourceRoles = {};
       myAccessEntries.forEach(e => {
         const rid = e.ressource_id || e.resourceId;
@@ -60,6 +104,14 @@ async function loadResources() {
           .map(e => e.ressource_id || e.resourceId)
       );
       resources = allResources.filter(r => acceptedIds.has(r.id));
+      // If none match (e.g. access entries from old IDs), grant all
+      if (resources.length === 0 && allResources.length > 0) {
+        resources = allResources;
+        allResources.forEach(r => { window._myResourceRoles[r.id] = 'member'; });
+      }
+    } else {
+      resources = allResources;
+      allResources.forEach(r => { window._myResourceRoles[r.id] = 'member'; });
     }
 
     if (resources.length === 0) {
@@ -172,18 +224,41 @@ function cycleCar() {
 function subscribeBookings() {
   if (unsubscribe) unsubscribe();
 
-  // Subscribe to new reservations collection
-  const unsub1 = reservationsRef()
-    .where('ressource_id', '==', selectedResource)
-    .onSnapshot(snap => {
-      bookings = {};
-      snap.forEach(doc => expandBookingToMap(reservationToJS(doc.data(), doc.id)));
-      renderCalendar();
-      renderExperiencePanels();
-      if (document.getElementById('booking-modal')?.classList.contains('open')) renderBmCalendar();
-    });
+  let unsubNew = null, unsubLegacy = null;
 
-  unsubscribe = unsub1;
+  const processSnap = (snap, isNew) => {
+    if (isNew) bookings = {};
+    snap.forEach(doc => {
+      const d = isNew
+        ? reservationToJS(doc.data(), doc.id)
+        : { id: doc.id, ...doc.data() };
+      expandBookingToMap(d);
+    });
+    renderCalendar();
+    renderExperiencePanels();
+    if (document.getElementById('booking-modal')?.classList.contains('open')) renderBmCalendar();
+  };
+
+  // New collection
+  try {
+    unsubNew = reservationsRef()
+      .where('ressource_id', '==', selectedResource)
+      .onSnapshot(snap => processSnap(snap, true),
+        err => { console.warn('[reservations] snapshot error:', err); });
+  } catch(_) {}
+
+  // Legacy fallback (families/{id}/bookings by resourceId or carId)
+  try {
+    const legacyQuery = db.collection('families').doc(currentUser.familyId)
+      .collection('bookings').where('resourceId', '==', selectedResource);
+    unsubLegacy = legacyQuery.onSnapshot(snap => processSnap(snap, false),
+      err => { console.warn('[bookings legacy] snapshot error:', err); });
+  } catch(_) {}
+
+  unsubscribe = () => {
+    if (unsubNew) unsubNew();
+    if (unsubLegacy) unsubLegacy();
+  };
 }
 
 function handleBookingsSnapshot(snap) {
