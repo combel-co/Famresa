@@ -27,11 +27,13 @@ function resourceAccessRef() {
 }
 
 async function getMyResourceAccessEntries(profileId, familyId) {
+  // Single-field index only (no composite index needed)
   const snap = await resourceAccessRef()
     .where('profileId', '==', profileId)
-    .where('familyId', '==', familyId)
     .get();
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(e => e.familyId === familyId);
 }
 
 async function createResourceAccess(data) {
@@ -52,9 +54,10 @@ async function updateResourceAccessStatus(accessId, status) {
 async function getPendingRequestsForFamily(familyId) {
   const snap = await resourceAccessRef()
     .where('familyId', '==', familyId)
-    .where('status', '==', 'pending')
     .get();
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(e => e.status === 'pending');
 }
 
 async function getAccessEntriesForResource(resourceId) {
