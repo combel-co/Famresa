@@ -7,9 +7,9 @@ async function showStaySheet(groupId, bookingHint) {
   // Fetch all booking docs in this stay group
   let stayBookings = [];
   try {
-    const snap = await familyRef().collection('bookings')
+    const snap = await reservationsRef()
       .where('reservationGroupId', '==', groupId).get();
-    snap.forEach(doc => stayBookings.push({ id: doc.id, ...doc.data() }));
+    snap.forEach(doc => stayBookings.push(reservationToJS(doc.data(), doc.id)));
   } catch(e) {
     // Fallback to hint
     if (bookingHint) stayBookings = [bookingHint];
@@ -38,14 +38,9 @@ async function showStaySheet(groupId, bookingHint) {
   // Load checklist progress summary
   let checklistSummary = '';
   try {
-    const [ciSnap, coSnap] = await Promise.all([
-      familyRef().collection('checklistStatus')
-        .where('groupId', '==', groupId).where('type', '==', 'checkin').get(),
-      familyRef().collection('checklistStatus')
-        .where('groupId', '==', groupId).where('type', '==', 'checkout').get()
-    ]);
-    const ciDone = ciSnap.size;
-    const coDone = coSnap.size;
+    const allChecks = await checklistStatutsRef().where('groupId', '==', groupId).get();
+    const ciDone = allChecks.docs.filter(d => d.data().type === 'checkin').length;
+    const coDone = allChecks.docs.filter(d => d.data().type === 'checkout').length;
     checklistSummary = `<div style="display:flex;gap:12px;margin-bottom:16px">
       <div style="flex:1;background:var(--accent-light);border-radius:10px;padding:10px 12px;text-align:center">
         <div style="font-size:11px;color:var(--text-light);margin-bottom:2px">Checkin</div>

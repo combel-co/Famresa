@@ -304,18 +304,16 @@ async function confirmRangeBooking() {
   }
 
   try {
-    await familyRef().collection('bookings').add({
-      resourceId: selectedResource,
-      carId: selectedResource, // backward compat
+    await reservationsRef().add({
+      ressource_id: selectedResource,
+      profil_id: currentUser.id,
       userId: currentUser.id, userName: currentUser.name, photo: currentUser.photo || null,
+      date_debut: startDate, date_fin: endDate,
       startDate, endDate, startHour, endHour,
       destinations: destinations.map(d => ({ name: d.name, kmFromParis: d.km })),
-      kmEstimate,
-      // Legacy compat
-      date: startDate,
       destination: destinations.map(d => d.name).join(', '),
-      distanceKm: kmEstimate,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      kmEstimate,
+      createdAt: ts()
     });
     const xpGained = 20 + Math.round(kmEstimate / 25);
     closeBookingModal();
@@ -341,17 +339,19 @@ async function createStay() {
   }
 
   try {
-    const groupId = 'stay_' + familyRef().collection('bookings').doc().id;
+    const groupId = 'stay_' + db.collection('reservations').doc().id;
     const batch = db.batch();
     for (const date of dates) {
-      const ref = familyRef().collection('bookings').doc();
+      const ref = reservationsRef().doc();
       batch.set(ref, {
-        resourceId: selectedResource,
-        date, startDate, endDate,
+        ressource_id: selectedResource,
+        profil_id: currentUser.id,
         userId: currentUser.id, userName: currentUser.name, photo: currentUser.photo || null,
+        date_debut: startDate, date_fin: endDate,
+        date, startDate, endDate,
         reservationGroupId: groupId,
         motif: motif || null,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        createdAt: ts()
       });
     }
     await batch.commit();
@@ -363,7 +363,7 @@ async function createStay() {
 
 async function cancelStay(groupId) {
   try {
-    const snap = await familyRef().collection('bookings')
+    const snap = await reservationsRef()
       .where('reservationGroupId', '==', groupId).get();
     const batch = db.batch();
     snap.forEach(doc => batch.delete(doc.ref));
@@ -375,7 +375,7 @@ async function cancelStay(groupId) {
 
 async function cancelBooking(bookingId) {
   try {
-    await familyRef().collection('bookings').doc(bookingId).delete();
+    await reservationsRef().doc(bookingId).delete();
     closeSheet();
     showToast('Réservation annulée');
   } catch(e) { showToast('Erreur — réessayez'); }
@@ -385,7 +385,7 @@ async function cancelBooking(bookingId) {
 // Le listener Firestore met automatiquement à jour le calendrier et l'historique.
 async function truncateCarBooking(bookingId, newEndDate) {
   try {
-    await familyRef().collection('bookings').doc(bookingId).update({ endDate: newEndDate });
+    await reservationsRef().doc(bookingId).update({ endDate: newEndDate, date_fin: newEndDate });
     closeSheet();
     showToast('Réservation raccourcie');
   } catch(e) { showToast('Erreur — réessayez'); }

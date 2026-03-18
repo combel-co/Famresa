@@ -122,10 +122,16 @@ async function _renderAdminPendingSection() {
     // Fetch user names
     const userNames = {};
     await Promise.all(pending.map(async item => {
+      const pid = item.profil_id || item.profileId;
       try {
-        const memberDoc = await familyRef().collection('members').doc(item.profileId).get();
-        userNames[item.profileId] = memberDoc.exists ? (memberDoc.data().name || item.profileId) : item.profileId;
-      } catch(e) { userNames[item.profileId] = item.profileId; }
+        const pDoc = await profilRef(pid).get();
+        if (pDoc.exists) {
+          userNames[pid] = pDoc.data().nom || pDoc.data().name || pid;
+        } else {
+          const member = await getFamilleMember(currentUser.familyId, pid);
+          userNames[pid] = member?.nom || member?.name || pid;
+        }
+      } catch(e) { userNames[pid] = pid; }
     }));
 
     // Inject admin panel before the promo card
@@ -139,7 +145,7 @@ async function _renderAdminPendingSection() {
         const resName = resourceNames[item.resourceId] || item.resourceId;
         const userName = userNames[item.profileId] || item.profileId;
         return `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px 16px;margin-bottom:10px">
-          <div style="font-weight:700;font-size:14px;margin-bottom:2px">${userName}</div>
+          <div style="font-weight:700;font-size:14px;margin-bottom:2px">${userNames[item.profil_id || item.profileId] || '—'}</div>
           <div style="font-size:12px;color:var(--text-light);margin-bottom:12px">Demande d'accès · ${resName}</div>
           <div style="display:flex;gap:8px">
             <button class="btn btn-primary" style="flex:1;padding:8px;font-size:13px"

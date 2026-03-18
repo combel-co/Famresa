@@ -44,8 +44,11 @@ function updateFamilyPill(name) {
 async function loadFamilyName() {
   if (!currentUser?.familyId) return;
   try {
-    const doc = await db.collection('families').doc(currentUser.familyId).get();
-    if (doc.exists && doc.data().name) updateFamilyPill(doc.data().name);
+    const doc = await familleRef(currentUser.familyId).get();
+    if (doc.exists) {
+      const n = doc.data().nom || doc.data().name;
+      if (n) updateFamilyPill(n);
+    }
   } catch (e) { /* silent fallback */ }
 }
 

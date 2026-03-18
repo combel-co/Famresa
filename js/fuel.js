@@ -131,15 +131,13 @@ async function confirmFuelAfterTrip(bookingId) {
     // Update the resource's fuelLevel
     const res = resources.find(r => r.id === selectedResource);
     if (res && res.type === 'car') {
-      await familyRef().collection('resources').doc(selectedResource).update({ fuelLevel: level });
-      // Also update legacy cars collection for backward compat
-      try { await familyRef().collection('cars').doc(selectedResource).update({ fuelLevel: level }); } catch(e) {}
+      await ressourcesRef().doc(selectedResource).update({ fuelLevel: level });
     }
 
     const booking = getUniqueBookingsSorted().find(b => b.id === bookingId);
-    await familyRef().collection('bookings').doc(bookingId).update({
+    await reservationsRef().doc(bookingId).update({
       fuelReturnLevel: level,
-      fuelUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      fuelUpdatedAt: ts()
     });
 
     const resource = resources.find(r => r.id === selectedResource);

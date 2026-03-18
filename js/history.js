@@ -11,11 +11,11 @@ function generateInviteCode() {
 async function loadAndCopyInviteLink() {
   const el = document.getElementById('invite-link-display');
   try {
-    const famDoc = await familyRef().get();
+    const famDoc = await familleRef(currentUser.familyId).get();
     let code = famDoc.exists && famDoc.data().inviteCode;
     if (!code) {
       code = generateInviteCode();
-      await familyRef().update({ inviteCode: code });
+      await familleRef(currentUser.familyId).update({ inviteCode: code });
     }
     const url = `${location.origin}${location.pathname}?join=${code}`;
     el.textContent = url;

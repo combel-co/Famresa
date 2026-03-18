@@ -22,9 +22,8 @@ async function refreshGuideCards() {
   const el = document.getElementById('guide-cards');
   if (!el) return;
   try {
-    const snap = await familyRef().collection('houseGuides')
-      .where('resourceId', '==', selectedResource)
-      .orderBy('order', 'asc')
+    const snap = await guidesMaisonRef()
+      .where('ressource_id', '==', selectedResource)
       .get();
     if (snap.empty) {
       el.innerHTML = '<div style="color:var(--text-light);font-size:14px;padding:8px 0">Aucune fiche. Ajoutez des infos utiles (Wi-Fi, urgences, voisins...)</div>';
@@ -40,20 +39,6 @@ async function refreshGuideCards() {
   } catch(e) {
     // Firestore index may not exist yet for orderBy — fallback without ordering
     try {
-      const snap = await familyRef().collection('houseGuides')
-        .where('resourceId', '==', selectedResource)
-        .get();
-      if (snap.empty) {
-        el.innerHTML = '<div style="color:var(--text-light);font-size:14px;padding:8px 0">Aucune fiche. Ajoutez des infos utiles (Wi-Fi, urgences, voisins...)</div>';
-        return;
-      }
-      el.innerHTML = snap.docs.map(doc => {
-        const d = doc.data();
-        return `<div style="background:#f8f9fa;border-radius:12px;padding:14px;margin-bottom:10px">
-          <div style="font-weight:700;font-size:15px;margin-bottom:6px">${d.emoji || '📌'} ${d.title || ''}</div>
-          <div style="font-size:14px;color:var(--text);white-space:pre-wrap">${d.content || ''}</div>
-        </div>`;
-      }).join('');
     } catch(e2) {
       el.innerHTML = '<div style="color:var(--danger);font-size:14px">Erreur de chargement.</div>';
     }
@@ -99,15 +84,13 @@ async function saveGuideCard() {
   const emoji = window._selectedGuideEmoji || '📌';
   if (!title) { showToast('Entrez un titre'); return; }
   try {
-    // Get max order
-    const snap = await familyRef().collection('houseGuides')
-      .where('resourceId', '==', selectedResource).get();
+    const snap = await guidesMaisonRef().where('ressource_id', '==', selectedResource).get();
     const maxOrder = snap.docs.reduce((m, d) => Math.max(m, d.data().order || 0), 0);
-    await familyRef().collection('houseGuides').add({
-      resourceId: selectedResource,
+    await guidesMaisonRef().add({
+      ressource_id: selectedResource,
       title, content, emoji,
       order: maxOrder + 1,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: ts()
     });
     showToast('Fiche ajoutée ✓');
     showGuideSheet();
