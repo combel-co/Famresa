@@ -85,13 +85,14 @@ document.addEventListener('click', function (e) {
 // TAB SWITCHING
 // ==========================================
 function switchTab(tab) {
-  activeTab = tab;
+  const normalizedTab = tab === 'resource' ? 'dashboard' : tab;
+  activeTab = normalizedTab;
   ['dashboard', 'calendar', 'leaderboard', 'history'].forEach(name => {
-    document.getElementById(`tab-${name}`)?.classList.toggle('active', name === tab);
-    document.getElementById(`nav-${name}`)?.classList.toggle('active', name === tab);
+    document.getElementById(`tab-${name}`)?.classList.toggle('active', name === normalizedTab);
+    document.getElementById(`nav-${name}`)?.classList.toggle('active', name === normalizedTab);
   });
-  if (tab === 'leaderboard' || tab === 'dashboard') renderExperiencePanels();
-  if (tab === 'history') renderProfileTab();
+  if (normalizedTab === 'leaderboard' || normalizedTab === 'dashboard') renderExperiencePanels();
+  if (normalizedTab === 'history') renderProfileTab();
 }
 
 // ==========================================
@@ -180,4 +181,3 @@ function getDateRange(startStr, endStr) {
   }
   return dates;
 }
-
