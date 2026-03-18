@@ -31,17 +31,24 @@ async function loginUser() {
   if (pin.length < 4) { errEl.textContent = 'Entrez votre code à 4 chiffres'; return; }
   errEl.textContent = '';
   try {
-    // Try new collection first, fallback to legacy
+    // Try new collection first; if permission denied/unavailable, fall through to legacy
     let doc = null, data = null;
-    const newSnap = await profilsRef().where('email', '==', email).get();
-    if (!newSnap.empty) {
-      doc = newSnap.docs[0]; data = doc.data();
-      if (String(data.code_pin ?? data.pin) !== pin) { errEl.textContent = 'Code incorrect'; return; }
-    } else {
+    try {
+      const newSnap = await profilsRef().where('email', '==', email).get();
+      if (!newSnap.empty) {
+        const d = newSnap.docs[0].data();
+        if (String(d.code_pin ?? d.pin) !== pin) { errEl.textContent = 'Code incorrect'; return; }
+        doc = newSnap.docs[0]; data = d;
+      }
+    } catch(_) { /* profils not accessible yet — fall through to users */ }
+
+    if (!doc) {
+      // Legacy path — users collection
       const oldSnap = await db.collection('users').where('email', '==', email).get();
       if (oldSnap.empty) { errEl.textContent = 'Email introuvable'; return; }
-      doc = oldSnap.docs[0]; data = doc.data();
-      if (String(data.pin) !== pin) { errEl.textContent = 'Code incorrect'; return; }
+      const d = oldSnap.docs[0].data();
+      if (String(d.pin) !== pin) { errEl.textContent = 'Code incorrect'; return; }
+      doc = oldSnap.docs[0]; data = d;
     }
 
     const familyId = data.familyId || data.famille_id || null;
