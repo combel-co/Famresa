@@ -42,13 +42,13 @@ const reservationService = {
    * Create a car reservation.
    * @returns {{ success, xpGained, kmEstimate, destinations } | { error, date }}
    */
-  async createCarReservation({ resourceId, userId, userName, photo, startDate, endDate, startHour, endHour, destinations, bookings }) {
+  async createCarReservation({ resourceId, userId, userName, photo, startDate, endDate, startHour, endHour, destinations, bookings, createdBy }) {
     const conflict = this.checkConflicts(startDate, endDate, bookings);
     if (conflict) return { error: 'conflict', date: conflict };
 
     const kmEstimate = destinations.reduce((s, d) => s + d.km * 2, 0);
 
-    await reservationRepository.create({
+    const doc = {
       ressource_id: resourceId,
       profil_id: userId,
       userId, userName, photo: photo || null,
@@ -57,7 +57,10 @@ const reservationService = {
       destinations: destinations.map(d => ({ name: d.name, kmFromParis: d.km })),
       destination: destinations.map(d => d.name).join(', '),
       kmEstimate
-    });
+    };
+    if (createdBy) doc.createdBy = createdBy;
+
+    await reservationRepository.create(doc);
 
     const xpGained = 20 + Math.round(kmEstimate / 25);
     return { success: true, xpGained, kmEstimate, destinations };
@@ -67,22 +70,26 @@ const reservationService = {
    * Create a house stay (one doc per day, batch write).
    * @returns {{ success: true } | { error, date }}
    */
-  async createStayReservation({ resourceId, userId, userName, photo, startDate, endDate, motif, bookings }) {
+  async createStayReservation({ resourceId, userId, userName, photo, startDate, endDate, motif, bookings, createdBy }) {
     const dates = getDateRange(startDate, endDate);
     for (const ds of dates) {
       if (bookings[ds]) return { error: 'conflict', date: ds };
     }
 
     const groupId = reservationRepository.generateGroupId();
-    const docsData = dates.map(date => ({
-      ressource_id: resourceId,
-      profil_id: userId,
-      userId, userName, photo: photo || null,
-      date_debut: startDate, date_fin: endDate,
-      date, startDate, endDate,
-      reservationGroupId: groupId,
-      motif: motif || null
-    }));
+    const docsData = dates.map(date => {
+      const doc = {
+        ressource_id: resourceId,
+        profil_id: userId,
+        userId, userName, photo: photo || null,
+        date_debut: startDate, date_fin: endDate,
+        date, startDate, endDate,
+        reservationGroupId: groupId,
+        motif: motif || null
+      };
+      if (createdBy) doc.createdBy = createdBy;
+      return doc;
+    });
 
     await reservationRepository.createBatch(docsData);
     return { success: true };
@@ -109,6 +116,19 @@ const reservationService = {
     await reservationRepository.update(bookingId, {
       endDate: newEndDate,
       date_fin: newEndDate
+    });
+  },
+
+  /**
+   * Get list of family members eligible as bookers (admin feature).
+   * @returns {Array<{ id, name, photo, initials }>}
+   */
+  async getEligibleBookers(familyId) {
+    const members = await userRepository.getFamilyMembers(familyId);
+    return members.map(m => {
+      const name = m.nom || m.name || 'Membre';
+      const initials = String(name).trim().split(/\s+/).map(p => p[0] || '').join('').toUpperCase().slice(0, 2) || '?';
+      return { id: m.profil_id || m.id, name, photo: m.photo || null, initials };
     });
   },
 
