@@ -29,4 +29,12 @@ const userRepository = {
 
     return null;
   },
+
+  async getFamilyMembers(familyId) {
+    if (!familyId) return [];
+    try {
+      return await getFamilleMembers(familyId);
+    } catch (_) {}
+    return [];
+  },
 };

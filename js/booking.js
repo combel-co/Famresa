@@ -4,11 +4,13 @@
 // Business logic delegated to reservationService
 // (src/modules/reservation/reservation.service.js)
 
-let bm = { startDate: null, endDate: null, startHour: '09:00', endHour: '20:00', destinations: [], step: 'start' };
+let bm = { startDate: null, endDate: null, startHour: '09:00', endHour: '20:00', destinations: [], step: 'start', booker: null, bookerTab: 'member' };
 let bmCurrentStep = 'destination';
+let bmIsAdmin = false;
+let bmMembers = [];
 
 function renderBmSteps() {
-  const steps = ['destination', 'dates', 'hours'];
+  const steps = bmIsAdmin ? ['booker', 'destination', 'dates', 'hours'] : ['destination', 'dates', 'hours'];
   const res = resources.find(r => r.id === selectedResource);
   const isHouse = res && res.type === 'house';
   const currentIndex = steps.indexOf(bmCurrentStep);
@@ -23,6 +25,13 @@ function renderBmSteps() {
     if (step === 'hours' && isHouse) el.style.display = 'none';
     else el.style.display = '';
   });
+
+  // Update booker mini card
+  const bookerVal = document.getElementById('bm-mini-booker-val');
+  if (bookerVal) {
+    if (bm.booker) bookerVal.textContent = bm.booker.name;
+    else bookerVal.textContent = 'Moi-même';
+  }
 
   // Update mini card values
   const destVal = document.getElementById('bm-mini-dest-val');
@@ -80,7 +89,9 @@ function renderBmSteps() {
 function bmNextStep() {
   const res = resources.find(r => r.id === selectedResource);
   const isHouse = res && res.type === 'house';
-  if (bmCurrentStep === 'destination') {
+  if (bmCurrentStep === 'booker') {
+    bmCurrentStep = 'destination';
+  } else if (bmCurrentStep === 'destination') {
     bmCurrentStep = 'dates';
     renderBmCalendar();
   } else if (bmCurrentStep === 'dates') {
@@ -110,13 +121,26 @@ function goToStep(step) {
 
 function openBookingModal() {
   if (!currentUser) { showWelcomeScreen(); return; }
-  bm = { startDate: null, endDate: null, startHour: '09:00', endHour: '20:00', destinations: [], step: 'start' };
-  bmCurrentStep = 'destination';
+  bm = { startDate: null, endDate: null, startHour: '09:00', endHour: '20:00', destinations: [], step: 'start', booker: null, bookerTab: 'member' };
+  bmIsAdmin = window._myResourceRoles && window._myResourceRoles[selectedResource] === 'admin';
+  bmMembers = [];
+
+  const bookerStep = document.getElementById('bm-step-booker');
+  if (bmIsAdmin) {
+    bmCurrentStep = 'booker';
+    if (bookerStep) bookerStep.style.display = '';
+    loadBookerMembers();
+  } else {
+    bmCurrentStep = 'destination';
+    if (bookerStep) bookerStep.style.display = 'none';
+  }
+
   document.getElementById('booking-modal').classList.add('open');
   const sh = document.getElementById('bm-start-hour'); if (sh) sh.value = '09:00';
   const eh = document.getElementById('bm-end-hour'); if (eh) eh.value = '20:00';
   const di = document.getElementById('bm-dest-input'); if (di) di.value = '';
   const mi = document.getElementById('bm-motif-input'); if (mi) mi.value = '';
+  const ni = document.getElementById('bm-external-name'); if (ni) ni.value = '';
   const hint = document.getElementById('bm-dates-hint'); if (hint) hint.textContent = 'Sélectionnez votre date de départ';
   renderDestSuggestions('');
   renderBmSteps();
@@ -242,13 +266,104 @@ function updateBookingRecap() {
 
 function resetBookingModal() {
   bm.startDate = null; bm.endDate = null; bm.destinations = []; bm.step = 'start';
-  bmCurrentStep = 'destination';
+  bm.booker = null; bm.bookerTab = 'member';
+  bmCurrentStep = bmIsAdmin ? 'booker' : 'destination';
   const hint = document.getElementById('bm-dates-hint'); if (hint) hint.textContent = 'Sélectionnez votre date de départ';
   const di = document.getElementById('bm-dest-input'); if (di) di.value = '';
   const mi = document.getElementById('bm-motif-input'); if (mi) mi.value = '';
+  const ni = document.getElementById('bm-external-name'); if (ni) ni.value = '';
   const kmEl = document.getElementById('bm-dest-km'); if (kmEl) kmEl.textContent = '';
+  if (bmIsAdmin) renderBookerMemberList();
   renderDestSuggestions('');
   renderBmSteps();
+}
+
+// ==========================================
+// ADMIN BOOKER — "Pour qui ?" step (admin only)
+// ==========================================
+
+async function loadBookerMembers() {
+  if (!currentUser?.familyId) return;
+  try {
+    bmMembers = await reservationService.getEligibleBookers(currentUser.familyId);
+  } catch (_) { bmMembers = []; }
+  renderBookerMemberList();
+}
+
+function renderBookerMemberList() {
+  const container = document.getElementById('bm-booker-member-list');
+  if (!container) return;
+  // "Moi-même" option + all members
+  let html = `<div class="bm-member-item${!bm.booker ? ' selected' : ''}" onclick="selectBooker(null)">
+    <div class="bm-member-avatar">${currentUser.photo ? '<img src="' + currentUser.photo + '" alt="">' : getInitials(currentUser.name || '?')}</div>
+    <div class="bm-member-name">Moi-même</div>
+  </div>`;
+  for (const m of bmMembers) {
+    if (m.id === currentUser.id) continue;
+    const sel = bm.booker && bm.booker.id === m.id ? ' selected' : '';
+    const avatar = m.photo ? '<img src="' + m.photo + '" alt="">' : (m.initials || '?');
+    html += `<div class="bm-member-item${sel}" onclick="selectBooker('${m.id}')">
+      <div class="bm-member-avatar">${avatar}</div>
+      <div class="bm-member-name">${m.name}</div>
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+function selectBooker(memberId) {
+  if (!memberId) {
+    bm.booker = null;
+  } else {
+    const m = bmMembers.find(x => x.id === memberId);
+    if (m) bm.booker = { id: m.id, name: m.name, photo: m.photo, type: 'member' };
+  }
+  renderBookerMemberList();
+  renderBmSteps();
+}
+
+function switchBookerTab(tab) {
+  bm.bookerTab = tab;
+  bm.booker = null;
+  const memberList = document.getElementById('bm-booker-member-list');
+  const externalDiv = document.getElementById('bm-booker-external');
+  const tabs = document.querySelectorAll('#bm-booker-tabs .bm-booker-tab');
+  tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  if (tab === 'member') {
+    if (memberList) memberList.style.display = '';
+    if (externalDiv) externalDiv.style.display = 'none';
+    renderBookerMemberList();
+  } else {
+    if (memberList) memberList.style.display = 'none';
+    if (externalDiv) externalDiv.style.display = '';
+    const ni = document.getElementById('bm-external-name'); if (ni) ni.value = '';
+  }
+  renderBmSteps();
+}
+
+function onExternalNameInput(val) {
+  const name = (val || '').trim();
+  if (name) {
+    bm.booker = { id: 'external', name, photo: null, type: 'external' };
+  } else {
+    bm.booker = null;
+  }
+  renderBmSteps();
+}
+
+/**
+ * Resolve the effective booker for the reservation.
+ * Returns { id, name, photo, createdBy } — createdBy is null if booking for self.
+ */
+function _resolveBooker() {
+  if (bm.booker) {
+    return {
+      id: bm.booker.id,
+      name: bm.booker.name,
+      photo: bm.booker.photo || null,
+      createdBy: { id: currentUser.id, name: currentUser.name }
+    };
+  }
+  return { id: currentUser.id, name: currentUser.name, photo: currentUser.photo, createdBy: null };
 }
 
 // ==========================================
@@ -266,17 +381,19 @@ async function confirmRangeBooking() {
   }
 
   try {
+    const booker = _resolveBooker();
     const result = await reservationService.createCarReservation({
       resourceId: selectedResource,
-      userId: currentUser.id,
-      userName: currentUser.name,
-      photo: currentUser.photo,
+      userId: booker.id,
+      userName: booker.name,
+      photo: booker.photo,
       startDate: bm.startDate,
       endDate: bm.endDate || bm.startDate,
       startHour: bm.startHour || '09:00',
       endHour: bm.endHour || '20:00',
       destinations: bm.destinations,
-      bookings
+      bookings,
+      createdBy: booker.createdBy
     });
 
     if (result.error === 'conflict') {
@@ -298,15 +415,17 @@ async function createStay() {
   const motif = document.getElementById('bm-motif-input')?.value.trim() || '';
 
   try {
+    const booker = _resolveBooker();
     const result = await reservationService.createStayReservation({
       resourceId: selectedResource,
-      userId: currentUser.id,
-      userName: currentUser.name,
-      photo: currentUser.photo,
+      userId: booker.id,
+      userName: booker.name,
+      photo: booker.photo,
       startDate,
       endDate,
       motif,
-      bookings
+      bookings,
+      createdBy: booker.createdBy
     });
 
     if (result.error === 'conflict') {
