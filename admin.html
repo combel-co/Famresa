@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Firebase — Nettoyage familles</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', system-ui, sans-serif; background: #f8f9fa; color: #1a1a2e; padding: 24px; max-width: 800px; margin: 0 auto; }
+    h1 { font-size: 22px; margin-bottom: 8px; }
+    h2 { font-size: 16px; margin: 24px 0 8px; color: #6366f1; }
+    .subtitle { color: #888; font-size: 14px; margin-bottom: 24px; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .card.highlight { border-color: #6366f1; background: #f0f0ff; }
+    .card.danger { border-color: #fca5a5; background: #fef2f2; }
+    .card.success { border-color: #86efac; background: #f0fdf4; }
+    .label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+    .value { font-size: 14px; font-weight: 600; margin-top: 2px; }
+    .member { display: inline-block; background: #e0e7ff; color: #4338ca; padding: 3px 10px; border-radius: 6px; font-size: 13px; margin: 2px 4px 2px 0; }
+    .member.admin { background: #fef3c7; color: #92400e; }
+    .btn { display: inline-block; padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin: 4px; }
+    .btn-primary { background: #6366f1; color: #fff; }
+    .btn-primary:hover { background: #4f46e5; }
+    .btn-danger { background: #ef4444; color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-success { background: #22c55e; color: #fff; }
+    .btn-success:hover { background: #16a34a; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    #log { background: #1a1a2e; color: #a5f3fc; font-family: monospace; font-size: 13px; padding: 16px; border-radius: 12px; margin-top: 20px; max-height: 400px; overflow-y: auto; white-space: pre-wrap; }
+    .log-error { color: #fca5a5; }
+    .log-success { color: #86efac; }
+    .log-info { color: #93c5fd; }
+    .grid { display: grid; gap: 8px; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+    .tag-empty { background: #fee2e2; color: #991b1b; }
+    .tag-real { background: #dcfce7; color: #166534; }
+    .tag-keep { background: #dbeafe; color: #1e40af; }
+    .tag-delete { background: #fecaca; color: #991b1b; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Admin Firebase</h1>
+  <p class="subtitle">Nettoyage des familles, mise a jour voiture & admin</p>
+
+  <div id="step-load">
+    <button class="btn btn-primary" onclick="loadAll()">Charger les donnees Firebase</button>
+  </div>
+
+  <div id="step-review" class="hidden">
+    <h2>1. Familles trouvees</h2>
+    <div id="families-list" class="grid"></div>
+
+    <h2>2. Voiture</h2>
+    <div id="car-info" class="grid"></div>
+
+    <h2>3. Actions</h2>
+    <div id="actions" class="card">
+      <p style="margin-bottom:12px;font-size:14px">Ces actions seront effectuees :</p>
+      <ul id="action-list" style="font-size:13px;margin-left:16px;margin-bottom:16px;line-height:1.8"></ul>
+      <button class="btn btn-danger" onclick="executeCleanup()" id="btn-execute">Executer le nettoyage</button>
+    </div>
+  </div>
+
+  <div id="log"></div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <script>
+    // ── Firebase init ──
+    const firebaseConfig = {
+      apiKey: "AIzaSyCf-3Gpbx8FacaeXiwvfSuhsaOJxv2FHTw",
+      authDomain: "famcar-e2bb3.firebaseapp.com",
+      projectId: "famcar-e2bb3",
+      storageBucket: "famcar-e2bb3.firebasestorage.app",
+      messagingSenderId: "349994619294",
+      appId: "1:349994619294:web:715e9d592c4b2fc025468f",
+      measurementId: "G-B9MYJGRNJ1"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const ts = () => firebase.firestore.FieldValue.serverTimestamp();
+
+    // ── State ──
+    let allFamilies = [];       // { id, data, members[], resources[], reservations[] }
+    let realFamilyId = null;
+    let carResourceId = null;
+    let gasparProfilId = null;
+
+    // ── Logging ──
+    function log(msg, cls = '') {
+      const el = document.getElementById('log');
+      const line = document.createElement('span');
+      line.className = cls;
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+      el.appendChild(line);
+      el.scrollTop = el.scrollHeight;
+    }
+
+    // ── Load everything ──
+    async function loadAll() {
+      log('Chargement en cours...', 'log-info');
+
+      try {
+        // Load all familles (new collection)
+        const famSnap = await db.collection('familles').get();
+        log(`${famSnap.size} famille(s) dans "familles"`, 'log-info');
+
+        // Also check legacy "families"
+        const legacySnap = await db.collection('families').get();
+        log(`${legacySnap.size} famille(s) dans "families" (legacy)`, 'log-info');
+
+        // Merge: prefer new, add legacy not already present
+        const seen = new Set();
+        allFamilies = [];
+
+        for (const doc of famSnap.docs) {
+          seen.add(doc.id);
+          allFamilies.push({ id: doc.id, data: doc.data(), source: 'familles', members: [], resources: [], reservations: [] });
+        }
+        for (const doc of legacySnap.docs) {
+          if (!seen.has(doc.id)) {
+            allFamilies.push({ id: doc.id, data: doc.data(), source: 'families', members: [], resources: [], reservations: [] });
+          }
+        }
+
+        log(`Total familles uniques: ${allFamilies.length}`, 'log-info');
+
+        // Load members for each family
+        const membresSnap = await db.collection('famille_membres').get();
+        for (const doc of membresSnap.docs) {
+          const d = doc.data();
+          const fam = allFamilies.find(f => f.id === d.famille_id);
+          if (fam) fam.members.push({ id: doc.id, ...d });
+        }
+
+        // Also check legacy members
+        for (const fam of allFamilies) {
+          try {
+            const legMembers = await db.collection('families').doc(fam.id).collection('members').get();
+            for (const doc of legMembers.docs) {
+              // Don't duplicate
+              if (!fam.members.find(m => m.profil_id === doc.id)) {
+                fam.members.push({ id: doc.id, profil_id: doc.id, ...doc.data(), legacy: true });
+              }
+            }
+          } catch (_) {}
+        }
+
+        // Load resources
+        const resSnap = await db.collection('ressources').get();
+        for (const doc of resSnap.docs) {
+          const d = doc.data();
+          const fam = allFamilies.find(f => f.id === d.famille_id);
+          if (fam) fam.resources.push({ id: doc.id, ...d });
+        }
+
+        // Load reservations
+        const resaSnap = await db.collection('reservations').get();
+        for (const doc of resaSnap.docs) {
+          const d = doc.data();
+          const fam = allFamilies.find(f => f.id === d.famille_id);
+          if (fam) fam.reservations.push({ id: doc.id, ...d });
+        }
+
+        // Find the "real" family (the one with members)
+        const withMembers = allFamilies.filter(f => f.members.length > 0);
+        if (withMembers.length === 1) {
+          realFamilyId = withMembers[0].id;
+          log(`Famille reelle identifiee: "${withMembers[0].data.nom || withMembers[0].data.name}" (${realFamilyId})`, 'log-success');
+        } else if (withMembers.length > 1) {
+          // Pick the one with the most members
+          withMembers.sort((a, b) => b.members.length - a.members.length);
+          realFamilyId = withMembers[0].id;
+          log(`Plusieurs familles avec membres — choix de la plus grande: "${withMembers[0].data.nom || withMembers[0].data.name}"`, 'log-info');
+        }
+
+        // Find Gaspar
+        if (realFamilyId) {
+          const realFam = allFamilies.find(f => f.id === realFamilyId);
+          const gaspar = realFam.members.find(m =>
+            (m.nom || m.name || '').toLowerCase().includes('gaspar')
+          );
+          if (gaspar) {
+            gasparProfilId = gaspar.profil_id || gaspar.id;
+            log(`Gaspar trouve: profil_id=${gasparProfilId}`, 'log-success');
+          } else {
+            log('Gaspar non trouve dans les membres!', 'log-error');
+          }
+
+          // Find car resource
+          if (realFam.resources.length > 0) {
+            const car = realFam.resources.find(r => r.type === 'car') || realFam.resources[0];
+            carResourceId = car.id;
+            log(`Voiture trouvee: "${car.nom || car.name}" (${carResourceId})`, 'log-success');
+          }
+        }
+
+        renderReview();
+      } catch (e) {
+        log('ERREUR: ' + e.message, 'log-error');
+        console.error(e);
+      }
+    }
+
+    // ── Render review UI ──
+    function renderReview() {
+      document.getElementById('step-load').classList.add('hidden');
+      document.getElementById('step-review').classList.remove('hidden');
+
+      // Families list
+      const familiesEl = document.getElementById('families-list');
+      familiesEl.innerHTML = allFamilies.map(fam => {
+        const name = fam.data.nom || fam.data.name || '(sans nom)';
+        const isReal = fam.id === realFamilyId;
+        const isEmpty = fam.members.length === 0 && fam.resources.length === 0 && fam.reservations.length === 0;
+        const cls = isReal ? 'card highlight' : (isEmpty ? 'card danger' : 'card');
+        const tag = isReal ? '<span class="tag tag-keep">GARDER</span>'
+                  : '<span class="tag tag-delete">SUPPRIMER</span>';
+
+        const membersHtml = fam.members.map(m => {
+          const mName = m.nom || m.name || '?';
+          const isAdmin = m.role === 'admin';
+          return `<span class="member${isAdmin ? ' admin' : ''}">${mName}${isAdmin ? ' (admin)' : ''}</span>`;
+        }).join('');
+
+        return `
+          <div class="${cls}">
+            <div class="row" style="justify-content:space-between">
+              <div>
+                <div class="label">Famille ${fam.source === 'families' ? '(legacy)' : ''}</div>
+                <div class="value">${name} ${tag}</div>
+              </div>
+              <div style="text-align:right;font-size:12px;color:#888">
+                ${fam.members.length} membre(s)<br>
+                ${fam.resources.length} ressource(s)<br>
+                ${fam.reservations.length} resa(s)
+              </div>
+            </div>
+            ${membersHtml ? `<div style="margin-top:8px">${membersHtml}</div>` : '<div style="margin-top:4px;font-size:12px;color:#999">Aucun membre</div>'}
+            <div style="font-size:11px;color:#aaa;margin-top:4px">ID: ${fam.id}</div>
+          </div>`;
+      }).join('');
+
+      // Car info
+      const carEl = document.getElementById('car-info');
+      if (carResourceId) {
+        const realFam = allFamilies.find(f => f.id === realFamilyId);
+        const car = realFam.resources.find(r => r.id === carResourceId);
+        carEl.innerHTML = `
+          <div class="card">
+            <div class="label">Voiture actuelle</div>
+            <div class="value">${car.emoji || ''} ${car.nom || car.name || '?'}</div>
+            <div style="font-size:13px;color:#888;margin-top:4px">
+              Plaque: ${car.plaque || '(aucune)'} | Type: ${car.type || '?'}
+            </div>
+            <div style="margin-top:8px;font-size:13px">
+              <strong>Mise a jour prevue :</strong><br>
+              Nom: Mercedes 180 A<br>
+              Places: 5<br>
+              Couleur: Grise<br>
+              Admin: Gaspar
+            </div>
+          </div>`;
+      } else {
+        carEl.innerHTML = '<div class="card danger"><div class="value">Aucune voiture trouvee</div></div>';
+      }
+
+      // Actions summary
+      const actionList = document.getElementById('action-list');
+      const emptyCount = allFamilies.filter(f => f.id !== realFamilyId).length;
+      const actions = [];
+      actions.push(`Supprimer ${emptyCount} famille(s) vide(s)/en double`);
+      if (carResourceId) {
+        actions.push('Mettre a jour la voiture: Mercedes 180 A, 5 places, Grise');
+      }
+      if (gasparProfilId && carResourceId) {
+        actions.push(`Definir Gaspar comme admin de la voiture`);
+      }
+      actionList.innerHTML = actions.map(a => `<li>${a}</li>`).join('');
+    }
+
+    // ── Execute cleanup ──
+    async function executeCleanup() {
+      const btn = document.getElementById('btn-execute');
+      btn.disabled = true;
+      btn.textContent = 'En cours...';
+
+      try {
+        // ── 1. Delete empty/duplicate families ──
+        const toDelete = allFamilies.filter(f => f.id !== realFamilyId);
+        log(`\n=== SUPPRESSION DE ${toDelete.length} FAMILLE(S) ===`, 'log-info');
+
+        for (const fam of toDelete) {
+          const name = fam.data.nom || fam.data.name || '(sans nom)';
+
+          // Delete from familles collection
+          try {
+            await db.collection('familles').doc(fam.id).delete();
+            log(`  Supprime familles/${fam.id} ("${name}")`, 'log-success');
+          } catch (_) {}
+
+          // Delete from legacy families collection
+          try {
+            await db.collection('families').doc(fam.id).delete();
+            log(`  Supprime families/${fam.id} (legacy)`, 'log-success');
+          } catch (_) {}
+
+          // Delete any orphan famille_membres
+          for (const m of fam.members) {
+            if (!m.legacy) {
+              try {
+                await db.collection('famille_membres').doc(m.id).delete();
+                log(`  Supprime famille_membres/${m.id}`, 'log-success');
+              } catch (_) {}
+            }
+          }
+
+          // Delete any orphan ressources
+          for (const r of fam.resources) {
+            try {
+              await db.collection('ressources').doc(r.id).delete();
+              log(`  Supprime ressources/${r.id}`, 'log-success');
+            } catch (_) {}
+          }
+
+          // Delete any orphan reservations
+          for (const r of fam.reservations) {
+            try {
+              await db.collection('reservations').doc(r.id).delete();
+              log(`  Supprime reservations/${r.id}`, 'log-success');
+            } catch (_) {}
+          }
+        }
+
+        // ── 2. Update car info ──
+        if (carResourceId) {
+          log('\n=== MISE A JOUR VOITURE ===', 'log-info');
+          await db.collection('ressources').doc(carResourceId).update({
+            nom: 'Mercedes 180 A',
+            name: 'Mercedes 180 A',
+            places: 5,
+            couleur: 'Grise',
+            type: 'car',
+            emoji: '🚗'
+          });
+          log(`Voiture mise a jour: Mercedes 180 A, 5 places, Grise`, 'log-success');
+        }
+
+        // ── 3. Set Gaspar as admin of the car ──
+        if (gasparProfilId && carResourceId) {
+          log('\n=== ADMIN VOITURE: GASPAR ===', 'log-info');
+
+          // Check if access entry already exists
+          const existingSnap = await db.collection('acces_ressource')
+            .where('ressource_id', '==', carResourceId)
+            .where('profil_id', '==', gasparProfilId)
+            .get();
+
+          if (!existingSnap.empty) {
+            // Update existing entry to admin
+            await existingSnap.docs[0].ref.update({ role: 'admin' });
+            log(`Acces existant mis a jour: role=admin`, 'log-success');
+          } else {
+            // Create new admin access
+            await db.collection('acces_ressource').add({
+              ressource_id: carResourceId,
+              profil_id: gasparProfilId,
+              famille_id: realFamilyId,
+              role: 'admin',
+              statut: 'accepted',
+              invited_at: ts(),
+              accepted_at: ts()
+            });
+            log(`Nouvel acces admin cree pour Gaspar`, 'log-success');
+          }
+
+          // Also check legacy resource_access
+          try {
+            const legacySnap = await db.collection('resource_access')
+              .where('resourceId', '==', carResourceId)
+              .where('profileId', '==', gasparProfilId)
+              .get();
+            if (!legacySnap.empty) {
+              await legacySnap.docs[0].ref.update({ role: 'admin' });
+              log(`Legacy resource_access aussi mis a jour`, 'log-success');
+            }
+          } catch (_) {}
+        }
+
+        log('\n=== NETTOYAGE TERMINE ===', 'log-success');
+        btn.textContent = 'Termine !';
+        btn.className = 'btn btn-success';
+
+      } catch (e) {
+        log('ERREUR: ' + e.message, 'log-error');
+        console.error(e);
+        btn.disabled = false;
+        btn.textContent = 'Reessayer';
+      }
+    }
+  </script>
+</body>
+</html>
