@@ -1252,6 +1252,28 @@
   }
   .rm-overlay.hidden { display: none; }
 
+  .rm-inline-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1100;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .rm-inline-sheet-content {
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    padding: 16px 20px 32px;
+    width: 100%;
+    max-width: 420px;
+    animation: rmSheetUp 0.3s ease;
+  }
+  @keyframes rmSheetUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
   .rm-page-header {
     display: flex; align-items: center; gap: 10px;
     padding: 10px 16px 14px; background: var(--bg-subtle);

@@ -883,14 +883,28 @@ async function _rmSendInviteEmail(resourceId) {
 }
 
 async function _rmMemberMenu(accessId, memberName, resourceId) {
-  document.getElementById('sheet-content').innerHTML = `
-    <div class="login-sheet">
-      <h2>${_rmEscapeHtml(memberName)}</h2>
-      <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Gérer les droits de ce membre</p>
-      <button class="btn btn-danger" onclick='_rmRemoveMember(${JSON.stringify(accessId)}, ${JSON.stringify(memberName)}, ${JSON.stringify(resourceId)});closeSheet()'>Retirer l'accès</button>
-      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Annuler</button>
+  const overlay = document.getElementById('resource-manage-overlay');
+  if (!overlay) return;
+
+  // Remove any existing inline sheet
+  const existing = document.getElementById('rm-inline-sheet');
+  if (existing) existing.remove();
+
+  const sheet = document.createElement('div');
+  sheet.id = 'rm-inline-sheet';
+  sheet.className = 'rm-inline-sheet-backdrop';
+  sheet.onclick = function(e) { if (e.target === sheet) sheet.remove(); };
+  sheet.innerHTML = `
+    <div class="rm-inline-sheet-content" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <div class="login-sheet">
+        <h2>${_rmEscapeHtml(memberName)}</h2>
+        <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Gérer les droits de ce membre</p>
+        <button class="btn btn-danger" onclick='_rmRemoveMember(${JSON.stringify(accessId)}, ${JSON.stringify(memberName)}, ${JSON.stringify(resourceId)});document.getElementById("rm-inline-sheet")?.remove()'>Retirer l'accès</button>
+        <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick='document.getElementById("rm-inline-sheet")?.remove()'>Annuler</button>
+      </div>
     </div>`;
-  document.getElementById('overlay').classList.add('open');
+  overlay.appendChild(sheet);
 }
 
 async function _rmRemoveMember(accessId, memberName, resourceId) {
