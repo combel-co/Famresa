@@ -3,6 +3,8 @@
 // ==========================================
 
 function showWelcomeScreen() {
+  hideSplash();
+  hideSkeleton();
   document.getElementById('app-header').style.display = 'none';
   document.getElementById('app-main').style.display = 'none';
   document.getElementById('login-overlay').classList.add('hidden');
@@ -81,6 +83,7 @@ async function loginUser() {
     if (!familyId) {
       await runMigrationIfNeeded();
     } else {
+      showSkeleton();
       runV2MigrationIfNeeded().catch(e => console.warn('[migration]', e));
       await loadResources();
       enterApp();
@@ -579,6 +582,8 @@ let _pendingResourceJoinCode = _resourceJoinCodeFromUrl || null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (currentUser?.familyId) {
+    // Show skeleton while data loads
+    showSkeleton();
     // Run data migration in background (non-blocking)
     runV2MigrationIfNeeded().catch(e => console.warn('[migration]', e));
     await loadResources();
