@@ -359,6 +359,32 @@
   </div>
   <div class="bm-body" id="bm-body">
 
+    <!-- STEP 0 — Pour qui ? (admin only) -->
+    <div class="bm-step" id="bm-step-booker" style="display:none">
+      <!-- Mini (collapsed) -->
+      <div class="bm-card-mini" onclick="goToStep('booker')">
+        <div>
+          <div class="bm-card-mini-label">Pour</div>
+          <div class="bm-card-mini-value" id="bm-mini-booker-val">Moi-même</div>
+        </div>
+        <div class="bm-card-mini-edit">Modifier</div>
+      </div>
+      <!-- Full (expanded) -->
+      <div class="bm-section" id="bm-step-booker-full">
+        <div class="bm-section-title">Pour qui ?</div>
+        <div class="bm-booker-tabs" id="bm-booker-tabs">
+          <button class="bm-booker-tab active" data-tab="member" onclick="switchBookerTab('member')">Membre</button>
+          <button class="bm-booker-tab" data-tab="external" onclick="switchBookerTab('external')">Locataire externe</button>
+        </div>
+        <div id="bm-booker-member-list" class="bm-booker-member-list"></div>
+        <div id="bm-booker-external" style="display:none">
+          <div class="input-group" style="margin-top:8px">
+            <input type="text" id="bm-external-name" placeholder="Nom du locataire" autocomplete="off" oninput="onExternalNameInput(this.value)">
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- STEP 1 — Destination / Motif -->
     <div class="bm-step active" id="bm-step-destination">
       <!-- Mini (collapsed) -->
