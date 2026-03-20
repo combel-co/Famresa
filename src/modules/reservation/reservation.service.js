@@ -1,8 +1,8 @@
 // ==========================================
-// RESERVATION SERVICE — Business Logic
+// RESERVATION SERVICE — Business Logic only
 // ==========================================
-// No UI, no DOM. Receives data, returns results.
-// Firebase access is temporary here (future: repository).
+// No UI, no DOM, no Firebase.
+// Uses reservationRepository for all DB access.
 
 const DEST_PRESETS = [
   { name: 'Paris intra-muros', km: 6 },
@@ -40,8 +40,7 @@ const reservationService = {
 
   /**
    * Create a car reservation.
-   * @returns {{ xpGained: number }} on success
-   * @throws on Firebase error
+   * @returns {{ success, xpGained, kmEstimate, destinations } | { error, date }}
    */
   async createCarReservation({ resourceId, userId, userName, photo, startDate, endDate, startHour, endHour, destinations, bookings }) {
     const conflict = this.checkConflicts(startDate, endDate, bookings);
@@ -49,7 +48,7 @@ const reservationService = {
 
     const kmEstimate = destinations.reduce((s, d) => s + d.km * 2, 0);
 
-    await reservationsRef().add({
+    await reservationRepository.create({
       ressource_id: resourceId,
       profil_id: userId,
       userId, userName, photo: photo || null,
@@ -57,8 +56,7 @@ const reservationService = {
       startDate, endDate, startHour, endHour,
       destinations: destinations.map(d => ({ name: d.name, kmFromParis: d.km })),
       destination: destinations.map(d => d.name).join(', '),
-      kmEstimate,
-      createdAt: ts()
+      kmEstimate
     });
 
     const xpGained = 20 + Math.round(kmEstimate / 25);
@@ -67,8 +65,7 @@ const reservationService = {
 
   /**
    * Create a house stay (one doc per day, batch write).
-   * @returns {{ success: true }} on success
-   * @throws on Firebase error
+   * @returns {{ success: true } | { error, date }}
    */
   async createStayReservation({ resourceId, userId, userName, photo, startDate, endDate, motif, bookings }) {
     const dates = getDateRange(startDate, endDate);
@@ -76,22 +73,18 @@ const reservationService = {
       if (bookings[ds]) return { error: 'conflict', date: ds };
     }
 
-    const groupId = 'stay_' + db.collection('reservations').doc().id;
-    const batch = db.batch();
-    for (const date of dates) {
-      const ref = reservationsRef().doc();
-      batch.set(ref, {
-        ressource_id: resourceId,
-        profil_id: userId,
-        userId, userName, photo: photo || null,
-        date_debut: startDate, date_fin: endDate,
-        date, startDate, endDate,
-        reservationGroupId: groupId,
-        motif: motif || null,
-        createdAt: ts()
-      });
-    }
-    await batch.commit();
+    const groupId = reservationRepository.generateGroupId();
+    const docsData = dates.map(date => ({
+      ressource_id: resourceId,
+      profil_id: userId,
+      userId, userName, photo: photo || null,
+      date_debut: startDate, date_fin: endDate,
+      date, startDate, endDate,
+      reservationGroupId: groupId,
+      motif: motif || null
+    }));
+
+    await reservationRepository.createBatch(docsData);
     return { success: true };
   },
 
@@ -99,25 +92,21 @@ const reservationService = {
    * Cancel a single reservation.
    */
   async cancel(bookingId) {
-    await reservationsRef().doc(bookingId).delete();
+    await reservationRepository.delete(bookingId);
   },
 
   /**
    * Cancel all reservations in a stay group.
    */
   async cancelStay(groupId) {
-    const snap = await reservationsRef()
-      .where('reservationGroupId', '==', groupId).get();
-    const batch = db.batch();
-    snap.forEach(doc => batch.delete(doc.ref));
-    await batch.commit();
+    await reservationRepository.deleteByGroup(groupId);
   },
 
   /**
    * Shorten a car booking (early return).
    */
   async truncate(bookingId, newEndDate) {
-    await reservationsRef().doc(bookingId).update({
+    await reservationRepository.update(bookingId, {
       endDate: newEndDate,
       date_fin: newEndDate
     });
