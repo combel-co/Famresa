@@ -1,19 +1,9 @@
 // ==========================================
 // FIREBASE CONFIG
 // ==========================================
-const firebaseConfig = {
-  apiKey: "REDACTED_API_KEY",
-  authDomain: "REDACTED_PROJECT_ID.firebaseapp.com",
-  projectId: "REDACTED_PROJECT_ID",
-  storageBucket: "REDACTED_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "REDACTED_SENDER_ID",
-  appId: "REDACTED_APP_ID",
-  measurementId: "REDACTED_MEASUREMENT_ID"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const ts = () => firebase.firestore.FieldValue.serverTimestamp();
+// Init + db + ts are now in src/infra/firebase/firebase.client.js
+// Mappers (reservationToJS, jsToReservation, accesRessourceToJS)
+// are now in src/infra/firebase/firebase.mapper.js
 
 // ==========================================
 // COLLECTION REFERENCES — NEW SCHEMA
@@ -69,29 +59,7 @@ async function getFamilleRessources(familyId) {
 // Maps Firestore fields ↔ JS fields
 function reservationsRef() { return db.collection('reservations'); }
 
-function reservationToJS(data, id) {
-  return {
-    id,
-    ...data,
-    // Map new field names → JS internal names used throughout the app
-    userId:     data.profil_id    ?? data.userId,
-    resourceId: data.ressource_id ?? data.resourceId,
-    carId:      data.ressource_id ?? data.carId,
-    startDate:  data.date_debut   ?? data.startDate,
-    endDate:    data.date_fin     ?? data.endDate,
-  };
-}
-
-function jsToReservation(data) {
-  return {
-    ...data,
-    // Map JS field names → new Firestore field names
-    profil_id:    data.userId     ?? data.profil_id,
-    ressource_id: data.resourceId ?? data.ressource_id,
-    date_debut:   data.startDate  ?? data.date_debut,
-    date_fin:     data.endDate    ?? data.date_fin,
-  };
-}
+// reservationToJS + jsToReservation → src/infra/firebase/firebase.mapper.js
 
 async function getReservationsByRessource(ressourceId) {
   const snap = await reservationsRef()
@@ -103,15 +71,7 @@ async function getReservationsByRessource(ressourceId) {
 // ACCES_RESSOURCE (was: resource_access)
 function accesRessourceRef() { return db.collection('acces_ressource'); }
 
-function accesRessourceToJS(data, id) {
-  return {
-    id,
-    ...data,
-    profileId:  data.profil_id    ?? data.profileId,
-    resourceId: data.ressource_id ?? data.resourceId,
-    status:     data.statut       ?? data.status,
-  };
-}
+// accesRessourceToJS → src/infra/firebase/firebase.mapper.js
 
 async function getMyResourceAccessEntries(profilId, familyId) {
   // Single-field query (no composite index needed) + client-side filter
