@@ -1,23 +1,10 @@
 // ==========================================
-// BOOKING MODAL (Airbnb style)
+// BOOKING MODAL (Airbnb style) — UI only
 // ==========================================
+// Business logic delegated to reservationService
+// (src/modules/reservation/reservation.service.js)
+
 let bm = { startDate: null, endDate: null, startHour: '09:00', endHour: '20:00', destinations: [], step: 'start' };
-
-const DEST_PRESETS = [
-  { name: 'Paris intra-muros', km: 6 },
-  { name: 'Versailles', km: 23 },
-  { name: 'Roissy CDG', km: 33 },
-  { name: 'Orly', km: 19 },
-  { name: 'Reims', km: 145 },
-  { name: 'Orléans', km: 134 },
-  { name: 'Rouen', km: 136 },
-  { name: 'Lyon', km: 465 },
-  { name: 'Nantes', km: 385 },
-  { name: 'Bordeaux', km: 585 },
-  { name: 'Marseille', km: 770 },
-  { name: 'Lille', km: 225 },
-];
-
 let bmCurrentStep = 'destination';
 
 function renderBmSteps() {
@@ -152,7 +139,7 @@ function renderBmCalendar() {
     const year = d.getFullYear(); const month = d.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     let firstDay = d.getDay() - 1; if (firstDay < 0) firstDay = 6;
-    const availBands = computeAvailBands(year, month, daysInMonth);
+    const availBands = reservationService.computeAvailBands(year, month, daysInMonth, bookings);
 
     html += `<div class="bm-month-block">`;
     html += `<div class="bm-month-label">${d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</div>`;
@@ -195,19 +182,6 @@ function renderBmCalendar() {
   if (body) body.scrollTop = scrollTop;
 }
 
-function computeAvailBands(year, month, daysInMonth) {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const bands = []; let start = null;
-  for (let d = 1; d <= daysInMonth; d++) {
-    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const free = new Date(year, month, d) >= today && !bookings[ds];
-    if (free && start === null) start = d;
-    if (!free && start !== null) { if ((d-1) - start >= 1) bands.push(`${start} → ${d-1}`); start = null; }
-  }
-  if (start !== null && daysInMonth - start >= 1) bands.push(`${start} → ${daysInMonth}`);
-  return bands.slice(0, 3);
-}
-
 function onBmDayClick(ds) {
   if (!bm.startDate || bm.endDate) {
     bm.startDate = ds; bm.endDate = null; bm.step = 'end';
@@ -239,7 +213,7 @@ function renderDestSuggestions(query) {
   const container = document.getElementById('bm-dest-suggestions');
   if (!container) return;
   const q = (query || '').toLowerCase().trim();
-  const list = q ? DEST_PRESETS.filter(d => d.name.toLowerCase().includes(q)) : DEST_PRESETS;
+  const list = q ? reservationService.DEST_PRESETS.filter(d => d.name.toLowerCase().includes(q)) : reservationService.DEST_PRESETS;
   container.innerHTML = list.map(d => {
     const sel = bm.destinations.some(x => x.name === d.name);
     return `<button class="bm-dest-chip${sel ? ' selected' : ''}" onclick="toggleDestination('${d.name.replace(/'/g,"\\'")}',${d.km})">${d.name}</button>`;
@@ -277,6 +251,10 @@ function resetBookingModal() {
   renderBmSteps();
 }
 
+// ==========================================
+// BOOKING ACTIONS — UI → Service → UI feedback
+// ==========================================
+
 async function confirmRangeBooking() {
   if (!currentUser || !bm.startDate) return;
   const res = resources.find(r => r.id === selectedResource);
@@ -287,74 +265,55 @@ async function confirmRangeBooking() {
     return;
   }
 
-  const startDate = bm.startDate;
-  const endDate = bm.endDate || bm.startDate;
-  const startHour = bm.startHour || '09:00';
-  const endHour = bm.endHour || '20:00';
-  const destinations = bm.destinations;
-  const kmEstimate = destinations.reduce((s, d) => s + d.km * 2, 0);
-
-  // Conflict check
-  let cur = new Date(startDate + 'T00:00:00');
-  const endObj = new Date(endDate + 'T00:00:00');
-  while (cur <= endObj) {
-    const ds = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
-    if (bookings[ds]) { showToast(`Conflit : le ${ds} est déjà réservé`); return; }
-    cur.setDate(cur.getDate() + 1);
-  }
-
   try {
-    await reservationsRef().add({
-      ressource_id: selectedResource,
-      profil_id: currentUser.id,
-      userId: currentUser.id, userName: currentUser.name, photo: currentUser.photo || null,
-      date_debut: startDate, date_fin: endDate,
-      startDate, endDate, startHour, endHour,
-      destinations: destinations.map(d => ({ name: d.name, kmFromParis: d.km })),
-      destination: destinations.map(d => d.name).join(', '),
-      kmEstimate,
-      createdAt: ts()
+    const result = await reservationService.createCarReservation({
+      resourceId: selectedResource,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      photo: currentUser.photo,
+      startDate: bm.startDate,
+      endDate: bm.endDate || bm.startDate,
+      startHour: bm.startHour || '09:00',
+      endHour: bm.endHour || '20:00',
+      destinations: bm.destinations,
+      bookings
     });
-    const xpGained = 20 + Math.round(kmEstimate / 25);
+
+    if (result.error === 'conflict') {
+      showToast(`Conflit : le ${result.date} est déjà réservé`);
+      return;
+    }
+
     closeBookingModal();
-    celebrate('✓', 'Réservation confirmée !', `+${xpGained} XP`,
-      destinations.length > 0 ? `Direction : ${destinations[0].name}` : 'Bonne route !');
+    celebrate('✓', 'Réservation confirmée !', `+${result.xpGained} XP`,
+      result.destinations.length > 0 ? `Direction : ${result.destinations[0].name}` : 'Bonne route !');
     setTimeout(() => { const nb = checkNewBadges(); nb.forEach(b => showToast(`Badge débloqué : ${b.label}`)); }, 2800);
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 
-// ==========================================
-// HOUSE STAY CREATION
-// ==========================================
 async function createStay() {
   if (!currentUser || !bm.startDate) return;
   const startDate = bm.startDate;
   const endDate = bm.endDate || bm.startDate;
   const motif = document.getElementById('bm-motif-input')?.value.trim() || '';
 
-  // Conflict check
-  const dates = getDateRange(startDate, endDate);
-  for (const ds of dates) {
-    if (bookings[ds]) { showToast(`Conflit : le ${ds} est déjà réservé`); return; }
-  }
-
   try {
-    const groupId = 'stay_' + db.collection('reservations').doc().id;
-    const batch = db.batch();
-    for (const date of dates) {
-      const ref = reservationsRef().doc();
-      batch.set(ref, {
-        ressource_id: selectedResource,
-        profil_id: currentUser.id,
-        userId: currentUser.id, userName: currentUser.name, photo: currentUser.photo || null,
-        date_debut: startDate, date_fin: endDate,
-        date, startDate, endDate,
-        reservationGroupId: groupId,
-        motif: motif || null,
-        createdAt: ts()
-      });
+    const result = await reservationService.createStayReservation({
+      resourceId: selectedResource,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      photo: currentUser.photo,
+      startDate,
+      endDate,
+      motif,
+      bookings
+    });
+
+    if (result.error === 'conflict') {
+      showToast(`Conflit : le ${result.date} est déjà réservé`);
+      return;
     }
-    await batch.commit();
+
     closeBookingModal();
     celebrate('🏠', 'Séjour confirmé !', '+20 XP', motif || `${formatBmDateRange(startDate, endDate)}`);
     setTimeout(() => { const nb = checkNewBadges(); nb.forEach(b => showToast(`Badge débloqué : ${b.label}`)); }, 2800);
@@ -363,11 +322,7 @@ async function createStay() {
 
 async function cancelStay(groupId) {
   try {
-    const snap = await reservationsRef()
-      .where('reservationGroupId', '==', groupId).get();
-    const batch = db.batch();
-    snap.forEach(doc => batch.delete(doc.ref));
-    await batch.commit();
+    await reservationService.cancelStay(groupId);
     closeSheet();
     showToast('Séjour annulé');
   } catch(e) { showToast('Erreur — réessayez'); }
@@ -375,25 +330,23 @@ async function cancelStay(groupId) {
 
 async function cancelBooking(bookingId) {
   try {
-    await reservationsRef().doc(bookingId).delete();
+    await reservationService.cancel(bookingId);
     closeSheet();
     showToast('Réservation annulée');
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 
-// Raccourcit une réservation voiture : met à jour endDate dans Firestore.
-// Le listener Firestore met automatiquement à jour le calendrier et l'historique.
 async function truncateCarBooking(bookingId, newEndDate) {
   try {
-    await reservationsRef().doc(bookingId).update({ endDate: newEndDate, date_fin: newEndDate });
+    await reservationService.truncate(bookingId, newEndDate);
     closeSheet();
     showToast('Réservation raccourcie');
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 
-// Affiche la feuille de gestion d'une réservation future (annulation ou retour anticipé).
-// bookingId : id du document Firestore
-// dateStr   : jour cliqué "YYYY-MM-DD" (pour le retour anticipé)
+// ==========================================
+// MANAGE BOOKING SHEET — Pure UI
+// ==========================================
 function showDeleteBookingSheet(bookingId, dateStr) {
   const booking = Object.values(bookings).find(b => b && b.id === bookingId);
   if (!booking) { showToast('Réservation introuvable'); return; }
@@ -406,7 +359,6 @@ function showDeleteBookingSheet(bookingId, dateStr) {
   }
 
   const isMultiDay = booking.startDate && booking.endDate && booking.startDate !== booking.endDate;
-  // Retour anticipé : seulement si le jour cliqué n'est pas le premier jour
   const canTruncate = isMultiDay && dateStr > booking.startDate;
 
   const date = new Date(dateStr + 'T00:00:00');
