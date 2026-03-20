@@ -17,16 +17,24 @@ function showToast(msg) {
 
 // Reusable PIN input setup (auto-advance, backspace, auto-submit)
 function setupPinInputs(inputs, onComplete) {
+  let _completing = false;
+  const guardedComplete = onComplete ? () => {
+    if (_completing) return;
+    _completing = true;
+    onComplete();
+    setTimeout(() => { _completing = false; }, 1000);
+  } : null;
+
   inputs.forEach((input, i) => {
     input.addEventListener('input', (e) => {
       const val = e.target.value;
       if (val.length > 1) e.target.value = val.slice(-1);
       if (val && i < inputs.length - 1) inputs[i + 1].focus();
-      if (i === inputs.length - 1 && val && onComplete) onComplete();
+      if (i === inputs.length - 1 && val && guardedComplete) guardedComplete();
     });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Backspace' && !e.target.value && i > 0) inputs[i - 1].focus();
-      if (e.key === 'Enter' && onComplete) onComplete();
+      if (e.key === 'Enter' && guardedComplete) guardedComplete();
     });
   });
 }

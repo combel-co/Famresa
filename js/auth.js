@@ -99,6 +99,7 @@ async function loginUser() {
 // ---- SIGNUP ----
 let suTempPhoto = null;
 let suInviteUrl = '';
+let _isSubmittingFamily = false;
 
 function startSignup() {
   document.getElementById('welcome-screen').style.display = 'none';
@@ -175,6 +176,7 @@ function generateSignupInviteCode() {
 }
 
 async function signupCreateAdvance() {
+  if (_isSubmittingFamily) return;
   const familyName = (document.getElementById('su-family-name')?.value || '').trim();
   const pin = Array.from(document.querySelectorAll('#su-family-pin input')).map(i => i.value.replace(/\D/g, '')).join('');
   const confirm = Array.from(document.querySelectorAll('#su-family-pin-confirm input')).map(i => i.value.replace(/\D/g, '')).join('');
@@ -183,6 +185,7 @@ async function signupCreateAdvance() {
   if (pin.length < 4) { errEl.textContent = 'Entrez le code familial (4 chiffres)'; return; }
   if (pin !== confirm) { errEl.textContent = 'Les codes ne correspondent pas'; return; }
   errEl.textContent = '';
+  _isSubmittingFamily = true;
   const inviteCode = generateSignupInviteCode();
   suInviteUrl = `${location.origin}${location.pathname}?join=${inviteCode}`;
   try {
@@ -195,7 +198,7 @@ async function signupCreateAdvance() {
     document.querySelectorAll('.su-step').forEach(s => s.classList.add('hidden'));
     document.getElementById('su-step-2b-link').classList.remove('hidden');
     document.getElementById('su-invite-display').textContent = suInviteUrl;
-  } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
+  } catch(e) { errEl.textContent = 'Erreur — réessayez'; } finally { _isSubmittingFamily = false; }
 }
 
 function copyInviteLink() {
@@ -312,12 +315,14 @@ async function obStep4Advance() {
 }
 
 async function obStep2Advance() {
+  if (_isSubmittingFamily) return;
   const create = Array.from(document.querySelectorAll('#ob-pin-create input')).map(i => i.value.replace(/\D/g, '')).join('');
   const confirm = Array.from(document.querySelectorAll('#ob-pin-confirm input')).map(i => i.value.replace(/\D/g, '')).join('');
   const errEl = document.getElementById('ob-pin-error');
   if (create.length < 4) { errEl.textContent = 'Entrez 4 chiffres'; return; }
   if (create !== confirm) { errEl.textContent = 'Les codes ne correspondent pas'; return; }
   errEl.textContent = '';
+  _isSubmittingFamily = true;
   try {
     const familyDocRef = await famillesRef().add({
       nom: 'Ma famille', pin: create, inviteCode: generateSignupInviteCode(),
@@ -325,7 +330,7 @@ async function obStep2Advance() {
     });
     suPendingFamilyId = familyDocRef.id;
     showOnboardingStep(3);
-  } catch (e) { errEl.textContent = 'Erreur — réessayez'; }
+  } catch (e) { errEl.textContent = 'Erreur — réessayez'; } finally { _isSubmittingFamily = false; }
 }
 
 async function obStep3Advance() {
