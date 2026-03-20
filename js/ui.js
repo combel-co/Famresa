@@ -90,7 +90,9 @@ function hideSkeleton() {
 function enterApp() {
   hideSplash();
   hideSkeleton();
-  document.getElementById('app-header').style.display = 'flex';
+  const header = document.getElementById('app-header');
+  header.style.display = 'flex';
+  header.style.visibility = 'visible';
   document.getElementById('app-main').style.display = 'block';
   // Sync CSS variable to actual rendered header height (fixes sticky gap on all screen sizes)
   requestAnimationFrame(_syncHeaderHeight);
