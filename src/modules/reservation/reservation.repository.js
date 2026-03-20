@@ -55,6 +55,23 @@ const reservationRepository = {
   },
 
   /**
+   * Count unique reservations linked to a resource across new and legacy fields.
+   */
+  async countByResourceId(resourceId) {
+    const [newSnap, legacySnap, carSnap] = await Promise.all([
+      reservationsRef().where('ressource_id', '==', resourceId).get().catch(() => ({ docs: [] })),
+      reservationsRef().where('resourceId', '==', resourceId).get().catch(() => ({ docs: [] })),
+      reservationsRef().where('carId', '==', resourceId).get().catch(() => ({ docs: [] })),
+    ]);
+
+    const ids = new Set();
+    [...(newSnap.docs || []), ...(legacySnap.docs || []), ...(carSnap.docs || [])].forEach((doc) => {
+      if (doc?.id) ids.add(doc.id);
+    });
+    return ids.size;
+  },
+
+  /**
    * Generate a unique group ID for stay reservations.
    */
   generateGroupId() {

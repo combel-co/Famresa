@@ -79,7 +79,7 @@ function renderProfileTab() {
               onclick="event.stopPropagation();showResourceManagePage('${res.id}')">Gérer l'accès ›</div>`
         : '';
 
-      return `<div class="pf-resource-card" onclick="selectResource('${res.id}');switchTab('resource')">
+      return `<div class="pf-resource-card" onclick="selectResource('${res.id}');showResourceManagePage('${res.id}')">
         <div class="pf-resource-icon">${res.emoji || '🚗'}</div>
         <div class="pf-resource-title">${res.name}</div>
         <div class="pf-resource-sub">${sub}</div>
@@ -149,7 +149,7 @@ async function _renderAdminPendingSection() {
           <div style="font-size:12px;color:var(--text-light);margin-bottom:12px">Demande d'accès · ${resName}</div>
           <div style="display:flex;gap:8px">
             <button class="btn btn-primary" style="flex:1;padding:8px;font-size:13px"
-              onclick="showResourceManagePage('${item.resourceId}')">Voir →</button>
+              onclick="selectResource('${item.resourceId}');showResourceManagePage('${item.resourceId}')">Voir →</button>
           </div>
         </div>`;
       }).join('')}`;

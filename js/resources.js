@@ -501,20 +501,15 @@ async function saveHouseInfo() {
 // ==========================================
 // RESOURCE INVITE & ACCESS MANAGEMENT
 // ==========================================
-function _generateResourceInviteCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return code;
-}
-
 async function _getOrCreateResourceInviteCode(resourceId) {
-  const res = resources.find(r => r.id === resourceId);
-  if (res?.inviteCode) return res.inviteCode;
-  const code = _generateResourceInviteCode();
-  await ressourcesRef().doc(resourceId).update({ inviteCode: code });
-  if (res) res.inviteCode = code;
-  return code;
+  const invite = await resourceService.ensureManageInviteInfo({
+    resourceId,
+    origin: location.origin,
+    pathname: location.pathname
+  });
+  const res = resources.find((item) => item.id === resourceId);
+  if (res) res.inviteCode = invite.inviteCode;
+  return invite.inviteCode;
 }
 
 async function showResourceAccessSheet(resourceId) {
@@ -600,7 +595,7 @@ async function showResourceAccessSheet(resourceId) {
 
 async function approveResourceAccess(accessId, userName) {
   try {
-    await updateResourceAccessStatus(accessId, 'accepted');
+    await resourceService.approveManageAccess({ accessId });
     showToast(`Accès approuvé${userName ? ' pour ' + userName : ''} ✓`);
     closeSheet();
   } catch(e) { showToast('Erreur — réessayez'); }
@@ -608,7 +603,7 @@ async function approveResourceAccess(accessId, userName) {
 
 async function rejectResourceAccess(accessId) {
   try {
-    await updateResourceAccessStatus(accessId, 'rejected');
+    await resourceService.rejectManageAccess({ accessId });
     showToast('Demande refusée');
     closeSheet();
   } catch(e) { showToast('Erreur — réessayez'); }
@@ -617,280 +612,282 @@ async function rejectResourceAccess(accessId) {
 // ==========================================
 // RESOURCE MANAGE PAGE
 // ==========================================
-function hideResourceManagePage() {
-  document.getElementById('resource-manage-overlay')?.classList.add('hidden');
+let _resourceManageState = {
+  resourceId: null,
+  viewModel: null
+};
+
+function _rmEscapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-async function showResourceManagePage(resourceId) {
-  const res = resources.find(r => r.id === resourceId);
-  if (!res) return;
-  const myRole = window._myResourceRoles?.[resourceId] || 'member';
-  const isAdmin = myRole === 'admin';
+function _rmAvatar(member, variant) {
+  const avatarClass = variant === 'pending'
+    ? 'rm-p-avatar'
+    : `rm-m-avatar${member.avatarClass ? ` ${member.avatarClass}` : ''}`;
+  if (member.photo) {
+    return `<div class="${avatarClass}"><img src="${_rmEscapeHtml(member.photo)}" alt=""></div>`;
+  }
+  return `<div class="${avatarClass}">${_rmEscapeHtml(member.initials || '?')}</div>`;
+}
 
-  const overlay = document.getElementById('resource-manage-overlay');
-  const content = document.getElementById('resource-manage-content');
-  if (!overlay || !content) return;
+function _rmLoadingMarkup(resourceId) {
+  const preview = resources.find((item) => item.id === resourceId);
+  const title = preview?.name || 'Ressource';
+  const subtitle = preview?.type === 'house'
+    ? (preview.address || 'Chargement…')
+    : (preview?.plaque || 'Chargement…');
 
-  // Show overlay with loading state
-  overlay.classList.remove('hidden');
-  content.innerHTML = `
+  return `
     <div class="rm-page-header">
       <button class="rm-back-btn" onclick="hideResourceManagePage()">‹</button>
       <div>
-        <div class="rm-page-title">${res.name}</div>
-        <div class="rm-page-sub">Chargement…</div>
+        <div class="rm-page-title">${_rmEscapeHtml(title)}</div>
+        <div class="rm-page-sub">${_rmEscapeHtml(subtitle)}</div>
+      </div>
+    </div>
+    <div class="rm-scroll-area">
+      <div class="rm-loading-card">
+        <div class="rm-loading-spinner" aria-hidden="true"></div>
+        <div class="rm-loading-title">Chargement de la ressource</div>
+        <div class="rm-loading-copy">Les données live Firebase arrivent…</div>
       </div>
     </div>`;
+}
 
-  // Load data in parallel
-  const [allEntries, bookingsSnap, familyDoc, inviteCode] = await Promise.all([
-    getAccessEntriesForResource(resourceId),
-    reservationsRef().where('ressource_id', '==', resourceId).get().catch(() => ({ size: 0 })),
-    familleRef(currentUser.familyId).get().catch(() => null),
-    isAdmin ? _getOrCreateResourceInviteCode(resourceId) : Promise.resolve(null)
-  ]);
-
-  const familyName = familyDoc?.exists ? (familyDoc.data().nom || familyDoc.data().name || 'Famille') : 'Famille';
-  const accepted = allEntries.filter(e => (e.statut ?? e.status) === 'accepted');
-  const pending  = allEntries.filter(e => (e.statut ?? e.status) === 'pending');
-  const totalBookings = bookingsSnap.size || 0;
-
-  // Fetch member details for all entries (from profils collection)
-  const memberDetails = {};
-  await Promise.all(allEntries.map(async e => {
-    const pid = e.profil_id || e.profileId;
-    try {
-      // Try new profils collection first
-      const pDoc = await profilRef(pid).get();
-      if (pDoc.exists) {
-        memberDetails[pid] = { name: pDoc.data().nom || pDoc.data().name || '?', photo: pDoc.data().photo || null, createdAt: pDoc.data().createdAt };
-      } else {
-        // Fallback: famille_membres
-        const member = await getFamilleMember(currentUser.familyId, pid);
-        memberDetails[pid] = { name: member?.nom || member?.name || pid.slice(0, 8), photo: member?.photo || null, createdAt: member?.createdAt };
-      }
-    } catch(_) { memberDetails[pid] = { name: '?', photo: null, createdAt: null }; }
-  }));
-
-  function pid(entry) { return entry.profil_id || entry.profileId; }
-
-  function fmtJoined(entry) {
-    const member = memberDetails[pid(entry)];
-    const when = entry.accepted_at || member?.createdAt;
-    if (!when) return 'Récemment';
-    const d = when.toDate ? when.toDate() : new Date(when);
-    return 'Depuis ' + d.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
-  }
-
-  function avatarHtml(profilId, extraClass = '') {
-    const m = memberDetails[profilId];
-    const initials = (m?.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-    if (m?.photo) return `<div class="rm-m-avatar ${extraClass}"><img src="${m.photo}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>`;
-    return `<div class="rm-m-avatar ${extraClass}">${initials}</div>`;
-  }
-
-  function pendingAvatarHtml(profilId) {
-    const m = memberDetails[profilId];
-    const initials = (m?.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-    if (m?.photo) return `<div class="rm-p-avatar"><img src="${m.photo}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>`;
-    return `<div class="rm-p-avatar">${initials}</div>`;
-  }
-
-  const roleLabelMap = { admin: 'Admin', member: 'Membre', guest: 'Invité' };
-
-  // ── Pending section ──
-  let pendingHtml = '';
-  if (pending.length) {
-    pendingHtml = `
-      <div class="rm-section-lbl">Demandes en attente</div>
-      <div class="rm-pending-group">
-        <div class="rm-pending-header">
-          <div class="rm-pending-label">${pending.length} demande${pending.length > 1 ? 's' : ''} à valider</div>
-          <div class="rm-pending-count">${pending.length}</div>
-        </div>
-        ${pending.map(e => {
-          const name = memberDetails[pid(e)]?.name || pid(e);
-          const when = e.invited_at?.toDate ? e.invited_at.toDate() : null;
-          const meta = when ? 'Via lien · ' + _relativeTime(when) : 'Via lien';
-          return `<div class="rm-pending-row" id="pending-row-${e.id}">
-            ${pendingAvatarHtml(e.profileId)}
-            <div class="rm-p-info">
-              <div class="rm-p-name">${name}</div>
-              <div class="rm-p-meta">${meta}</div>
-            </div>
-            <div class="rm-p-actions">
-              <button class="rm-p-btn-accept" onclick="_rmApprove('${e.id}','${name}','${resourceId}')">Accepter</button>
-              <button class="rm-p-btn-reject" onclick="_rmReject('${e.id}','${resourceId}')">Refuser</button>
-            </div>
-          </div>`;
-        }).join('')}
-
-      </div>`;
-  }
-
-  // ── Members section ──
-  const membersHtml = accepted.map(e => {
-    const profilId = pid(e);
-    const isMe = profilId === currentUser?.id;
-    const name = memberDetails[profilId]?.name || profilId;
-    const displayName = isMe ? `${name} · moi` : name;
-    const avClass = isMe ? 'me' : (e.role === 'guest' ? 'guest-av' : '');
-    const pillClass = e.role === 'admin' ? 'admin' : (e.role === 'guest' ? 'guest-pill' : '');
-    const menuBtn = isAdmin && !isMe
-      ? `<div class="rm-m-menu" onclick="_rmMemberMenu('${e.id}','${name}','${resourceId}')">···</div>`
-      : '';
-    return `<div class="rm-member-row">
-      ${avatarHtml(profilId, avClass)}
-      <div class="rm-m-info">
-        <div class="rm-m-name">${displayName}</div>
-        <div class="rm-m-joined">${fmtJoined(e)}</div>
+function _rmErrorMarkup() {
+  return `
+    <div class="rm-page-header">
+      <button class="rm-back-btn" onclick="hideResourceManagePage()">‹</button>
+      <div>
+        <div class="rm-page-title">Ressource</div>
+        <div class="rm-page-sub">Erreur de chargement</div>
       </div>
-      <div class="rm-role-pill ${pillClass}">${roleLabelMap[e.role] || e.role}</div>
-      ${menuBtn}
+    </div>
+    <div class="rm-scroll-area">
+      <div class="rm-loading-card rm-loading-card-error">
+        <div class="rm-loading-title">Impossible de charger cette ressource</div>
+        <div class="rm-loading-copy">Vérifiez votre connexion puis réessayez.</div>
+      </div>
     </div>`;
-  }).join('');
+}
 
-  // ── Invite section (admin only) ──
-  let inviteHtml = '';
-  if (isAdmin && inviteCode) {
-    const link = `${location.origin}${location.pathname}?resource_join=${inviteCode}`;
-    const shortLink = `famresa.app/join/${res.name.toLowerCase().replace(/\s+/g, '')}/${inviteCode.slice(0, 6)}`;
-    inviteHtml = `
+function _rmRenderPage(viewModel) {
+  const resource = viewModel.resource;
+  const stats = viewModel.stats;
+
+  const inviteHtml = viewModel.permissions.canInvite
+    ? `
       <div class="rm-section-lbl">Inviter quelqu'un</div>
       <div class="rm-invite-card">
         <div class="rm-invite-title">Ajouter un membre à cette ressource</div>
         <div class="rm-invite-row">
-          <input class="rm-invite-input" type="email" id="rm-invite-email-${resourceId}" placeholder="prenom@email.com">
-          <button class="rm-copy-link-btn" onclick="_rmSendInviteEmail('${resourceId}')">Envoyer</button>
+          <input class="rm-invite-input" type="email" id="rm-invite-email-${_rmEscapeHtml(resource.id)}" placeholder="prenom@email.com">
+          <button class="rm-copy-link-btn" onclick='_rmSendInviteEmail(${JSON.stringify(resource.id)})'>Envoyer</button>
         </div>
-        <div class="rm-share-link-row" onclick="navigator.clipboard?.writeText('${link}').then(()=>showToast('Lien copié !'))">
-          <div class="rm-share-link-url">${shortLink}</div>
+        <button class="rm-share-link-row" type="button" onclick='_rmCopyInviteLink(${JSON.stringify(resource.id)})'>
+          <div class="rm-share-link-url">${_rmEscapeHtml(viewModel.invite.displayUrl || '')}</div>
           <div class="rm-share-link-copy">Copier le lien</div>
-        </div>
-      </div>`;
-  }
+        </button>
+      </div>`
+    : '';
 
-  // ── Danger zone (admin only) ──
-  let dangerHtml = '';
-  if (isAdmin) {
-    dangerHtml = `
+  const pendingHtml = viewModel.permissions.isAdmin && viewModel.pendingMembers.length
+    ? `
+      <div class="rm-section-lbl">Demandes en attente</div>
+      <div class="rm-pending-group">
+        <div class="rm-pending-header">
+          <div class="rm-pending-label">${viewModel.pendingMembers.length} demande${viewModel.pendingMembers.length > 1 ? 's' : ''} à valider</div>
+          <div class="rm-pending-count">${viewModel.pendingMembers.length}</div>
+        </div>
+        ${viewModel.pendingMembers.map((member) => `
+          <div class="rm-pending-row">
+            ${_rmAvatar(member, 'pending')}
+            <div class="rm-p-info">
+              <div class="rm-p-name">${_rmEscapeHtml(member.name)}</div>
+              <div class="rm-p-meta">${_rmEscapeHtml(member.requestLabel)}</div>
+            </div>
+            <div class="rm-p-actions">
+              <button class="rm-p-btn-accept" onclick='_rmApprove(${JSON.stringify(member.accessId)}, ${JSON.stringify(member.name)}, ${JSON.stringify(resource.id)})'>Accepter</button>
+              <button class="rm-p-btn-reject" onclick='_rmReject(${JSON.stringify(member.accessId)}, ${JSON.stringify(resource.id)})'>Refuser</button>
+            </div>
+          </div>`).join('')}
+      </div>`
+    : '';
+
+  const membersHtml = viewModel.acceptedMembers.length
+    ? viewModel.acceptedMembers.map((member) => `
+      <div class="rm-member-row">
+        ${_rmAvatar(member, 'member')}
+        <div class="rm-m-info">
+          <div class="rm-m-name">${_rmEscapeHtml(member.displayName)}</div>
+          <div class="rm-m-joined">${_rmEscapeHtml(member.joinedLabel)}</div>
+        </div>
+        <div class="rm-role-pill ${_rmEscapeHtml(member.roleClass)}">${_rmEscapeHtml(member.roleLabel)}</div>
+        ${member.canManage
+          ? `<button class="rm-m-menu" type="button" onclick='_rmMemberMenu(${JSON.stringify(member.accessId)}, ${JSON.stringify(member.name)}, ${JSON.stringify(resource.id)})'>···</button>`
+          : '' }
+      </div>`).join('')
+    : '<div class="rm-empty-state">Aucun membre actif</div>';
+
+  const dangerHtml = viewModel.permissions.isAdmin
+    ? `
       <div class="rm-section-lbl">Gestion</div>
       <div class="rm-danger-card">
         <div class="rm-danger-title">Zone admin</div>
         <div class="rm-danger-row">
           <div class="rm-danger-label">Modifier les infos</div>
-          <button class="rm-danger-btn neutral" onclick="hideResourceManagePage();showCarInfo()">Modifier</button>
+          <button class="rm-danger-btn neutral" onclick='_rmEditResource(${JSON.stringify(resource.id)}, ${JSON.stringify(viewModel.actions.editMode)})'>Modifier</button>
         </div>
-        <div style="height:8px"></div>
         <div class="rm-danger-row">
           <div class="rm-danger-label">Supprimer la ressource</div>
-          <button class="rm-danger-btn" onclick="_rmDeleteResource('${resourceId}')">Supprimer</button>
+          <button class="rm-danger-btn" onclick='_rmDeleteResource(${JSON.stringify(resource.id)})'>Supprimer</button>
         </div>
-      </div>`;
-  }
+      </div>`
+    : '';
 
-  const roleBadgeClass = myRole === 'admin' ? 'admin' : (myRole === 'guest' ? 'guest' : 'member');
-  const roleBadgeLabel = roleLabelMap[myRole] || myRole;
-  const resTypeSub = res.type === 'house'
-    ? (res.address ? res.address : 'Maison de famille')
-    : (res.plaque || 'Voiture');
-  const resTypeDetail = res.type === 'house' ? 'Maison' : 'Voiture';
-
-  content.innerHTML = `
+  return `
     <div class="rm-page-header">
       <button class="rm-back-btn" onclick="hideResourceManagePage()">‹</button>
       <div>
-        <div class="rm-page-title">${res.name}</div>
-        <div class="rm-page-sub">${familyName}</div>
+        <div class="rm-page-title">${_rmEscapeHtml(resource.name)}</div>
+        <div class="rm-page-sub">${_rmEscapeHtml(resource.familyName)}</div>
       </div>
     </div>
     <div class="rm-scroll-area">
-      <!-- Hero -->
       <div class="rm-resource-hero">
-        <div class="rm-resource-big-icon">${res.emoji || (res.type === 'house' ? '🏠' : '🚗')}</div>
+        <div class="rm-resource-big-icon">${_rmEscapeHtml(resource.emoji)}</div>
         <div class="rm-resource-info">
-          <div class="rm-resource-name">${res.name}</div>
-          <div class="rm-resource-family">${resTypeSub}</div>
-          <div style="margin-top:6px;font-size:11px;color:var(--color-text-tertiary)">${resTypeDetail}</div>
+          <div class="rm-resource-name">${_rmEscapeHtml(resource.name)}</div>
+          <div class="rm-resource-family">${_rmEscapeHtml(resource.subLine)}</div>
+          <div class="rm-resource-meta">${_rmEscapeHtml(resource.metaLine)}</div>
         </div>
-        <div class="rm-resource-role-badge ${roleBadgeClass}">${roleBadgeLabel}</div>
+        <div class="rm-resource-role-badge ${_rmEscapeHtml(resource.roleClass)}">${_rmEscapeHtml(resource.roleLabel)}</div>
       </div>
-      <!-- Stats -->
       <div class="rm-stats-row">
         <div class="rm-stat-card">
-          <div class="rm-stat-val">${accepted.length}</div>
+          <div class="rm-stat-val">${stats.memberCount}</div>
           <div class="rm-stat-lbl">Membres</div>
         </div>
         <div class="rm-stat-card">
-          <div class="rm-stat-val">${totalBookings}</div>
+          <div class="rm-stat-val">${stats.bookingCount}</div>
           <div class="rm-stat-lbl">Réservations</div>
         </div>
         <div class="rm-stat-card">
-          <div class="rm-stat-val">${pending.length}</div>
+          <div class="rm-stat-val">${stats.pendingCount}</div>
           <div class="rm-stat-lbl">En attente</div>
         </div>
       </div>
       ${inviteHtml}
       ${pendingHtml}
-      <!-- Members -->
       <div class="rm-section-lbl">Membres actifs</div>
-      <div class="rm-members-group" id="rm-members-group-${resourceId}">
-        ${membersHtml || '<div style="padding:14px;color:var(--color-text-tertiary);font-size:13px">Aucun membre</div>'}
-      </div>
+      <div class="rm-members-group">${membersHtml}</div>
       ${dangerHtml}
     </div>`;
 }
 
-function _relativeTime(date) {
-  const diff = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (diff < 3600) return `il y a ${Math.max(1, Math.floor(diff / 60))} min`;
-  if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`;
-  if (diff < 172800) return 'hier';
-  return `il y a ${Math.floor(diff / 86400)} j`;
+function _rmCurrentInvite(resourceId) {
+  if (_resourceManageState.resourceId === resourceId && _resourceManageState.viewModel?.invite?.shareUrl) {
+    return _resourceManageState.viewModel.invite;
+  }
+  return null;
+}
+
+function hideResourceManagePage() {
+  _resourceManageState = { resourceId: null, viewModel: null };
+  document.getElementById('resource-manage-overlay')?.classList.add('hidden');
+}
+
+async function showResourceManagePage(resourceId) {
+  const overlay = document.getElementById('resource-manage-overlay');
+  const content = document.getElementById('resource-manage-content');
+  if (!overlay || !content || !resourceId || !currentUser?.id || !currentUser?.familyId) return;
+
+  overlay.classList.remove('hidden');
+  content.innerHTML = _rmLoadingMarkup(resourceId);
+  _resourceManageState = { resourceId, viewModel: null };
+
+  try {
+    const viewModel = await resourceService.getManagePageViewModel({
+      resourceId,
+      currentUserId: currentUser.id,
+      familyId: currentUser.familyId,
+      origin: location.origin,
+      pathname: location.pathname
+    });
+
+    _resourceManageState = { resourceId, viewModel };
+    const localResource = resources.find((item) => item.id === resourceId);
+    if (localResource && viewModel.invite?.inviteCode) localResource.inviteCode = viewModel.invite.inviteCode;
+    content.innerHTML = _rmRenderPage(viewModel);
+  } catch (e) {
+    console.error('Resource manage page error:', e);
+    content.innerHTML = _rmErrorMarkup();
+  }
 }
 
 async function _rmApprove(accessId, userName, resourceId) {
   try {
-    await updateResourceAccessStatus(accessId, 'accepted');
+    await resourceService.approveManageAccess({ accessId });
     showToast(`${userName} a accès ✓`);
-    document.getElementById(`pending-row-${accessId}`)?.remove();
-    // Refresh the page
-    showResourceManagePage(resourceId);
+    await showResourceManagePage(resourceId);
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 
 async function _rmReject(accessId, resourceId) {
   try {
-    await updateResourceAccessStatus(accessId, 'rejected');
+    await resourceService.rejectManageAccess({ accessId });
     showToast('Demande refusée');
-    document.getElementById(`pending-row-${accessId}`)?.remove();
-    showResourceManagePage(resourceId);
+    await showResourceManagePage(resourceId);
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 
-function _rmSendInviteEmail(resourceId) {
+async function _rmCopyInviteLink(resourceId) {
+  try {
+    const currentInvite = _rmCurrentInvite(resourceId)
+      || await resourceService.ensureManageInviteInfo({
+        resourceId,
+        origin: location.origin,
+        pathname: location.pathname
+      });
+    await navigator.clipboard?.writeText(currentInvite.shareUrl);
+    showToast('Lien copié !');
+  } catch (e) {
+    showToast('Impossible de copier le lien');
+  }
+}
+
+async function _rmSendInviteEmail(resourceId) {
   const emailEl = document.getElementById(`rm-invite-email-${resourceId}`);
   const email = (emailEl?.value || '').trim().toLowerCase();
   if (!email || !email.includes('@')) { showToast('Email invalide'); return; }
-  // Copy invite link as fallback (no server-side email)
-  const res = resources.find(r => r.id === resourceId);
-  const inviteCode = res?.inviteCode;
-  if (inviteCode) {
-    const link = `${location.origin}${location.pathname}?resource_join=${inviteCode}`;
-    navigator.clipboard?.writeText(link).then(() => showToast(`Lien copié — envoyez-le à ${email}`));
-  } else {
-    showToast(`Envoyez le lien d'invitation à ${email}`);
+
+  try {
+    const currentInvite = _rmCurrentInvite(resourceId)
+      || await resourceService.ensureManageInviteInfo({
+        resourceId,
+        origin: location.origin,
+        pathname: location.pathname
+      });
+    await navigator.clipboard?.writeText(currentInvite.shareUrl);
+    showToast(`Lien copié — envoyez-le à ${email}`);
+    if (emailEl) emailEl.value = '';
+  } catch (e) {
+    showToast('Impossible de préparer le lien');
   }
-  if (emailEl) emailEl.value = '';
 }
 
 async function _rmMemberMenu(accessId, memberName, resourceId) {
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
-      <h2>${memberName}</h2>
+      <h2>${_rmEscapeHtml(memberName)}</h2>
       <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Gérer les droits de ce membre</p>
-      <button class="btn btn-primary" onclick="closeSheet()" style="margin-bottom:10px">Promouvoir admin</button>
-      <button class="btn btn-danger" onclick="_rmRemoveMember('${accessId}','${memberName}','${resourceId}');closeSheet()">Retirer l'accès</button>
+      <button class="btn btn-danger" onclick='_rmRemoveMember(${JSON.stringify(accessId)}, ${JSON.stringify(memberName)}, ${JSON.stringify(resourceId)});closeSheet()'>Retirer l'accès</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Annuler</button>
     </div>`;
   document.getElementById('overlay').classList.add('open');
@@ -898,20 +895,32 @@ async function _rmMemberMenu(accessId, memberName, resourceId) {
 
 async function _rmRemoveMember(accessId, memberName, resourceId) {
   try {
-    await updateResourceAccessStatus(accessId, 'rejected');
+    await resourceService.removeManageAccess({ accessId });
     showToast(`${memberName} retiré(e)`);
-    showResourceManagePage(resourceId);
+    await showResourceManagePage(resourceId);
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 
+function _rmEditResource(resourceId, editMode) {
+  selectResource(resourceId);
+  hideResourceManagePage();
+  if (editMode === 'house') {
+    showHouseInfo();
+    return;
+  }
+  showCarInfo();
+}
+
 async function _rmDeleteResource(resourceId) {
-  const res = resources.find(r => r.id === resourceId);
+  const res = _resourceManageState.viewModel?.resource?.id === resourceId
+    ? _resourceManageState.viewModel.resource
+    : resources.find((item) => item.id === resourceId);
   if (!res) return;
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
-      <h2>Supprimer ${res.name} ?</h2>
+      <h2>Supprimer ${_rmEscapeHtml(res.name)} ?</h2>
       <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Cette action est irréversible. Les réservations existantes seront conservées.</p>
-      <button class="btn btn-danger" onclick="_rmConfirmDelete('${resourceId}');closeSheet()">Oui, supprimer</button>
+      <button class="btn btn-danger" onclick='_rmConfirmDelete(${JSON.stringify(resourceId)});closeSheet()'>Oui, supprimer</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Annuler</button>
     </div>`;
   document.getElementById('overlay').classList.add('open');
@@ -919,14 +928,19 @@ async function _rmDeleteResource(resourceId) {
 
 async function _rmConfirmDelete(resourceId) {
   try {
-    await ressourcesRef().doc(resourceId).delete();
-    resources = resources.filter(r => r.id !== resourceId);
+    await resourceService.deleteManagedResource({ resourceId });
+    resources = resources.filter((item) => item.id !== resourceId);
+    if (window._myResourceRoles) delete window._myResourceRoles[resourceId];
     hideResourceManagePage();
+
     if (resources.length > 0) {
       selectResource(resources[0].id);
     } else {
+      if (unsubscribe) { unsubscribe(); unsubscribe = null; }
       renderNoAccessState();
     }
+
+    if (typeof renderProfileTab === 'function') renderProfileTab();
     showToast('Ressource supprimée');
   } catch(e) { showToast('Erreur — réessayez'); }
 }
