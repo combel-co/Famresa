@@ -70,7 +70,26 @@ function _syncHeaderHeight() {
     document.documentElement.style.setProperty('--header-h', h.offsetHeight + 'px');
 }
 
+function hideSplash() {
+  const splash = document.getElementById('splash-screen');
+  if (splash) {
+    splash.style.opacity = '0';
+    setTimeout(() => splash.style.display = 'none', 300);
+  }
+}
+
+function showSkeleton() {
+  hideSplash();
+  document.getElementById('skeleton-screen').style.display = 'block';
+}
+
+function hideSkeleton() {
+  document.getElementById('skeleton-screen').style.display = 'none';
+}
+
 function enterApp() {
+  hideSplash();
+  hideSkeleton();
   document.getElementById('app-header').style.display = 'flex';
   document.getElementById('app-main').style.display = 'block';
   // Sync CSS variable to actual rendered header height (fixes sticky gap on all screen sizes)
