@@ -1104,6 +1104,11 @@
   /* Active step fills remaining space; section scrolls internally */
   .bm-step.active { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   .bm-step.active .bm-section { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  /* Motif textarea fills available section height */
+  .bm-motif-group { display: flex; flex-direction: column; flex: 1; margin-top: 8px; }
+  #bm-motif-input { flex: 1; resize: none; min-height: 120px; font-family: 'DM Sans', sans-serif; font-size: 16px; border-radius: 12px; border: 1.5px solid #e0e0e0; padding: 14px 16px; outline: none; transition: border-color 0.15s; }
+  #bm-motif-input:focus { border-color: var(--text); }
+  .bm-step.active #bm-motif-section { display: flex; flex-direction: column; flex: 1; }
 
   /* Mini card */
   .bm-card-mini {

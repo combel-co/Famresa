@@ -107,7 +107,11 @@ async function loadResources() {
       // If none match (e.g. access entries from old IDs), grant all
       if (resources.length === 0 && allResources.length > 0) {
         resources = allResources;
-        allResources.forEach(r => { window._myResourceRoles[r.id] = 'member'; });
+        // Preserve the best role from existing access entries instead of defaulting to 'member'
+        const existingRoles = Object.values(window._myResourceRoles);
+        const bestRole = existingRoles.includes('admin') ? 'admin'
+          : existingRoles.includes('member') ? 'member' : 'guest';
+        allResources.forEach(r => { window._myResourceRoles[r.id] = bestRole; });
       }
     } else {
       resources = allResources;
