@@ -33,7 +33,7 @@ window.addEventListener('resize', function () {
 // FAMILY SELECTOR
 // ==========================================
 let _currentFamilyName = 'Famille';
-const _MOCK_FAMILIES = ['Famille Berton', 'Famille Dupont'];
+let _userFamilies = []; // { id, name } — real families for this user
 
 function updateFamilyPill(name) {
   _currentFamilyName = name || 'Famille';
@@ -44,17 +44,38 @@ function updateFamilyPill(name) {
 async function loadFamilyName() {
   if (!currentUser?.familyId) return;
   try {
-    // Try new collection first, fallback to legacy
-    let name = '';
+    // Load families the user belongs to (via famille_membres)
+    _userFamilies = [];
     try {
-      const doc = await familleRef(currentUser.familyId).get();
-      if (doc.exists) name = doc.data().nom || doc.data().name || '';
+      const memSnap = await familleMembresRef()
+        .where('profil_id', '==', currentUser.id).get();
+      const familyIds = [...new Set(memSnap.docs.map(d => d.data().famille_id).filter(Boolean))];
+      for (const fid of familyIds) {
+        try {
+          const fDoc = await familleRef(fid).get();
+          if (fDoc.exists) {
+            _userFamilies.push({ id: fid, name: fDoc.data().nom || fDoc.data().name || 'Famille' });
+          }
+        } catch(_) {}
+      }
     } catch(_) {}
-    if (!name) {
-      const doc = await db.collection('families').doc(currentUser.familyId).get();
-      if (doc.exists) name = doc.data().name || doc.data().nom || '';
+
+    // Fallback: at least show current family
+    if (_userFamilies.length === 0) {
+      let name = '';
+      try {
+        const doc = await familleRef(currentUser.familyId).get();
+        if (doc.exists) name = doc.data().nom || doc.data().name || '';
+      } catch(_) {}
+      if (!name) {
+        const doc = await db.collection('families').doc(currentUser.familyId).get();
+        if (doc.exists) name = doc.data().name || doc.data().nom || '';
+      }
+      _userFamilies = [{ id: currentUser.familyId, name: name || 'Ma famille' }];
     }
-    if (name) updateFamilyPill(name);
+
+    const current = _userFamilies.find(f => f.id === currentUser.familyId);
+    if (current) updateFamilyPill(current.name);
   } catch (e) { /* silent fallback */ }
 }
 
@@ -62,20 +83,26 @@ function toggleFamilyPicker() {
   const picker = document.getElementById('family-picker-dropdown');
   if (!picker) return;
   if (picker.style.display === 'block') { picker.style.display = 'none'; return; }
-  picker.innerHTML = _MOCK_FAMILIES.map((f, i) => {
-    const active = f === _currentFamilyName;
-    return `<div class="family-picker-item${active ? ' active' : ''}" onclick="selectFamily(${i})">
-      <span>${f}</span>
+  if (_userFamilies.length <= 1) return; // No picker if only 1 family
+  picker.innerHTML = _userFamilies.map((f, i) => {
+    const active = f.id === currentUser.familyId;
+    return `<div class="family-picker-item${active ? ' active' : ''}" onclick="selectFamily('${f.id}')">
+      <span>${f.name}</span>
       ${active ? '<span class="family-picker-check">✓</span>' : ''}
-    </div>${i < _MOCK_FAMILIES.length - 1 ? '<div class="family-picker-divider"></div>' : ''}`;
+    </div>${i < _userFamilies.length - 1 ? '<div class="family-picker-divider"></div>' : ''}`;
   }).join('');
   picker.style.display = 'block';
 }
 
-function selectFamily(index) {
-  updateFamilyPill(_MOCK_FAMILIES[index]);
+function selectFamily(familyId) {
+  const fam = _userFamilies.find(f => f.id === familyId);
+  if (!fam) return;
+  currentUser.familyId = familyId;
+  localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+  updateFamilyPill(fam.name);
   const picker = document.getElementById('family-picker-dropdown');
   if (picker) picker.style.display = 'none';
+  loadResources();
 }
 
 document.addEventListener('click', function (e) {
