@@ -54,8 +54,10 @@ async function loginUser() {
     const familyId = data.familyId || data.famille_id || null;
     let name = data.nom || data.name || '';
     let photo = data.photo || null;
+    // Preserve createdAt for seniority display
+    const createdAt = data.createdAt?.toMillis?.() || data.createdAt || null;
 
-    // Try to get richer profile from famille_membres
+    // Try to get richer profile from famille_membres (name/photo may be there)
     if (familyId) {
       try {
         const member = await getFamilleMember(familyId, doc.id);
@@ -73,7 +75,7 @@ async function loginUser() {
       } catch(e) { /* fallback to profil data */ }
     }
 
-    currentUser = { id: doc.id, name, email: data.email, photo, familyId };
+    currentUser = { id: doc.id, name, email: data.email, photo, familyId, createdAt };
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
     document.getElementById('login-overlay').classList.add('hidden');
     if (!familyId) {

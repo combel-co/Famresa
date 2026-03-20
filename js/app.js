@@ -44,11 +44,17 @@ function updateFamilyPill(name) {
 async function loadFamilyName() {
   if (!currentUser?.familyId) return;
   try {
-    const doc = await familleRef(currentUser.familyId).get();
-    if (doc.exists) {
-      const n = doc.data().nom || doc.data().name;
-      if (n) updateFamilyPill(n);
+    // Try new collection first, fallback to legacy
+    let name = '';
+    try {
+      const doc = await familleRef(currentUser.familyId).get();
+      if (doc.exists) name = doc.data().nom || doc.data().name || '';
+    } catch(_) {}
+    if (!name) {
+      const doc = await db.collection('families').doc(currentUser.familyId).get();
+      if (doc.exists) name = doc.data().name || doc.data().nom || '';
     }
+    if (name) updateFamilyPill(name);
   } catch (e) { /* silent fallback */ }
 }
 

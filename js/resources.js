@@ -224,36 +224,82 @@ function cycleCar() {
 function subscribeBookings() {
   if (unsubscribe) unsubscribe();
 
-  let unsubNew = null, unsubLegacy = null;
+  // Two separate maps so neither listener clears the other's data
+  let _bookingsNew    = {};
+  let _bookingsLegacy = {};
+  let _readyNew     = false;
+  let _readyLegacy  = false;
 
-  const processSnap = (snap, isNew) => {
-    if (isNew) bookings = {};
-    snap.forEach(doc => {
-      const d = isNew
-        ? reservationToJS(doc.data(), doc.id)
-        : { id: doc.id, ...doc.data() };
-      expandBookingToMap(d);
-    });
+  function _rebuild() {
+    bookings = {};
+    // Legacy first, new data takes precedence (overwrites same dates)
+    Object.entries(_bookingsLegacy).forEach(([k, v]) => { bookings[k] = v; });
+    Object.entries(_bookingsNew).forEach(([k, v]) => { bookings[k] = v; });
     renderCalendar();
     renderExperiencePanels();
     if (document.getElementById('booking-modal')?.classList.contains('open')) renderBmCalendar();
-  };
+  }
 
-  // New collection
+  function _expandToMap(d, map) {
+    const start = d.startDate || d.date_debut;
+    const end   = d.endDate   || d.date_fin || start;
+    if (start && end) {
+      let cur = new Date(start + 'T00:00:00');
+      const endObj = new Date(end + 'T00:00:00');
+      while (cur <= endObj) {
+        const ds = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+        map[ds] = d;
+        cur.setDate(cur.getDate() + 1);
+      }
+    } else if (d.date) { map[d.date] = d; }
+  }
+
+  // New collection: reservations
+  let unsubNew = null;
   try {
     unsubNew = reservationsRef()
       .where('ressource_id', '==', selectedResource)
-      .onSnapshot(snap => processSnap(snap, true),
-        err => { console.warn('[reservations] snapshot error:', err); });
-  } catch(_) {}
+      .onSnapshot(snap => {
+        _bookingsNew = {};
+        snap.forEach(doc => _expandToMap(reservationToJS(doc.data(), doc.id), _bookingsNew));
+        _readyNew = true;
+        if (_readyLegacy) _rebuild();
+      }, err => {
+        console.warn('[reservations] snapshot error:', err);
+        _readyNew = true;
+        if (_readyLegacy) _rebuild();
+      });
+  } catch(_) { _readyNew = true; }
 
-  // Legacy fallback (families/{id}/bookings by resourceId or carId)
+  // Legacy collection: families/{id}/bookings
+  let unsubLegacy = null;
   try {
-    const legacyQuery = db.collection('families').doc(currentUser.familyId)
-      .collection('bookings').where('resourceId', '==', selectedResource);
-    unsubLegacy = legacyQuery.onSnapshot(snap => processSnap(snap, false),
-      err => { console.warn('[bookings legacy] snapshot error:', err); });
-  } catch(_) {}
+    const familyId = currentUser.familyId;
+    const legacyCol = db.collection('families').doc(familyId).collection('bookings');
+    // Subscribe by resourceId first, then carId for old bookings
+    unsubLegacy = legacyCol
+      .where('resourceId', '==', selectedResource)
+      .onSnapshot(snap => {
+        _bookingsLegacy = {};
+        snap.forEach(doc => _expandToMap({ id: doc.id, ...doc.data() }, _bookingsLegacy));
+        // Also pick up carId-only bookings
+        legacyCol.where('carId', '==', selectedResource).get().then(snap2 => {
+          snap2.forEach(doc => {
+            const d = { id: doc.id, ...doc.data() };
+            if (!d.resourceId) _expandToMap(d, _bookingsLegacy);
+          });
+          _readyLegacy = true;
+          if (_readyNew) _rebuild();
+        }).catch(() => { _readyLegacy = true; if (_readyNew) _rebuild(); });
+      }, err => {
+        console.warn('[bookings legacy] snapshot error:', err);
+        _readyLegacy = true;
+        if (_readyNew) _rebuild();
+      });
+  } catch(_) {
+    _readyLegacy = true;
+    if (_readyNew) _rebuild();
+  }
 
   unsubscribe = () => {
     if (unsubNew) unsubNew();
