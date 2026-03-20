@@ -73,11 +73,8 @@ function renderProfileTab() {
       const rolePill = roleStyle
         ? `<div style="margin-top:6px;display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${roleStyle.bg};color:${roleStyle.color}">${roleStyle.label}</div>`
         : '';
-      const isAdmin = role === 'admin';
-      const adminBtn = isAdmin
-        ? `<div style="margin-top:8px;font-size:11px;color:var(--accent);font-weight:600;cursor:pointer"
-              onclick="event.stopPropagation();showResourceManagePage('${res.id}')">Gérer l'accès ›</div>`
-        : '';
+      const manageBtn = `<div style="margin-top:8px;font-size:11px;color:var(--accent);font-weight:600;cursor:pointer"
+              onclick="event.stopPropagation();showResourceManagePage('${res.id}')">Gérer l'accès ›</div>`;
 
       return `<div class="pf-resource-card" onclick="selectResource('${res.id}');showResourceManagePage('${res.id}')">
         <div class="pf-resource-icon">${res.emoji || '🚗'}</div>
@@ -85,7 +82,7 @@ function renderProfileTab() {
         <div class="pf-resource-sub">${sub}</div>
         ${availBadge}
         ${rolePill}
-        ${adminBtn}
+        ${manageBtn}
       </div>`;
     });
 
