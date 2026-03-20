@@ -22,6 +22,14 @@ function renderProfileTab() {
   const pfFamilyName = document.getElementById('pf-family-name');
   if (pfFamilyName) pfFamilyName.textContent = _currentFamilyName || 'Famille';
 
+  // XP
+  const xp = getXpForAllTime();
+  const level = getLevelFromXp(xp);
+  const pfXpBadge = document.getElementById('pf-xp-badge');
+  const pfXpNum   = document.getElementById('pf-xp-num');
+  if (pfXpBadge) pfXpBadge.textContent = level.name;
+  if (pfXpNum)   pfXpNum.textContent = `${xp} XP`;
+
   // KPIs
   const allBookings = getUniqueBookingsSorted();
   const myBookings  = allBookings.filter(b => u && b.userId === u.id);

@@ -472,42 +472,60 @@ async function runMigrationIfNeeded() {
 // ==========================================
 // PROFILE
 // ==========================================
+// Legacy — redirects to the Profile tab
 function showProfile() {
+  switchTab('history');
+}
+
+// Edit profile sheet (photo, name, email)
+function showEditProfileSheet() {
   if (!currentUser) { showWelcomeScreen(); return; }
   const av = currentUser.photo ? `<img src="${currentUser.photo}" alt="">` : getInitials(currentUser.name);
-  const xp = getXpForAllTime();
-  const level = getLevelFromXp(xp);
-  const earned = computeEarnedBadges();
-  const badgeItems = BADGE_DEFS.map(def => {
-    const cls = earned.has(def.id) ? 'earned' : 'locked';
-    return `<div class="badge-item ${cls}"><div class="badge-item-label">${def.label}</div><div class="badge-item-desc">${def.desc}</div></div>`;
-  }).join('');
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
-      <h2>Mon profil</h2>
-      <div class="profile-row">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-          <div class="profile-avatar">${av}</div>
-          <label style="font-size:12px;color:var(--accent);cursor:pointer;text-decoration:underline" onclick="document.getElementById('profile-photo-input').click()">Modifier photo</label>
-          <input type="file" id="profile-photo-input" accept="image/*" style="display:none" onchange="changeProfilePhoto(this)">
-        </div>
-        <div class="profile-meta">
-          <div class="name">${currentUser.name}</div>
-          <div class="email">${currentUser.email}</div>
-        </div>
+      <h2>Modifier le profil</h2>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:20px">
+        <div class="profile-avatar">${av}</div>
+        <label style="font-size:12px;color:var(--accent);cursor:pointer;text-decoration:underline" onclick="document.getElementById('profile-photo-input').click()">Modifier la photo</label>
+        <input type="file" id="profile-photo-input" accept="image/*" style="display:none" onchange="changeProfilePhoto(this)">
       </div>
-      <div class="profile-xp-row">
-        <span class="profile-xp-badge">${level.name}</span>
-        <span class="profile-xp-num">${xp} XP</span>
+      <div class="input-group">
+        <label>Prénom</label>
+        <input type="text" id="edit-profile-name" value="${currentUser.name || ''}" autocomplete="off">
       </div>
-      <div style="margin-top:14px"><div style="font-weight:700;font-size:14px;margin-bottom:4px">Badges</div>
-        <div class="badge-grid">${badgeItems}</div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="edit-profile-email" value="${currentUser.email || ''}" autocomplete="off">
       </div>
-      <button class="btn" style="background:var(--accent-light);color:var(--accent);margin-top:16px" onclick="showChangePin()">Changer mon code</button>
-      <button class="btn btn-danger" style="margin-top:10px" onclick="logout()">Se déconnecter</button>
+      <div class="lock-error" id="edit-profile-error"></div>
+      <button class="btn btn-primary" style="margin-top:8px" onclick="saveProfileEdits()">Enregistrer</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>
     </div>`;
   document.getElementById('overlay').classList.add('open');
+}
+
+async function saveProfileEdits() {
+  const name  = (document.getElementById('edit-profile-name')?.value || '').trim();
+  const email = (document.getElementById('edit-profile-email')?.value || '').trim().toLowerCase();
+  const errEl = document.getElementById('edit-profile-error');
+  if (!name) { errEl.textContent = 'Entrez votre prénom'; return; }
+  if (!email || !email.includes('@')) { errEl.textContent = 'Email invalide'; return; }
+  errEl.textContent = '';
+  try {
+    // Update profil
+    await profilRef(currentUser.id).update({ nom: name, email });
+    // Update famille_membre
+    const member = await getFamilleMember(currentUser.familyId, currentUser.id);
+    if (member) await familleMembresRef().doc(member.id).update({ nom: name, email });
+    // Update local state
+    currentUser.name  = name;
+    currentUser.email = email;
+    localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+    updateUserPill();
+    renderProfileTab();
+    closeSheet();
+    showToast('Profil mis à jour ✓');
+  } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
 }
 
 async function changeProfilePhoto(input) {
@@ -531,7 +549,8 @@ async function changeProfilePhoto(input) {
         currentUser.photo = photo;
         localStorage.setItem('famcar_user', JSON.stringify(currentUser));
         updateUserPill();
-        showProfile();
+        renderProfileTab();
+        showEditProfileSheet();
         showToast('Photo mise à jour ✓');
       } catch(e) { showToast('Erreur — réessayez'); }
     };
@@ -553,7 +572,7 @@ function showChangePin() {
       </div>
       <div class="lock-error" id="change-pin-error"></div>
       <button class="btn btn-primary" onclick="saveNewPin()">Enregistrer</button>
-      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="showProfile()">Retour</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>
     </div>`;
   const inputs = document.querySelectorAll('#change-pin-input input');
   setTimeout(() => inputs[0].focus(), 100);

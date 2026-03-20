@@ -110,7 +110,7 @@
     <span id="family-name-display">Famille</span>
     <span class="family-chevron">▾</span>
   </button>
-  <div class="user-pill" id="user-pill" onclick="showProfile()">
+  <div class="user-pill" id="user-pill" onclick="switchTab('history')">
     <div class="avatar" id="header-avatar">?</div>
     <span id="header-name">Se connecter</span>
   </div>
@@ -240,12 +240,17 @@
     <!-- Hero card -->
     <div class="pf-hero-card">
       <div class="pf-hero-top">
-        <div class="pf-hero-avatar" id="pf-avatar">?</div>
+        <div class="pf-hero-avatar" id="pf-avatar" onclick="showEditProfileSheet()" style="cursor:pointer">?</div>
         <div class="pf-hero-meta">
           <div class="pf-hero-name" id="pf-name">—</div>
           <div class="pf-hero-sub" id="pf-sub">—</div>
         </div>
-        <button class="pf-edit-btn" onclick="showProfile()">Modifier</button>
+        <button class="pf-edit-btn" onclick="showEditProfileSheet()">Modifier</button>
+      </div>
+      <!-- XP badge -->
+      <div class="pf-xp-row" id="pf-xp-row">
+        <span class="pf-xp-badge" id="pf-xp-badge">—</span>
+        <span class="pf-xp-num" id="pf-xp-num">— XP</span>
       </div>
       <!-- Family pills -->
       <div class="pf-family-pills">
@@ -289,17 +294,12 @@
     <!-- Compte -->
     <div class="pf-section-lbl">Compte</div>
     <div class="pf-settings-group">
-      <div class="pf-settings-row" onclick="showProfile()">
+      <div class="pf-settings-row" onclick="showEditProfileSheet()">
         <div class="pf-row-icon">👤</div>
-        <div class="pf-row-label">Paramètres du compte</div>
+        <div class="pf-row-label">Modifier le profil</div>
         <div class="pf-row-chevron">›</div>
       </div>
-      <div class="pf-settings-row">
-        <div class="pf-row-icon">🔔</div>
-        <div class="pf-row-label">Notifications</div>
-        <div class="pf-row-chevron">›</div>
-      </div>
-      <div class="pf-settings-row">
+      <div class="pf-settings-row" onclick="showChangePin()">
         <div class="pf-row-icon">🔒</div>
         <div class="pf-row-label">Code personnel</div>
         <div class="pf-row-chevron">›</div>
