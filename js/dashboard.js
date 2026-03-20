@@ -28,7 +28,14 @@ function renderUpcomingBookings() {
   const label = document.getElementById('upcoming-label');
   if (!el) return;
   const todayStr = new Date().toISOString().slice(0, 10);
-  const unique = getUniqueBookingsSorted().filter(b => (b.endDate || b.startDate || b.date || '') >= todayStr);
+  const limitDate = new Date();
+  limitDate.setDate(limitDate.getDate() + 7);
+  const limitStr = limitDate.toISOString().slice(0, 10);
+  const unique = getUniqueBookingsSorted().filter(b => {
+    const start = b.startDate || b.date || '';
+    const end = b.endDate || start;
+    return end >= todayStr && start <= limitStr;
+  });
   if (!unique.length) {
     if (label) label.style.display = 'none';
     el.innerHTML = '';
