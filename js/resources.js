@@ -72,9 +72,18 @@ async function loadResources() {
       // No access records yet — determine role from family created_by
       let role = 'member';
       try {
-        const famDoc = await db.collection('families').doc(familyId).get()
-          .catch(() => null) || await familleRef(familyId).get().catch(() => null);
-        if (famDoc?.exists && famDoc.data().created_by === currentUser.id) role = 'admin';
+        let famDoc = null;
+        try {
+          const d = await db.collection('families').doc(familyId).get();
+          if (d.exists) famDoc = d;
+        } catch(_) {}
+        if (!famDoc) {
+          try {
+            const d = await familleRef(familyId).get();
+            if (d.exists) famDoc = d;
+          } catch(_) {}
+        }
+        if (famDoc && famDoc.data().created_by === currentUser.id) role = 'admin';
       } catch(_) {}
 
       // Try writing to new collection; silently ignore if not permitted yet
