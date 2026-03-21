@@ -158,7 +158,7 @@ function renderBmCalendar() {
   const today = new Date(); today.setHours(0,0,0,0);
   let html = '';
 
-  for (let m = 0; m < 4; m++) {
+  for (let m = 0; m < reservationService.BOOKING_HORIZON_MONTHS; m++) {
     const d = new Date(today.getFullYear(), today.getMonth() + m, 1);
     const year = d.getFullYear(); const month = d.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
