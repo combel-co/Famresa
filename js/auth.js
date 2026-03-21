@@ -150,19 +150,22 @@ function signupChooseCreate() {
 async function signupJoinAdvance() {
   const url = (document.getElementById('su-invite-url')?.value || '').trim();
   const errEl = document.getElementById('su-join-error');
-  if (!url) { errEl.textContent = 'Collez le lien d\'invitation'; return; }
+  if (!url) { errEl.textContent = 'Entrez le code d\'invitation'; return; }
   let code = '';
   try {
     const u = new URL(url);
     code = u.searchParams.get('join') || '';
-  } catch(e) { errEl.textContent = 'Lien invalide'; return; }
-  if (!code) { errEl.textContent = 'Lien invalide — paramètre ?join= manquant'; return; }
+  } catch(e) {
+    // Not a URL — treat as raw invite code
+    code = url.replace(/\s/g, '').toUpperCase();
+  }
+  if (!code) { errEl.textContent = 'Code invalide'; return; }
   errEl.textContent = '';
   try {
     // Try new collection first, fallback to legacy
     let snap = await famillesRef().where('inviteCode', '==', code).limit(1).get();
     if (snap.empty) snap = await db.collection('families').where('inviteCode', '==', code).limit(1).get();
-    if (snap.empty) { errEl.textContent = 'Lien invalide ou expiré'; return; }
+    if (snap.empty) { errEl.textContent = 'Code invalide ou expiré'; return; }
     suPendingFamilyId = snap.docs[0].id;
     showSignupStep(3);
   } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
@@ -187,7 +190,7 @@ async function signupCreateAdvance() {
   errEl.textContent = '';
   _isSubmittingFamily = true;
   const inviteCode = generateSignupInviteCode();
-  suInviteUrl = `${location.origin}${location.pathname}?join=${inviteCode}`;
+  suInviteUrl = inviteCode;
   try {
     const familyDocRef = await famillesRef().add({
       nom: familyName, pin, inviteCode,
@@ -197,12 +200,14 @@ async function signupCreateAdvance() {
     suPendingFamilyId = familyDocRef.id;
     document.querySelectorAll('.su-step').forEach(s => s.classList.add('hidden'));
     document.getElementById('su-step-2b-link').classList.remove('hidden');
-    document.getElementById('su-invite-display').textContent = suInviteUrl;
+    document.getElementById('su-invite-display').textContent = `Code d'invitation : ${inviteCode}`;
   } catch(e) { errEl.textContent = 'Erreur — réessayez'; } finally { _isSubmittingFamily = false; }
 }
 
 function copyInviteLink() {
-  navigator.clipboard?.writeText(suInviteUrl).then(() => showToast('Lien copié !')).catch(() => showToast(suInviteUrl));
+  const appUrl = `${location.origin}${location.pathname}`;
+  const message = `Rejoins la famille sur Resa-voiture !\n${appUrl}\nCode d'invitation : ${suInviteUrl}`;
+  navigator.clipboard?.writeText(message).then(() => showToast('Code copié !')).catch(() => showToast('Code : ' + suInviteUrl));
 }
 
 function handleSignupPhoto(input) {
@@ -624,7 +629,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       startSignup();
       signupChooseJoin();
       const urlInput = document.getElementById('su-invite-url');
-      if (urlInput) urlInput.value = `${location.origin}${location.pathname}?join=${_joinCode}`;
+      if (urlInput) urlInput.value = _joinCode;
     }
   }
 });

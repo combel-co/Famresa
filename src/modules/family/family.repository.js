@@ -4,6 +4,16 @@
 // No business logic. Only DB operations.
 
 const familyRepository = {
+  async ensureInviteCode(familyId, newCode) {
+    if (!familyId) return null;
+    const doc = await familleRef(familyId).get();
+    if (!doc.exists) return null;
+    const existing = doc.data().inviteCode;
+    if (existing) return existing;
+    await familleRef(familyId).update({ inviteCode: newCode });
+    return newCode;
+  },
+
   async getById(familyId) {
     if (!familyId) return null;
 

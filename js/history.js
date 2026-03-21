@@ -11,14 +11,13 @@ function generateInviteCode() {
 async function loadAndCopyInviteLink() {
   const el = document.getElementById('invite-link-display');
   try {
-    const famDoc = await familleRef(currentUser.familyId).get();
-    let code = famDoc.exists && famDoc.data().inviteCode;
-    if (!code) {
-      code = generateInviteCode();
-      await familleRef(currentUser.familyId).update({ inviteCode: code });
-    }
-    const url = `${location.origin}${location.pathname}?join=${code}`;
-    el.textContent = url;
-    navigator.clipboard?.writeText(url).then(() => showToast('Lien copié !')).catch(() => showToast('Lien affiché ci-dessus'));
+    const code = await familyService.getInviteCode(currentUser.familyId, generateInviteCode);
+    if (!code) { el.textContent = 'Erreur de chargement.'; return; }
+    const appUrl = `${location.origin}${location.pathname}`;
+    const message = `Rejoins la famille sur Resa-voiture !\n${appUrl}\nCode d'invitation : ${code}`;
+    el.textContent = `Code : ${code}`;
+    navigator.clipboard?.writeText(message)
+      .then(() => showToast('Code copié !'))
+      .catch(() => showToast('Code : ' + code));
   } catch(e) { el.textContent = 'Erreur de chargement.'; }
 }

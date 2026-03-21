@@ -4,6 +4,10 @@
 // No UI, no DOM, no Firebase.
 
 const familyService = {
+  async getInviteCode(familyId, generateCodeFn) {
+    return familyRepository.ensureInviteCode(familyId, generateCodeFn());
+  },
+
   async getById(familyId) {
     const family = await familyRepository.getById(familyId);
     if (!family) return null;
