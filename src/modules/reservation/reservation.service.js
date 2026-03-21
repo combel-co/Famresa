@@ -4,6 +4,8 @@
 // No UI, no DOM, no Firebase.
 // Uses reservationRepository for all DB access.
 
+const BOOKING_HORIZON_MONTHS = 13;
+
 const DEST_PRESETS = [
   { name: 'Paris intra-muros', km: 6 },
   { name: 'Versailles', km: 23 },
@@ -21,6 +23,7 @@ const DEST_PRESETS = [
 
 const reservationService = {
 
+  BOOKING_HORIZON_MONTHS,
   DEST_PRESETS,
 
   /**
