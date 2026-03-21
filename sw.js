@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_NAME = 'famresa-' + CACHE_VERSION;
 
 // On install: cache the app shell
@@ -28,15 +28,16 @@ self.addEventListener('activate', event => {
   );
 });
 
-// On fetch: network-first for HTML, cache-first for everything else
+// On fetch: network-first for HTML/JS/CSS, cache-first for static assets
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   const isHTML = event.request.destination === 'document' ||
                  url.pathname.endsWith('/') ||
                  url.pathname.endsWith('.html');
+  const isAppCode = url.pathname.endsWith('.js') || url.pathname.endsWith('.css');
 
-  if (isHTML) {
-    // Network first: always try fresh HTML, fallback to cache if offline
+  if (isHTML || isAppCode) {
+    // Network first: always try fresh code, fallback to cache if offline
     event.respondWith(
       fetch(event.request)
         .then(response => {
@@ -49,7 +50,7 @@ self.addEventListener('fetch', event => {
         .catch(() => caches.match(event.request))
     );
   } else {
-    // Cache first for fonts and other static assets (GET only)
+    // Cache first for fonts, images and other static assets (GET only)
     if (event.request.method !== 'GET') return;
     event.respondWith(
       caches.match(event.request).then(cached => {
