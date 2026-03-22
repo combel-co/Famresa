@@ -132,26 +132,6 @@
     font-weight: 500; letter-spacing: -0.5px; text-transform: capitalize;
   }
 
-  .active-car-badge {
-    margin: 7px auto 0;
-    border: 1px solid var(--border);
-    background: #fff;
-    border-radius: 999px;
-    padding: 6px 12px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text);
-    max-width: 220px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    cursor: pointer;
-  }
-  .active-car-badge:disabled { opacity: 0.85; cursor: default; }
 
   .month-btn {
     width: 40px; height: 40px; border-radius: 50%;
@@ -1179,7 +1159,6 @@
     .resource-tabs { margin-left: -14px; margin-right: -14px; padding-left: 14px; padding-right: 14px; }
     :root { --header-h: 77px; }  /* mobile: padding 16+16 + content 44 + border 1 */
     .month-title { font-size: 22px; }
-    .active-car-badge { max-width: 170px; font-size: 11px; padding: 5px 10px; }
     .month-btn.today-btn { padding: 0 10px; font-size: 12px; }
     .cal-day { font-size: 13px; border-radius: 10px; height: 48px; padding-top: 7px; padding-bottom: 18px; }
   }
