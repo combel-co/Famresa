@@ -736,8 +736,8 @@
   /* ---- PROFIL TAB ---- */
   .pf-page-header { display:flex; justify-content:space-between; align-items:flex-end; padding:8px 0 14px; }
   .pf-page-title { font-size:28px; font-weight:500; color:#1a1a1a; letter-spacing:-0.5px; line-height:1; }
-  .pf-hero-card { background:#fff; border:0.5px solid #e5e4df; border-radius:20px; padding:24px 16px 20px; margin-bottom:10px; text-align:center; }
-  .pf-hero-avatar { width:72px; height:72px; border-radius:50%; background:#dbeafe; color:#2563eb; display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:500; margin:0 auto 12px; border:0.5px solid #bfdbfe; overflow:hidden; cursor:pointer; }
+  .pf-hero-card { background:transparent; border:none; padding:24px 16px 16px; margin-bottom:0; text-align:center; }
+  .pf-hero-avatar { width:96px; height:96px; border-radius:50%; background:#dbeafe; color:#2563eb; display:flex; align-items:center; justify-content:center; font-size:34px; font-weight:500; margin:0 auto 12px; border:none; overflow:hidden; cursor:pointer; }
   .pf-hero-avatar img { width:100%; height:100%; object-fit:cover; }
   .pf-hero-name { font-size:20px; font-weight:500; color:#1a1a1a; line-height:1.2; }
   .pf-family-section { margin-bottom:6px; }
