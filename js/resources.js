@@ -800,20 +800,6 @@ function _rmRenderPage(viewModel) {
         </div>
         <div class="rm-resource-role-badge ${_rmEscapeHtml(resource.roleClass)}">${_rmEscapeHtml(resource.roleLabel)}</div>
       </div>
-      <div class="rm-stats-row">
-        <div class="rm-stat-card">
-          <div class="rm-stat-val">${stats.memberCount}</div>
-          <div class="rm-stat-lbl">Membres</div>
-        </div>
-        <div class="rm-stat-card">
-          <div class="rm-stat-val">${stats.bookingCount}</div>
-          <div class="rm-stat-lbl">Réservations</div>
-        </div>
-        <div class="rm-stat-card">
-          <div class="rm-stat-val">${stats.pendingCount}</div>
-          <div class="rm-stat-lbl">En attente</div>
-        </div>
-      </div>
       ${inviteHtml}
       ${pendingHtml}
       <div class="rm-section-lbl">Membres actifs</div>
