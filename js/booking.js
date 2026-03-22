@@ -10,7 +10,7 @@ let bmIsAdmin = false;
 let bmMembers = [];
 
 function renderBmSteps() {
-  const steps = bmIsAdmin ? ['booker', 'destination', 'dates', 'hours'] : ['destination', 'dates', 'hours'];
+  const steps = bmIsAdmin ? ['dates', 'hours', 'booker', 'destination'] : ['dates', 'hours', 'destination'];
   const res = resources.find(r => r.id === selectedResource);
   const isHouse = res && res.type === 'house';
   const currentIndex = steps.indexOf(bmCurrentStep);
@@ -67,9 +67,9 @@ function renderBmSteps() {
   // Footer button
   const nextBtn = document.getElementById('bm-next-btn');
   if (nextBtn) {
-    if (bmCurrentStep === 'hours' || (isHouse && bmCurrentStep === 'dates')) {
+    if (bmCurrentStep === 'destination') {
       nextBtn.textContent = 'Réserver';
-      nextBtn.disabled = !bm.startDate;
+      nextBtn.disabled = false;
     } else if (bmCurrentStep === 'dates') {
       nextBtn.textContent = 'Suivant';
       nextBtn.disabled = !bm.startDate;
@@ -89,18 +89,15 @@ function renderBmSteps() {
 function bmNextStep() {
   const res = resources.find(r => r.id === selectedResource);
   const isHouse = res && res.type === 'house';
-  if (bmCurrentStep === 'booker') {
+  if (bmCurrentStep === 'dates') {
+    bmCurrentStep = isHouse
+      ? (bmIsAdmin ? 'booker' : 'destination')
+      : 'hours';
+  } else if (bmCurrentStep === 'hours') {
+    bmCurrentStep = bmIsAdmin ? 'booker' : 'destination';
+  } else if (bmCurrentStep === 'booker') {
     bmCurrentStep = 'destination';
   } else if (bmCurrentStep === 'destination') {
-    bmCurrentStep = 'dates';
-    renderBmCalendar();
-  } else if (bmCurrentStep === 'dates') {
-    if (isHouse) {
-      confirmRangeBooking();
-      return;
-    }
-    bmCurrentStep = 'hours';
-  } else if (bmCurrentStep === 'hours') {
     confirmRangeBooking();
     return;
   }
@@ -124,14 +121,13 @@ function openBookingModal() {
   bm = { startDate: null, endDate: null, startHour: '09:00', endHour: '20:00', destinations: [], step: 'start', booker: null, bookerTab: 'member' };
   bmIsAdmin = window._myResourceRoles && window._myResourceRoles[selectedResource] === 'admin';
   bmMembers = [];
+  bmCurrentStep = 'dates';
 
   const bookerStep = document.getElementById('bm-step-booker');
   if (bmIsAdmin) {
-    bmCurrentStep = 'booker';
     if (bookerStep) bookerStep.style.display = '';
     loadBookerMembers();
   } else {
-    bmCurrentStep = 'destination';
     if (bookerStep) bookerStep.style.display = 'none';
   }
 
@@ -143,6 +139,7 @@ function openBookingModal() {
   const ni = document.getElementById('bm-external-name'); if (ni) ni.value = '';
   const hint = document.getElementById('bm-dates-hint'); if (hint) hint.textContent = 'Sélectionnez votre date de départ';
   renderDestSuggestions('');
+  renderBmCalendar();
   renderBmSteps();
 }
 
@@ -267,7 +264,7 @@ function updateBookingRecap() {
 function resetBookingModal() {
   bm.startDate = null; bm.endDate = null; bm.destinations = []; bm.step = 'start';
   bm.booker = null; bm.bookerTab = 'member';
-  bmCurrentStep = bmIsAdmin ? 'booker' : 'destination';
+  bmCurrentStep = 'dates';
   const hint = document.getElementById('bm-dates-hint'); if (hint) hint.textContent = 'Sélectionnez votre date de départ';
   const di = document.getElementById('bm-dest-input'); if (di) di.value = '';
   const mi = document.getElementById('bm-motif-input'); if (mi) mi.value = '';
@@ -275,6 +272,7 @@ function resetBookingModal() {
   const kmEl = document.getElementById('bm-dest-km'); if (kmEl) kmEl.textContent = '';
   if (bmIsAdmin) renderBookerMemberList();
   renderDestSuggestions('');
+  renderBmCalendar();
   renderBmSteps();
 }
 
