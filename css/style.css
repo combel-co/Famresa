@@ -1073,14 +1073,13 @@
 
   /* ---- Wizard : step system ---- */
   .bm-step .bm-section { display: block; }
-  .bm-step.completed .bm-section,
-  .bm-step.upcoming .bm-section { display: none; }
+  .bm-step.completed .bm-section { display: none; }
   .bm-step .bm-card-mini { display: none; }
-  .bm-step.completed .bm-card-mini,
-  .bm-step.upcoming .bm-card-mini { display: flex; }
-  .bm-step.upcoming .bm-card-mini { opacity: 0.45; pointer-events: none; }
-  /* Completed/upcoming steps shrink to their mini card size */
-  .bm-step.completed, .bm-step.upcoming { flex-shrink: 0; }
+  .bm-step.completed .bm-card-mini { display: flex; }
+  /* Upcoming steps are hidden — only completed and active steps are visible */
+  .bm-step.upcoming { display: none; }
+  /* Completed steps shrink to their mini card size */
+  .bm-step.completed { flex-shrink: 0; }
   /* Active step fills remaining space; section scrolls internally */
   .bm-step.active { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   .bm-step.active .bm-section { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
