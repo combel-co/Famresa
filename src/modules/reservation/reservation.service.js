@@ -101,8 +101,8 @@ const reservationService = {
   /**
    * Cancel a single reservation.
    */
-  async cancel(bookingId) {
-    await reservationRepository.delete(bookingId);
+  async cancel(bookingId, familyId) {
+    await reservationRepository.delete(bookingId, familyId);
   },
 
   /**

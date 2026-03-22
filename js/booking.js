@@ -449,7 +449,7 @@ async function cancelStay(groupId) {
 
 async function cancelBooking(bookingId) {
   try {
-    await reservationService.cancel(bookingId);
+    await reservationService.cancel(bookingId, currentUser?.familyId);
     closeSheet();
     showToast('Réservation annulée');
   } catch(e) { showToast('Erreur — réessayez'); }

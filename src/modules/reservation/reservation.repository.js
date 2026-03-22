@@ -31,9 +31,17 @@ const reservationRepository = {
 
   /**
    * Delete a single reservation by ID.
+   * Also attempts deletion from the legacy families/{familyId}/bookings collection
+   * so that bookings created before the migration are fully removed.
    */
-  async delete(bookingId) {
+  async delete(bookingId, familyId) {
     await reservationsRef().doc(bookingId).delete();
+    if (familyId) {
+      try {
+        await db.collection('families').doc(familyId)
+          .collection('bookings').doc(bookingId).delete();
+      } catch (_) {}
+    }
   },
 
   /**
