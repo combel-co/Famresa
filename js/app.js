@@ -120,7 +120,7 @@ document.addEventListener('click', function (e) {
 function switchTab(tab) {
   const normalizedTab = tab === 'resource' ? 'dashboard' : tab;
   activeTab = normalizedTab;
-  ['dashboard', 'calendar', 'leaderboard', 'history'].forEach(name => {
+  ['dashboard', 'calendar', 'history'].forEach(name => {
     document.getElementById(`tab-${name}`)?.classList.toggle('active', name === normalizedTab);
     document.getElementById(`nav-${name}`)?.classList.toggle('active', name === normalizedTab);
   });
@@ -130,7 +130,7 @@ function switchTab(tab) {
   if (appHeader) appHeader.style.display = normalizedTab === 'history' ? 'none' : '';
   if (resourceTabs) resourceTabs.style.display = normalizedTab === 'history' ? 'none' : '';
 
-  if (normalizedTab === 'leaderboard' || normalizedTab === 'dashboard') renderExperiencePanels();
+  if (normalizedTab === 'dashboard') renderExperiencePanels();
   if (normalizedTab === 'history') renderProfileTab();
 }
 
