@@ -31,4 +31,10 @@ const resourceRepository = {
   async deleteById(resourceId) {
     await ressourcesRef().doc(resourceId).delete();
   },
+
+  async updateStatus(resourceId, statusData) {
+    await ressourcesRef().doc(resourceId).update({
+      vehicleStatus: statusData
+    });
+  },
 };
