@@ -224,47 +224,12 @@
 
     <!-- Hero card -->
     <div class="pf-hero-card">
-      <div class="pf-hero-top">
-        <div class="pf-hero-avatar" id="pf-avatar" onclick="showEditProfileSheet()" style="cursor:pointer">?</div>
-        <div class="pf-hero-meta">
-          <div class="pf-hero-name" id="pf-name">—</div>
-          <div class="pf-hero-sub" id="pf-sub">—</div>
-        </div>
-        <button class="pf-edit-btn" onclick="showEditProfileSheet()">Modifier</button>
-      </div>
-      <!-- XP badge -->
-      <div class="pf-xp-row" id="pf-xp-row">
-        <span class="pf-xp-badge" id="pf-xp-badge">—</span>
-        <span class="pf-xp-num" id="pf-xp-num">— XP</span>
-      </div>
-      <!-- Family pills -->
-      <div class="pf-family-pills">
-        <div class="pf-family-pill active">
-          <div class="pf-f-dot"></div>
-          <span id="pf-family-name">Famille</span>
-        </div>
-        <div class="pf-family-pill pf-add-pill" onclick="loadAndCopyInviteLink()">+ Rejoindre</div>
-      </div>
-      <!-- KPIs -->
-      <div class="pf-kpi-row">
-        <div class="pf-kpi-item">
-          <div class="pf-kpi-val" id="pf-kpi-resources">—</div>
-          <div class="pf-kpi-lbl">Mes ressources</div>
-        </div>
-        <div class="pf-kpi-item">
-          <div class="pf-kpi-val" id="pf-kpi-reservations">—</div>
-          <div class="pf-kpi-lbl">Réservations</div>
-        </div>
-        <div class="pf-kpi-item">
-          <div class="pf-kpi-val" id="pf-kpi-seniority">—</div>
-          <div class="pf-kpi-lbl">Ancienneté</div>
-        </div>
-      </div>
+      <div class="pf-hero-avatar" id="pf-avatar" onclick="showEditProfileSheet()" style="cursor:pointer">?</div>
+      <div class="pf-hero-name" id="pf-name">—</div>
     </div>
 
-    <!-- Ressources partagées -->
-    <div class="pf-section-lbl">Ressources partagées</div>
-    <div class="pf-resources-grid" id="pf-resources-grid"></div>
+    <!-- Ressources par famille -->
+    <div id="pf-resources-by-family"></div>
 
     <!-- Promo invite -->
     <div class="pf-promo-card" onclick="loadAndCopyInviteLink()">
@@ -797,6 +762,7 @@
 <script src="js/booking.js?v=4" defer></script>
 <script src="js/calendar.js?v=4" defer></script>
 <script src="js/history.js?v=4" defer></script>
+<script src="src/modules/profile/profile.service.js?v=1" defer></script>
 <script src="js/profile.js?v=4" defer></script>
 <script src="js/resources.js?v=4" defer></script>
 <script src="js/dashboard.js?v=4" defer></script>
