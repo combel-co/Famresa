@@ -149,27 +149,11 @@ function renderExperiencePanels() {
   if (kpiKmCard) kpiKmCard.style.display = 'none';
   if (kpiCo2Card) kpiCo2Card.style.display = 'none';
 
-  // Points accumulator (for leaderboard / history tabs)
-  const points = {};
-  monthEntries.forEach(b => {
-    const key = b.userId || b.userName || 'inconnu';
-    const label = b.userName || 'Utilisateur';
-    if (!points[key]) points[key] = { label, score: 0, rides: 0, photo: b.photo || null };
-    const km = estimateDistanceForBooking(b);
-    points[key].score += 20 + Math.round(km / 25);
-    points[key].rides += 1;
-  });
-  const ranking = Object.values(points).sort((a,b)=>b.score-a.score);
-
   const myMonthRides = monthEntries.filter(b => currentUser && b.userId === currentUser.id).length;
-  const myRank = ranking.findIndex(r => currentUser && r.label === currentUser.name) + 1;
   const qsRides = document.getElementById('qs-rides');
-  const qsRank = document.getElementById('qs-rank');
   if (qsRides) qsRides.textContent = String(myMonthRides);
-  if (qsRank) qsRank.textContent = myRank > 0 ? `#${myRank}` : '#—';
 
   renderXpHeroCard();
-  renderLeaderboard(ranking);
   renderHistoryList();
   renderPostTripReminder();
 }
