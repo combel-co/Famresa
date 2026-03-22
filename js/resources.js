@@ -37,20 +37,10 @@ async function loadResources() {
       type: r.type || 'car'
     }));
 
-    // If still empty, create a default car in new collection
+    // If no resources exist, show the resource choice screen instead of auto-creating
     if (allResources.length === 0) {
-      try {
-        const ref = await ressourcesRef().add({
-          famille_id: familyId,
-          nom: 'Voiture familiale', name: 'Voiture familiale',
-          emoji: '🚗', type: 'car', fuelLevel: null,
-          createdAt: ts()
-        });
-        allResources = [{ id: ref.id, name: 'Voiture familiale', emoji: '🚗', type: 'car', fuelLevel: null }];
-      } catch(_) {
-        // If write fails too, just work with nothing
-        allResources = [];
-      }
+      showResourceChoiceSheet();
+      return;
     }
 
     // ── 2. Access check (new collection first, legacy fallback) ──
@@ -168,6 +158,64 @@ function renderNoAccessState() {
   if (upcomingLabel) upcomingLabel.style.display = 'none';
   const upcomingBookings = document.getElementById('upcoming-bookings');
   if (upcomingBookings) upcomingBookings.innerHTML = '';
+}
+
+// Show resource choice sheet when a new family has no resources yet
+function showResourceChoiceSheet() {
+  // Render an empty main card state while the sheet is shown
+  const tabsEl = document.getElementById('resource-tabs');
+  if (tabsEl) tabsEl.innerHTML = '';
+
+  const mainCard = document.getElementById('resource-main-card');
+  if (mainCard) {
+    mainCard.innerHTML = `
+      <div style="padding:40px 24px;text-align:center">
+        <div style="font-size:52px;margin-bottom:16px">🏁</div>
+        <div style="font-weight:700;font-size:20px;margin-bottom:8px">Bienvenue !</div>
+        <div style="color:var(--text-light);font-size:14px;line-height:1.6">
+          Pour commencer, créez une ressource ou rejoignez-en une existante.
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('sheet-content').innerHTML = `
+    <div class="login-sheet">
+      <h2>Première ressource</h2>
+      <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">
+        Que souhaitez-vous faire ?
+      </p>
+      <button class="btn btn-primary" style="width:100%;padding:14px;margin-bottom:12px" onclick="closeSheet();showAddResourceSheet()">
+        🆕 Créer une ressource
+      </button>
+      <div style="text-align:center;color:var(--text-light);font-size:13px;margin-bottom:12px">ou</div>
+      <div id="resource-join-section">
+        <div class="input-group" style="margin-bottom:8px">
+          <label>Code d'invitation ressource</label>
+          <input type="text" id="resource-choice-join-code" placeholder="Ex: ABC123" autocomplete="off" style="text-transform:uppercase">
+        </div>
+        <div class="lock-error" id="resource-choice-join-error"></div>
+        <button class="btn" style="width:100%;background:#f0f4ff;color:#4338ca;font-weight:600;padding:12px" onclick="submitResourceChoiceJoin()">
+          Rejoindre une ressource
+        </button>
+      </div>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:14px;width:100%" onclick="closeSheet()">Plus tard</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+}
+
+async function submitResourceChoiceJoin() {
+  const input = document.getElementById('resource-choice-join-code');
+  const errEl = document.getElementById('resource-choice-join-error');
+  const code = (input?.value || '').trim().toUpperCase();
+  if (!code) { errEl.textContent = 'Entrez un code d\'invitation'; return; }
+  errEl.textContent = '';
+  try {
+    await handleResourceJoinCode(code);
+    closeSheet();
+    await loadResources();
+  } catch(e) {
+    errEl.textContent = 'Code invalide ou erreur — réessayez';
+  }
 }
 
 // ==========================================

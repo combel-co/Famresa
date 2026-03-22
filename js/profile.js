@@ -30,15 +30,21 @@ function renderProfileTab() {
   if (pfXpBadge) pfXpBadge.textContent = level.name;
   if (pfXpNum)   pfXpNum.textContent = `${xp} XP`;
 
-  // KPIs
-  const allBookings = getUniqueBookingsSorted();
-  const myBookings  = allBookings.filter(b => u && b.userId === u.id);
+  // KPIs — user-centric (independent of selected resource)
+  const pfResources    = document.getElementById('pf-kpi-resources');
+  const pfReservations = document.getElementById('pf-kpi-reservations');
+  const pfSeniority    = document.getElementById('pf-kpi-seniority');
 
-  const pfRides     = document.getElementById('pf-kpi-rides');
-  const pfTotal     = document.getElementById('pf-kpi-total');
-  const pfSeniority = document.getElementById('pf-kpi-seniority');
-  if (pfRides) pfRides.textContent = String(myBookings.length);
-  if (pfTotal) pfTotal.textContent = String(allBookings.length);
+  if (pfResources) pfResources.textContent = String(resources.length);
+
+  // Load total reservations count asynchronously via service
+  if (pfReservations && u) {
+    pfReservations.textContent = '…';
+    reservationService.countUserReservations(u.id)
+      .then(count => { pfReservations.textContent = String(count); })
+      .catch(() => { pfReservations.textContent = '—'; });
+  }
+
   if (pfSeniority) {
     const created = u?.createdAt;
     if (created) {

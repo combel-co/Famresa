@@ -113,13 +113,83 @@ const reservationService = {
   },
 
   /**
-   * Shorten a car booking (early return).
+   * Update a car reservation (destination, dates, hours).
+   * @returns {{ success: true } | { error, message }}
+   */
+  async updateReservation(bookingId, updates, bookings) {
+    const allowed = {};
+    if (updates.destinations !== undefined) {
+      allowed.destinations = updates.destinations.map(d => ({ name: d.name, kmFromParis: d.km || d.kmFromParis }));
+      allowed.destination = updates.destinations.map(d => d.name).join(', ');
+      allowed.kmEstimate = updates.destinations.reduce((s, d) => s + (d.km || d.kmFromParis || 0) * 2, 0);
+    }
+    if (updates.startDate !== undefined) {
+      allowed.startDate = updates.startDate;
+      allowed.date_debut = updates.startDate;
+    }
+    if (updates.endDate !== undefined) {
+      allowed.endDate = updates.endDate;
+      allowed.date_fin = updates.endDate;
+    }
+    if (updates.startHour !== undefined) allowed.startHour = updates.startHour;
+    if (updates.endHour !== undefined) allowed.endHour = updates.endHour;
+
+    // Check date conflicts if dates changed (exclude current booking)
+    if (allowed.startDate || allowed.endDate) {
+      const start = allowed.startDate || updates.currentStartDate;
+      const end = allowed.endDate || updates.currentEndDate;
+      if (start && end && bookings) {
+        const cur = new Date(start + 'T00:00:00');
+        const endObj = new Date(end + 'T00:00:00');
+        while (cur <= endObj) {
+          const ds = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+          if (bookings[ds] && bookings[ds].id !== bookingId) {
+            return { error: 'conflict', message: `Le ${ds} est déjà réservé` };
+          }
+          cur.setDate(cur.getDate() + 1);
+        }
+      }
+    }
+
+    await reservationRepository.update(bookingId, allowed);
+    return { success: true };
+  },
+
+  /**
+   * Shorten a car booking (early return by date).
    */
   async truncate(bookingId, newEndDate) {
     await reservationRepository.update(bookingId, {
       endDate: newEndDate,
       date_fin: newEndDate
     });
+  },
+
+  /**
+   * Early return with time update and optional vehicle status.
+   * @param {string} bookingId
+   * @param {string} resourceId
+   * @param {{ returnHour: string, needsCleaning?: boolean, needsRepair?: boolean, notes?: string }} options
+   */
+  async earlyReturn(bookingId, resourceId, { returnHour, needsCleaning, needsRepair, notes }) {
+    // Update reservation end hour
+    const today = new Date().toISOString().slice(0, 10);
+    await reservationRepository.update(bookingId, {
+      endHour: returnHour,
+      endDate: today,
+      date_fin: today
+    });
+
+    // Update vehicle status if any flag is set
+    if (needsCleaning || needsRepair || notes) {
+      await resourceRepository.updateStatus(resourceId, {
+        needsCleaning: needsCleaning || false,
+        needsRepair: needsRepair || false,
+        notes: notes || '',
+        reportedBy: null, // will be set by UI
+        reportedAt: new Date().toISOString()
+      });
+    }
   },
 
   /**
@@ -133,6 +203,13 @@ const reservationService = {
       const initials = String(name).trim().split(/\s+/).map(p => p[0] || '').join('').toUpperCase().slice(0, 2) || '?';
       return { id: m.profil_id || m.id, name, photo: m.photo || null, initials };
     });
+  },
+
+  /**
+   * Count total reservations for a user across all resources.
+   */
+  async countUserReservations(userId) {
+    return reservationRepository.countByUserId(userId);
   },
 
   /**

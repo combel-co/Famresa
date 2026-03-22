@@ -121,6 +121,18 @@ function renderExperiencePanels() {
   const reserveBtn = document.getElementById('reserve-cta-btn');
   if (reserveBtn) reserveBtn.textContent = isHouse ? 'Réserver la maison' : 'Réserver la voiture';
 
+  // ── Bouton "Rendre plus tôt" (visible si réservation active aujourd'hui pour moi, voiture uniquement) ──
+  const earlyReturnContainer = document.getElementById('early-return-container');
+  if (earlyReturnContainer) {
+    if (!isHouse && todayBooking && currentUser && todayBooking.userId === currentUser.id) {
+      earlyReturnContainer.innerHTML = `<button class="btn" style="width:100%;background:#fff8ed;color:#b45309;border:1px solid #fde68a;font-weight:600;padding:12px;margin-top:8px" onclick="showEarlyReturnSheet('${todayBooking.id}')">🔑 Rendre plus tôt</button>`;
+      earlyReturnContainer.style.display = '';
+    } else {
+      earlyReturnContainer.innerHTML = '';
+      earlyReturnContainer.style.display = 'none';
+    }
+  }
+
   // ── Prochain créneau libre ──
   const nextSlot = document.getElementById('next-slot-text');
   if (nextSlot) {

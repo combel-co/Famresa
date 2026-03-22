@@ -149,14 +149,25 @@ function onDayClick(dateStr, isPast) {
       return;
     }
     const avatarContent = booking.photo ? `<img src="${booking.photo}" alt="">` : getInitials(booking.userName);
+    const dateRange = booking.startDate && booking.endDate && booking.startDate !== booking.endDate
+      ? `${new Date(booking.startDate + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} → ${new Date(booking.endDate + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`
+      : prettyDate;
+    const hoursInfo = booking.startHour && booking.endHour ? `${booking.startHour} → ${booking.endHour}` : '';
+    const destInfo = booking.destination || (booking.destinations && booking.destinations.length > 0 ? booking.destinations.map(d => d.name).join(', ') : '');
+    const kmInfo = booking.kmEstimate ? `${booking.kmEstimate} km AR` : '';
+
     html = `
-      <div class="sheet-date">${prettyDate}</div>
+      <div class="sheet-date">${dateRange}</div>
+      ${hoursInfo ? `<div style="font-size:14px;color:var(--text-light);margin-bottom:8px">🕐 ${hoursInfo}</div>` : ''}
       <div class="sheet-status">
         <div class="booked-by">
           <div class="avatar-lg">${avatarContent}</div>
           <div class="info">${booking.userName}<small>${isMine ? 'Votre réservation' : 'A réservé ce jour'}</small></div>
         </div>
       </div>
+      ${destInfo ? `<div style="background:#f8f8f8;border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:14px">📍 ${destInfo}${kmInfo ? ` <span style="color:var(--text-light)">(${kmInfo})</span>` : ''}</div>` : ''}
+      ${isMine ? `<button class="btn" style="background:#f0f4ff;color:#4338ca;font-weight:600;margin-bottom:4px" onclick="openEditBookingModal('${booking.id}')">✏️ Modifier la réservation</button>` : ''}
+      ${isMine && dateStr === new Date().toISOString().slice(0,10) ? `<button class="btn" style="background:#fff8ed;color:#b45309;border:1px solid #fde68a;font-weight:600;margin-bottom:4px" onclick="showEarlyReturnSheet('${booking.id}')">🔑 Rendre plus tôt</button>` : ''}
       ${isMine ? `<button class="btn btn-danger" style="margin-top:4px" onclick="showDeleteBookingSheet('${booking.id}','${dateStr}')">Gérer / Annuler</button>` : ''}
       <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Fermer</button>`;
   } else {
