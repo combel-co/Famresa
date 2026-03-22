@@ -166,27 +166,35 @@ const reservationService = {
   },
 
   /**
-   * Early return with time update and optional vehicle status.
+   * Early return with time update, optional vehicle status, and fuel level.
    * @param {string} bookingId
    * @param {string} resourceId
-   * @param {{ returnHour: string, needsCleaning?: boolean, needsRepair?: boolean, notes?: string }} options
+   * @param {{ returnHour: string, needsCleaning?: boolean, needsRepair?: boolean, notes?: string, fuelLevel?: number|null }} options
    */
-  async earlyReturn(bookingId, resourceId, { returnHour, needsCleaning, needsRepair, notes }) {
-    // Update reservation end hour
+  async earlyReturn(bookingId, resourceId, { returnHour, needsCleaning, needsRepair, notes, fuelLevel }) {
     const today = new Date().toISOString().slice(0, 10);
-    await reservationRepository.update(bookingId, {
+
+    // Mark reservation as returned
+    const reservationUpdate = {
       endHour: returnHour,
       endDate: today,
-      date_fin: today
-    });
+      date_fin: today,
+      returnedAt: new Date().toISOString()
+    };
+    if (fuelLevel !== null && fuelLevel !== undefined) {
+      reservationUpdate.fuelReturnLevel = fuelLevel;
+    }
+    await reservationRepository.update(bookingId, reservationUpdate);
 
-    // Update vehicle status if any flag is set
+    // Update resource: fuel level and/or vehicle status
+    if (fuelLevel !== null && fuelLevel !== undefined) {
+      await resourceRepository.updateFuelLevel(resourceId, fuelLevel);
+    }
     if (needsCleaning || needsRepair || notes) {
       await resourceRepository.updateStatus(resourceId, {
         needsCleaning: needsCleaning || false,
         needsRepair: needsRepair || false,
         notes: notes || '',
-        reportedBy: null, // will be set by UI
         reportedAt: new Date().toISOString()
       });
     }

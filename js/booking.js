@@ -528,8 +528,11 @@ function showEarlyReturnSheet(bookingId) {
   const booking = Object.values(bookings).find(b => b && b.id === bookingId);
   if (!booking) { showToast('Réservation introuvable'); return; }
 
+  selectedFuelLevel = null;
+
   const now = new Date();
   const currentTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const resourceId = booking.ressource_id || booking.resourceId || selectedResource;
 
   const html = `
     <div class="login-sheet">
@@ -554,8 +557,12 @@ function showEarlyReturnSheet(bookingId) {
         <label>Notes (optionnel)</label>
         <input type="text" id="early-return-notes" placeholder="Ex: pneu avant droit à vérifier" autocomplete="off">
       </div>
+      <div style="margin-bottom:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:10px">Niveau d'essence rendu</label>
+        <div class="fuel-selector">${renderFuelButtons()}</div>
+      </div>
       <div class="lock-error" id="early-return-error"></div>
-      <button class="btn btn-primary" style="width:100%" onclick="confirmEarlyReturn('${booking.id}','${booking.ressource_id || booking.resourceId || selectedResource}')">Confirmer le retour</button>
+      <button class="btn btn-primary" style="width:100%" onclick="confirmEarlyReturn('${booking.id}','${resourceId}')">Confirmer le retour</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px;width:100%" onclick="closeSheet()">Annuler</button>
     </div>`;
 
@@ -568,6 +575,7 @@ async function confirmEarlyReturn(bookingId, resourceId) {
   const needsCleaning = document.getElementById('early-return-cleaning')?.checked || false;
   const needsRepair = document.getElementById('early-return-repair')?.checked || false;
   const notes = (document.getElementById('early-return-notes')?.value || '').trim();
+  const fuelLevel = selectedFuelLevel;
 
   if (!returnHour) {
     document.getElementById('early-return-error').textContent = 'Indiquez l\'heure de retour';
@@ -579,10 +587,23 @@ async function confirmEarlyReturn(bookingId, resourceId) {
       returnHour,
       needsCleaning,
       needsRepair,
-      notes
+      notes,
+      fuelLevel
     });
+    selectedFuelLevel = null;
+
+    // Update local resource fuel level so UI reflects it immediately
+    if (fuelLevel !== null && fuelLevel !== undefined) {
+      const res = resources.find(r => r.id === resourceId);
+      if (res) res.fuelLevel = fuelLevel;
+    }
+
     closeSheet();
-    showToast('Véhicule rendu — merci !');
+    if (fuelLevel !== null && fuelLevel !== undefined && fuelLevel >= 50) {
+      celebrate('⛽', 'Véhicule rendu — merci !', '🌟', 'La voiture est bien ravitaillée');
+    } else {
+      showToast('Véhicule rendu — merci !');
+    }
   } catch(e) {
     document.getElementById('early-return-error').textContent = 'Erreur — réessayez';
   }

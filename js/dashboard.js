@@ -17,7 +17,7 @@ function getNextFreeDate() {
   const d = new Date();
   for (let i = 0; i < 60; i++) {
     const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    if (!bookings[ds]) return ds;
+    if (!bookings[ds] || bookings[ds].returnedAt) return ds;
     d.setDate(d.getDate() + 1);
   }
   return null;
@@ -62,7 +62,8 @@ function renderUpcomingBookings() {
 function renderExperiencePanels() {
   const monthEntries = getMonthBookingEntries();
   const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
-  const todayBooking = bookings[todayStr];
+  const todayBookingRaw = bookings[todayStr];
+  const todayBooking = todayBookingRaw && !todayBookingRaw.returnedAt ? todayBookingRaw : null;
   const res = resources.find(r => r.id === selectedResource);
   const isHouse = res && res.type === 'house';
 

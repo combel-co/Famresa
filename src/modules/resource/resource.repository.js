@@ -37,4 +37,8 @@ const resourceRepository = {
       vehicleStatus: statusData
     });
   },
+
+  async updateFuelLevel(resourceId, fuelLevel) {
+    await ressourcesRef().doc(resourceId).update({ fuelLevel });
+  },
 };
