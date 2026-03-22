@@ -144,6 +144,7 @@ function openBookingModal() {
 }
 
 function closeBookingModal() {
+  _editingBookingId = null;
   document.getElementById('booking-modal').classList.remove('open');
 }
 
@@ -262,6 +263,7 @@ function updateBookingRecap() {
 }
 
 function resetBookingModal() {
+  _editingBookingId = null;
   bm.startDate = null; bm.endDate = null; bm.destinations = []; bm.step = 'start';
   bm.booker = null; bm.bookerTab = 'member';
   bmCurrentStep = 'dates';
@@ -370,6 +372,13 @@ function _resolveBooker() {
 
 async function confirmRangeBooking() {
   if (!currentUser || !bm.startDate) return;
+
+  // If in edit mode, save changes instead of creating new
+  if (_editingBookingId) {
+    await saveEditedBooking();
+    return;
+  }
+
   const res = resources.find(r => r.id === selectedResource);
   const isHouse = res && res.type === 'house';
 
@@ -510,4 +519,140 @@ function showDeleteBookingSheet(bookingId, dateStr) {
 
   document.getElementById('sheet-content').innerHTML = html;
   document.getElementById('overlay').classList.add('open');
+}
+
+// ==========================================
+// EARLY RETURN — "Rendre plus tôt"
+// ==========================================
+function showEarlyReturnSheet(bookingId) {
+  const booking = Object.values(bookings).find(b => b && b.id === bookingId);
+  if (!booking) { showToast('Réservation introuvable'); return; }
+
+  const now = new Date();
+  const currentTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  const html = `
+    <div class="login-sheet">
+      <h2>🔑 Rendre plus tôt</h2>
+      <p style="color:var(--text-light);font-size:14px;margin-bottom:16px">
+        Indiquez l'heure de retour et l'état du véhicule
+      </p>
+      <div class="input-group" style="margin-bottom:14px">
+        <label>Heure de retour</label>
+        <input type="time" id="early-return-hour" value="${currentTime}">
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">État du véhicule</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:6px;cursor:pointer">
+          <input type="checkbox" id="early-return-cleaning"> À nettoyer
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:6px;cursor:pointer">
+          <input type="checkbox" id="early-return-repair"> Réparation nécessaire
+        </label>
+      </div>
+      <div class="input-group" style="margin-bottom:14px">
+        <label>Notes (optionnel)</label>
+        <input type="text" id="early-return-notes" placeholder="Ex: pneu avant droit à vérifier" autocomplete="off">
+      </div>
+      <div class="lock-error" id="early-return-error"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="confirmEarlyReturn('${booking.id}','${booking.ressource_id || booking.resourceId || selectedResource}')">Confirmer le retour</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px;width:100%" onclick="closeSheet()">Annuler</button>
+    </div>`;
+
+  document.getElementById('sheet-content').innerHTML = html;
+  document.getElementById('overlay').classList.add('open');
+}
+
+async function confirmEarlyReturn(bookingId, resourceId) {
+  const returnHour = document.getElementById('early-return-hour')?.value;
+  const needsCleaning = document.getElementById('early-return-cleaning')?.checked || false;
+  const needsRepair = document.getElementById('early-return-repair')?.checked || false;
+  const notes = (document.getElementById('early-return-notes')?.value || '').trim();
+
+  if (!returnHour) {
+    document.getElementById('early-return-error').textContent = 'Indiquez l\'heure de retour';
+    return;
+  }
+
+  try {
+    await reservationService.earlyReturn(bookingId, resourceId, {
+      returnHour,
+      needsCleaning,
+      needsRepair,
+      notes
+    });
+    closeSheet();
+    showToast('Véhicule rendu — merci !');
+  } catch(e) {
+    document.getElementById('early-return-error').textContent = 'Erreur — réessayez';
+  }
+}
+
+// ==========================================
+// EDIT BOOKING — Re-open modal pre-filled for modification
+// ==========================================
+let _editingBookingId = null;
+
+function openEditBookingModal(bookingId) {
+  const booking = Object.values(bookings).find(b => b && b.id === bookingId);
+  if (!booking) { showToast('Réservation introuvable'); return; }
+
+  closeSheet();
+  _editingBookingId = bookingId;
+
+  // Open modal and pre-fill with existing values
+  openBookingModal();
+
+  // Pre-fill destinations
+  if (booking.destinations && booking.destinations.length > 0) {
+    const dest = booking.destinations[0];
+    bm.destinations = [{ name: dest.name, km: dest.kmFromParis || dest.km || 0 }];
+  }
+
+  // Pre-fill dates
+  bm.startDate = booking.startDate || null;
+  bm.endDate = booking.endDate || null;
+
+  // Pre-fill hours
+  bm.startHour = booking.startHour || '09:00';
+  bm.endHour = booking.endHour || '20:00';
+  const sh = document.getElementById('bm-start-hour'); if (sh) sh.value = bm.startHour;
+  const eh = document.getElementById('bm-end-hour'); if (eh) eh.value = bm.endHour;
+
+  // Skip booker step for edits
+  bmCurrentStep = 'destination';
+  const bookerStep = document.getElementById('bm-step-booker');
+  if (bookerStep) bookerStep.style.display = 'none';
+
+  // Update UI
+  renderDestSuggestions('');
+  renderBmSteps();
+  renderBmCalendar();
+
+  // Change button text to "Enregistrer"
+  const nextBtn = document.getElementById('bm-next-btn');
+  if (nextBtn) nextBtn.dataset.editMode = 'true';
+}
+
+async function saveEditedBooking() {
+  if (!_editingBookingId) return;
+  try {
+    const updates = {
+      destinations: bm.destinations,
+      startDate: bm.startDate,
+      endDate: bm.endDate || bm.startDate,
+      startHour: bm.startHour || '09:00',
+      endHour: bm.endHour || '20:00'
+    };
+    const result = await reservationService.updateReservation(_editingBookingId, updates, bookings);
+    if (result.error === 'conflict') {
+      showToast(result.message);
+      return;
+    }
+    _editingBookingId = null;
+    closeBookingModal();
+    showToast('Réservation modifiée');
+  } catch(e) {
+    showToast('Erreur — réessayez');
+  }
 }

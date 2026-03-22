@@ -177,6 +177,7 @@
       </div>
       <div class="ccv2-reserve-wrap">
         <button class="ccv2-btn-reserve" id="reserve-cta-btn" onclick="openBookingModal()">Réserver la voiture</button>
+        <div id="early-return-container" style="display:none"></div>
         <button class="ccv2-btn-manage" onclick="showResourceManagePage(selectedResource)" style="margin-top:8px;width:100%;padding:10px;border:1.5px solid var(--accent,#4f8cff);background:transparent;color:var(--accent,#4f8cff);border-radius:12px;font-size:0.97em;font-weight:600;cursor:pointer;">Gérer la ressource</button>
       </div>
       <div class="ccv2-next-slot" id="next-slot-text">Prochain créneau libre · Aujourd'hui</div>
@@ -266,12 +267,12 @@
       <!-- KPIs -->
       <div class="pf-kpi-row">
         <div class="pf-kpi-item">
-          <div class="pf-kpi-val" id="pf-kpi-rides">—</div>
-          <div class="pf-kpi-lbl">Mes trajets</div>
+          <div class="pf-kpi-val" id="pf-kpi-resources">—</div>
+          <div class="pf-kpi-lbl">Mes ressources</div>
         </div>
         <div class="pf-kpi-item">
-          <div class="pf-kpi-val" id="pf-kpi-total">—</div>
-          <div class="pf-kpi-lbl">Trajets famille</div>
+          <div class="pf-kpi-val" id="pf-kpi-reservations">—</div>
+          <div class="pf-kpi-lbl">Réservations</div>
         </div>
         <div class="pf-kpi-item">
           <div class="pf-kpi-val" id="pf-kpi-seniority">—</div>
@@ -312,12 +313,12 @@
     <!-- Aide -->
     <div class="pf-section-lbl">Aide</div>
     <div class="pf-settings-group">
-      <div class="pf-settings-row">
+      <div class="pf-settings-row" onclick="showToast('Bientôt disponible')">
         <div class="pf-row-icon">💡</div>
         <div class="pf-row-label">Proposer une amélioration</div>
         <div class="pf-row-chevron">›</div>
       </div>
-      <div class="pf-settings-row">
+      <div class="pf-settings-row" onclick="showToast('Bientôt disponible')">
         <div class="pf-row-icon">❓</div>
         <div class="pf-row-label">Aide & FAQ</div>
         <div class="pf-row-chevron">›</div>

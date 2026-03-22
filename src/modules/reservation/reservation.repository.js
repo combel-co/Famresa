@@ -80,6 +80,21 @@ const reservationRepository = {
   },
 
   /**
+   * Count unique reservations for a given user across all resources.
+   */
+  async countByUserId(userId) {
+    const [newSnap, legacySnap] = await Promise.all([
+      reservationsRef().where('profil_id', '==', userId).get().catch(() => ({ docs: [] })),
+      reservationsRef().where('userId', '==', userId).get().catch(() => ({ docs: [] })),
+    ]);
+    const ids = new Set();
+    [...(newSnap.docs || []), ...(legacySnap.docs || [])].forEach(doc => {
+      if (doc?.id) ids.add(doc.id);
+    });
+    return ids.size;
+  },
+
+  /**
    * Generate a unique group ID for stay reservations.
    */
   generateGroupId() {
