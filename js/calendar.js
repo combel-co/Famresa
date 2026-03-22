@@ -150,6 +150,16 @@ function onDayClick(dateStr, isPast) {
   const date = new Date(dateStr + 'T00:00:00');
   const prettyDate = date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
+  // If booking is already returned (early return done), show trip report instead of action buttons
+  if (booking && booking.returnedAt && currentUser && booking.userId === currentUser.id) {
+    if (res && res.type === 'house') {
+      showStaySheet(booking.reservationGroupId || booking.id, booking);
+    } else {
+      showTripReport(booking, prettyDate);
+    }
+    return;
+  }
+
   let html = '';
   if (booking) {
     const isMine = currentUser && booking.userId === currentUser.id;
