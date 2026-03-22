@@ -210,26 +210,11 @@ function selectResource(resourceId) {
   renderResourceTabs();
   if (unsubscribe) unsubscribe();
   subscribeBookings();
-  // Re-render calendar badge
-  const activeRes = resources.find(r => r.id === resourceId);
-  const badge = document.getElementById('active-car-badge');
-  if (badge && activeRes) {
-    badge.textContent = `${activeRes.emoji || '🚗'} ${activeRes.name}`;
-    badge.disabled = resources.length <= 1;
-  }
   // Adapt dashboard for resource type
   renderCalendar();
   renderExperiencePanels();
 }
 
-// Kept for backward compatibility with calendar car badge click
-function cycleCar() {
-  if (resources.length <= 1) return;
-  const currentIndex = resources.findIndex(r => r.id === selectedResource);
-  const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % resources.length : 0;
-  selectResource(resources[nextIndex].id);
-  showToast(`Ressource active : ${resources[nextIndex].name}`);
-}
 
 // ==========================================
 // BOOKINGS SUBSCRIPTION
@@ -459,21 +444,6 @@ async function saveCarInfo() {
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 
-// ==========================================
-// CALENDAR BADGE (backward compat)
-// ==========================================
-function renderCarSelector() {
-  const badge = document.getElementById('active-car-badge');
-  if (!badge) return;
-  if (resources.length === 0 || !selectedResource) {
-    badge.textContent = '🚗 Aucune ressource';
-    badge.disabled = true;
-    return;
-  }
-  const active = resources.find(r => r.id === selectedResource) || resources[0];
-  badge.textContent = `${active.emoji || '🚗'} ${active.name}`;
-  badge.disabled = resources.length <= 1;
-}
 
 // ==========================================
 // HOUSE INFO
