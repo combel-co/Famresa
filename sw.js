@@ -37,17 +37,23 @@ self.addEventListener('fetch', event => {
   const isAppCode = url.pathname.endsWith('.js') || url.pathname.endsWith('.css');
 
   if (isHTML || isAppCode) {
-    // Network first: always try fresh code, fallback to cache if offline
+    // Network first: always try fresh code, fallback to cache if offline or 404
     event.respondWith(
       fetch(event.request)
         .then(response => {
           if (response.ok) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+            return response;
           }
-          return response;
+          // Serveur répond 404/5xx (ex: GitHub Pages) → servir l'app shell depuis le cache
+          return caches.match('/Resa-voiture/index.html')
+            .then(cached => cached || response);
         })
-        .catch(() => caches.match(event.request))
+        .catch(() =>
+          caches.match(event.request)
+            .then(cached => cached || caches.match('/Resa-voiture/index.html'))
+        )
     );
   } else {
     // Cache first for fonts, images and other static assets (GET only)

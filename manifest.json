@@ -2,6 +2,7 @@
   "name": "FamResa",
   "short_name": "FamResa",
   "description": "Gérez vos ressources familiales — voitures, maisons — simplement, ensemble.",
+  "scope": "/Resa-voiture/",
   "start_url": "/Resa-voiture/",
   "display": "standalone",
   "background_color": "#ffffff",
