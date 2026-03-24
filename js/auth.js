@@ -25,6 +25,7 @@ function connectUser() {
   if (diagBox) diagBox.style.display = 'none';
   if (diagText) diagText.textContent = '';
   document.getElementById('login-overlay').classList.remove('hidden');
+  _setupLoginDiagGesture();
   const pins = document.querySelectorAll('#login-pin input');
   setupPinInputs(pins, loginUser);
   setTimeout(() => document.getElementById('login-email')?.focus(), 300);
