@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v8';
 const CACHE_NAME = 'famresa-' + CACHE_VERSION;
 
 // On install: cache the app shell + critical assets

@@ -177,6 +177,13 @@ async function runV2MigrationIfNeeded() {
       await batch.commit();
     }
 
+    // Mark migration completion server-side for cleanup orchestration.
+    try {
+      await famillesRef().doc(familyId).set({
+        migration_v2_completed_at: ts(),
+      }, { merge: true });
+    } catch (_) {}
+
     localStorage.setItem('famresa_v2_migrated', '1');
     console.log('[migration] v2 migration complete ✓');
   } catch (e) {

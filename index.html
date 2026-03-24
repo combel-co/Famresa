@@ -449,7 +449,16 @@
   <div class="ob-card">
     <button class="ob-back" onclick="document.getElementById('login-overlay').classList.add('hidden');showWelcomeScreen()">←</button>
     <div class="ob-emoji">👋</div>
-    <h2 id="login-title" style="margin-bottom:6px">Connexion</h2>
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px">
+      <h2 id="login-title" style="margin:0">Connexion</h2>
+      <button
+        type="button"
+        aria-label="Aide diagnostic"
+        title="Diagnostic admin"
+        onclick="openLoginDiagnosticSecure()"
+        style="width:22px;height:22px;border-radius:999px;border:1px solid #d1d5db;background:#fff;color:#6b7280;font-size:13px;line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:0"
+      >i</button>
+    </div>
     <p style="color:var(--text-light);margin-bottom:24px;font-size:14px">Entrez votre email et votre code secret.</p>
     <div class="ob-fields">
       <div class="input-group" style="margin-bottom:0">
@@ -742,14 +751,14 @@
 </div>
 
 <!-- JS modules (defer = non-blocking, preserves order) -->
-<script src="src/infra/firebase/firebase.client.js?v=6" defer></script>
+<script src="src/infra/firebase/firebase.client.js?v=7" defer></script>
 <script src="src/infra/firebase/firebase.mapper.js?v=5" defer></script>
 <script src="js/firebase.js?v=5" defer></script>
 <script src="js/app.js?v=5" defer></script>
 <script src="js/ui.js?v=4" defer></script>
 <script src="js/xp.js?v=4" defer></script>
 <script src="js/celebration.js?v=4" defer></script>
-<script src="js/auth.js?v=11" defer></script>
+<script src="js/auth.js?v=13" defer></script>
 <script src="js/fuel.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.repository.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.service.js?v=4" defer></script>
@@ -780,6 +789,9 @@
 
   const params = new URLSearchParams(location.search);
   const isSafeMode = params.get('safe_mode') === '1';
+  if (!isSafeMode) {
+    sessionStorage.removeItem('famresa_safe_mode_done');
+  }
 
   // Emergency mode: unregister SW and purge app caches once, then reload clean URL.
   if (isSafeMode && sessionStorage.getItem('famresa_safe_mode_done') !== '1') {

@@ -1,7 +1,7 @@
 // ==========================================
 // AUTH — WELCOME / LOGIN / SIGNUP / PROFILE
 // ==========================================
-const AUTH_BUILD = 'auth-v11-20260324';
+const AUTH_BUILD = 'auth-v13-20260324';
 
 function showWelcomeScreen() {
   hideSplash();
@@ -31,29 +31,6 @@ function connectUser() {
   setTimeout(() => document.getElementById('login-email')?.focus(), 300);
 }
 
-let _loginDiagPressTimer = null;
-function _setupLoginDiagGesture() {
-  const title = document.getElementById('login-title');
-  if (!title || title.dataset.diagGestureBound === '1') return;
-  title.dataset.diagGestureBound = '1';
-
-  const start = () => {
-    clearTimeout(_loginDiagPressTimer);
-    _loginDiagPressTimer = setTimeout(() => {
-      window.toggleLoginDiagnostic();
-      showToast('Diagnostic activé');
-    }, 900);
-  };
-  const end = () => clearTimeout(_loginDiagPressTimer);
-
-  title.addEventListener('touchstart', start, { passive: true });
-  title.addEventListener('touchend', end, { passive: true });
-  title.addEventListener('touchcancel', end, { passive: true });
-  title.addEventListener('mousedown', start);
-  title.addEventListener('mouseup', end);
-  title.addEventListener('mouseleave', end);
-}
-
 function _renderLoginDiagnostic(payload) {
   const diagBox = document.getElementById('login-diagnostic');
   const diagText = document.getElementById('login-diagnostic-text');
@@ -76,6 +53,41 @@ window.toggleLoginDiagnostic = function toggleLoginDiagnostic() {
   }
   _renderLoginDiagnostic(window.showLastLoginDiagnostic());
   diagBox.style.display = 'block';
+};
+
+async function _validateDiagAdminCode(inputCode) {
+  const code = String(inputCode || '').trim();
+  if (!code) return false;
+  if (sessionStorage.getItem('famresa_diag_admin_unlocked') === '1') return true;
+
+  const localCode = localStorage.getItem('famresa_diag_admin_code');
+  if (localCode && code === localCode) return true;
+
+  // Server-side config fallback (if available): config/access.adminDiagCode | diagAdminCode | pin
+  try {
+    if (window.db) {
+      const cfg = await db.collection('config').doc('access').get();
+      if (cfg.exists) {
+        const d = cfg.data() || {};
+        const serverCode = String(d.adminDiagCode || d.diagAdminCode || d.pin || '').trim();
+        if (serverCode && code === serverCode) return true;
+      }
+    }
+  } catch (_) {}
+
+  return false;
+}
+
+window.openLoginDiagnosticSecure = async function openLoginDiagnosticSecure() {
+  const code = window.prompt('Code admin requis');
+  if (!code) return;
+  const ok = await _validateDiagAdminCode(code);
+  if (!ok) {
+    showToast('Code admin invalide');
+    return;
+  }
+  sessionStorage.setItem('famresa_diag_admin_unlocked', '1');
+  window.toggleLoginDiagnostic();
 };
 
 function _isAuthDebugEnabled() {
@@ -136,13 +148,36 @@ function _recordAuthDiag(diag) {
       ref,
       at: new Date().toISOString(),
       userAgent: navigator.userAgent,
-      swControlled: !!navigator.serviceWorker?.controller
+      swControlled: !!navigator.serviceWorker?.controller,
+      firebaseInit: window.__firebaseInitState || null,
     };
     localStorage.setItem('famresa_last_login_diag', JSON.stringify(payload));
     window.__famresaLastLoginDiag = payload;
+    _persistAuthDiagToFirestore(payload);
     return payload;
   } catch (_) {}
   return null;
+}
+
+async function _persistAuthDiagToFirestore(payload) {
+  try {
+    if (!window.db || !payload) return;
+    await db.collection('erreur').add({
+      source: 'login',
+      ref: payload.ref || '',
+      build: payload.build || '',
+      stage: payload.stage || '',
+      errorCode: payload.errorCode || '',
+      errorMessage: payload.errorMessage || '',
+      email: payload.email || '',
+      userAgent: payload.userAgent || '',
+      swControlled: !!payload.swControlled,
+      firebaseInit: payload.firebaseInit || null,
+      createdAt: ts(),
+    });
+  } catch (_) {
+    // Never block login flow if diagnostics persistence fails
+  }
 }
 
 window.showLastLoginDiagnostic = function showLastLoginDiagnostic() {
@@ -191,11 +226,19 @@ async function loginUser() {
   const diag = { flow: 'loginUser', email, stage };
   try {
     stage = 'firebase_ready_check'; diag.stage = stage;
-    // Use window.* to avoid Safari TDZ errors when firebase.client.js failed before db init
+    // Use window.* only to avoid Safari TDZ errors in partial/stale PWA runtimes.
+    const initState = window.__firebaseInitState || {};
     const hasFirebase = !!window.firebase && typeof window.firebase.firestore === 'function';
-    const hasDb = !!window.db;
+    const hasDb = !!window.db && typeof window.db.collection === 'function';
+
+    if (initState.status === 'error') {
+      const reason = initState.errorMessage || 'initialisation Firebase échouée';
+      throw new Error(`Firebase init failed: ${reason}`);
+    }
+
     if (!hasFirebase || !hasDb) {
-      throw new Error('Firebase non initialisé (SDK ou cache PWA obsolète)');
+      const phase = initState.status === 'booting' ? 'en cours' : 'incomplète';
+      throw new Error(`Firebase ${phase} (SDK ou cache PWA obsolète)`);
     }
 
     // Try new collection first; if permission denied/unavailable, fall through to legacy
@@ -211,7 +254,11 @@ async function loginUser() {
       }
     } catch(_) { /* profils not accessible yet — fall through to users */ }
 
-    if (!doc) {
+    const allowLegacyFallback = (typeof isLegacyFallbackAllowed === 'function')
+      ? isLegacyFallbackAllowed()
+      : true;
+
+    if (!doc && allowLegacyFallback) {
       // Legacy path — users collection
       stage = 'query_users_by_email'; diag.stage = stage;
       const oldSnap = await db.collection('users').where('email', '==', email).get();
@@ -237,6 +284,8 @@ async function loginUser() {
         }
       } catch (_) { /* non-blocking */ }
     }
+
+    if (!doc) { errEl.textContent = 'Email introuvable'; return; }
 
     const familyId = data.familyId || data.famille_id || null;
     let name = data.nom || data.name || '';
