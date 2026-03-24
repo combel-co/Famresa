@@ -13,6 +13,11 @@ let activeTab = 'dashboard';
 let fuelReportsByBooking = {};
 let pendingFuelPromptBookingId = null;
 let suPendingFamilyId = null;
+window._legacyFallbackAllowed = true;
+
+function isLegacyFallbackAllowed() {
+  return window._legacyFallbackAllowed !== false;
+}
 
 // Keep --header-h in sync on orientation change (debounced — avoid iOS scroll jitter)
 var _resizeTimer;
@@ -43,6 +48,15 @@ function updateFamilyPill(name) {
 async function loadFamilyName() {
   if (!currentUser?.familyId) return;
   try {
+    try {
+      const currentFamDoc = await familleRef(currentUser.familyId).get();
+      if (currentFamDoc.exists) {
+        const fd = currentFamDoc.data() || {};
+        // Admin switch used during DB cleanup: disable legacy collections fallback when true.
+        window._legacyFallbackAllowed = fd.disable_legacy_fallback !== true;
+      }
+    } catch (_) {}
+
     // Load families the user belongs to (via famille_membres)
     _userFamilies = [];
     try {

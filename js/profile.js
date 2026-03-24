@@ -159,3 +159,76 @@ async function _renderAdminPendingSection() {
     promoCard.parentNode.insertBefore(adminPanel, promoCard);
   } catch(e) { /* silent */ }
 }
+
+function closeErrorDashboard() {
+  document.getElementById('error-dashboard-overlay')?.classList.add('hidden');
+  const root = document.getElementById('error-dashboard-content');
+  if (root) root.innerHTML = '';
+}
+
+async function showErrorDashboard() {
+  const isAnyAdmin = Object.values(window._myResourceRoles || {}).includes('admin');
+  if (!isAnyAdmin) {
+    showToast('Réservé aux admins');
+    return;
+  }
+
+  const code = window.prompt('Code admin requis');
+  if (!code) return;
+  const ok = await (window.verifyDiagAdminCode ? window.verifyDiagAdminCode(code) : false);
+  if (!ok) {
+    showToast('Code admin invalide');
+    return;
+  }
+
+  const overlay = document.getElementById('error-dashboard-overlay');
+  const root = document.getElementById('error-dashboard-content');
+  if (!overlay || !root) return;
+
+  overlay.classList.remove('hidden');
+  root.innerHTML = `
+    <div class="rm-page">
+      <div class="rm-head">
+        <button class="rm-back" onclick="closeErrorDashboard()">← Retour</button>
+        <div class="rm-title">Erreurs de connexion</div>
+      </div>
+      <div id="error-dashboard-body" style="padding:14px 16px;color:#6b7280">Chargement…</div>
+    </div>
+  `;
+
+  const body = document.getElementById('error-dashboard-body');
+  try {
+    const familyId = currentUser?.familyId || null;
+    const snap = await db.collection('erreur')
+      .orderBy('createdAt', 'desc')
+      .limit(50)
+      .get();
+    const items = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(item => !familyId || !item.familyId || item.familyId === familyId);
+
+    if (!items.length) {
+      body.innerHTML = `<div style="padding:10px 0">Aucune erreur récente 🎉</div>`;
+      return;
+    }
+
+    body.innerHTML = items.map(item => {
+      const dt = item.createdAt?.toDate ? item.createdAt.toDate() : (item.at ? new Date(item.at) : null);
+      const when = dt ? dt.toLocaleString('fr-FR') : 'Date inconnue';
+      const stage = item.stage || 'unknown';
+      const codeTxt = item.errorCode ? ` (${item.errorCode})` : '';
+      const ref = item.ref || 'n/a';
+      const email = item.email || '—';
+      const msg = (item.errorMessage || '—').toString().slice(0, 180);
+      return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;margin-bottom:10px">
+        <div style="font-size:12px;color:#6b7280">${when}</div>
+        <div style="font-weight:700;font-size:13px;margin-top:2px">${stage}${codeTxt}</div>
+        <div style="font-size:12px;margin-top:4px;color:#374151">Ref: ${ref}</div>
+        <div style="font-size:12px;color:#374151">Email: ${email}</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:6px">${msg}</div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    body.innerHTML = `<div style="color:#b91c1c">Impossible de charger les erreurs.</div>`;
+  }
+}
