@@ -19,11 +19,162 @@ function connectUser() {
   if (emailEl) emailEl.value = '';
   document.querySelectorAll('#login-pin input').forEach(i => i.value = '');
   document.getElementById('login-error').textContent = '';
+  const diagBox = document.getElementById('login-diagnostic');
+  const diagText = document.getElementById('login-diagnostic-text');
+  if (diagBox) diagBox.style.display = 'none';
+  if (diagText) diagText.textContent = '';
   document.getElementById('login-overlay').classList.remove('hidden');
+  _setupLoginDiagGesture();
   const pins = document.querySelectorAll('#login-pin input');
   setupPinInputs(pins, loginUser);
   setTimeout(() => document.getElementById('login-email')?.focus(), 300);
 }
+
+let _loginDiagPressTimer = null;
+function _setupLoginDiagGesture() {
+  const title = document.getElementById('login-title');
+  if (!title || title.dataset.diagGestureBound === '1') return;
+  title.dataset.diagGestureBound = '1';
+
+  const start = () => {
+    clearTimeout(_loginDiagPressTimer);
+    _loginDiagPressTimer = setTimeout(() => {
+      window.toggleLoginDiagnostic();
+      showToast('Diagnostic activé');
+    }, 900);
+  };
+  const end = () => clearTimeout(_loginDiagPressTimer);
+
+  title.addEventListener('touchstart', start, { passive: true });
+  title.addEventListener('touchend', end, { passive: true });
+  title.addEventListener('touchcancel', end, { passive: true });
+  title.addEventListener('mousedown', start);
+  title.addEventListener('mouseup', end);
+  title.addEventListener('mouseleave', end);
+}
+
+function _renderLoginDiagnostic(payload) {
+  const diagBox = document.getElementById('login-diagnostic');
+  const diagText = document.getElementById('login-diagnostic-text');
+  if (!diagBox || !diagText) return;
+
+  if (!payload) {
+    diagText.textContent = 'Aucun diagnostic enregistré pour le moment. Réessayez puis copiez le diagnostic si le problème continue.';
+    return;
+  }
+
+  diagText.textContent = `Diagnostic ${payload.ref || 'n/a'}: ${payload.stage || 'unknown'}${payload.errorCode ? ` (${payload.errorCode})` : ''}. Vous pouvez copier ce message et me l’envoyer.`;
+}
+
+window.toggleLoginDiagnostic = function toggleLoginDiagnostic() {
+  const diagBox = document.getElementById('login-diagnostic');
+  if (!diagBox) return;
+  if (diagBox.style.display === 'block') {
+    diagBox.style.display = 'none';
+    return;
+  }
+  _renderLoginDiagnostic(window.showLastLoginDiagnostic());
+  diagBox.style.display = 'block';
+};
+
+function _isAuthDebugEnabled() {
+  try {
+    const qs = new URLSearchParams(location.search);
+    return qs.get('debug_auth') === '1' || localStorage.getItem('famresa_debug_auth') === '1';
+  } catch (_) {
+    return false;
+  }
+}
+
+function _authPublicErrorMessage(err) {
+  const code = String(err?.code || '').toLowerCase();
+  if (code.includes('permission-denied')) return 'Accès refusé Firestore (règles) — contactez l’admin';
+  if (code.includes('unavailable')) return 'Serveur indisponible — vérifiez votre connexion';
+  if (code.includes('deadline-exceeded')) return 'Délai dépassé — réessayez';
+  if (code.includes('failed-precondition')) return 'Configuration Firestore incomplète';
+  return 'Erreur — réessayez';
+}
+
+function _stageReason(stage) {
+  switch (stage) {
+    case 'query_profils_by_email':
+    case 'query_users_by_email':
+      return 'Impossible de vérifier le compte';
+    case 'firebase_ready_check':
+      return 'Initialisation Firebase incomplète (cache PWA probable)';
+    case 'auto_create_profil':
+      return 'Impossible d’initialiser le profil';
+    case 'run_v1_migration':
+    case 'run_v2_migration':
+      return 'Migration des données incomplète';
+    case 'load_resources':
+      return 'Chargement des ressources impossible';
+    default:
+      return 'Erreur de connexion';
+  }
+}
+
+function _authErrorForUI(err, stage) {
+  const code = String(err?.code || '').trim();
+  const base = _authPublicErrorMessage(err);
+  if (base !== 'Erreur — réessayez') return base;
+  const stageMsg = _stageReason(stage);
+  if (_isAuthDebugEnabled()) {
+    const raw = String(err?.message || '').slice(0, 120);
+    return `${stageMsg}${code ? ` (${code})` : ''}${raw ? ` — ${raw}` : ''}`;
+  }
+  return stageMsg;
+}
+
+function _recordAuthDiag(diag) {
+  try {
+    const ref = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    const payload = {
+      ...diag,
+      ref,
+      at: new Date().toISOString(),
+      userAgent: navigator.userAgent
+    };
+    localStorage.setItem('famresa_last_login_diag', JSON.stringify(payload));
+    window.__famresaLastLoginDiag = payload;
+    return payload;
+  } catch (_) {}
+  return null;
+}
+
+window.showLastLoginDiagnostic = function showLastLoginDiagnostic() {
+  try {
+    const raw = localStorage.getItem('famresa_last_login_diag');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    console.table(parsed);
+    return parsed;
+  } catch (_) {
+    return null;
+  }
+};
+
+window.copyLastLoginDiagnostic = async function copyLastLoginDiagnostic() {
+  const payload = window.showLastLoginDiagnostic();
+  if (!payload) {
+    showToast('Aucun diagnostic trouvé');
+    return;
+  }
+  const message = [
+    `Ref: ${payload.ref || '-'}`,
+    `Etape: ${payload.stage || '-'}`,
+    `Code: ${payload.errorCode || '-'}`,
+    `Message: ${payload.errorMessage || '-'}`,
+    `Date: ${payload.at || '-'}`,
+  ].join('\n');
+
+  try {
+    await navigator.clipboard.writeText(message);
+    showToast('Diagnostic copié ✓');
+  } catch (_) {
+    showToast(`Diagnostic: ${payload.ref || 'n/a'}`);
+  }
+};
 
 async function loginUser() {
   const email = (document.getElementById('login-email')?.value || '').trim().toLowerCase();
@@ -32,25 +183,54 @@ async function loginUser() {
   if (!email || !email.includes('@')) { errEl.textContent = 'Email invalide'; return; }
   if (pin.length < 4) { errEl.textContent = 'Entrez votre code à 4 chiffres'; return; }
   errEl.textContent = '';
+  let stage = 'start';
+  const diag = { flow: 'loginUser', email, stage };
   try {
+    stage = 'firebase_ready_check'; diag.stage = stage;
+    const hasFirebase = typeof firebase !== 'undefined' && !!firebase && typeof firebase.firestore === 'function';
+    const hasDb = typeof db !== 'undefined' && !!db;
+    if (!hasFirebase || !hasDb) {
+      throw new Error('Firebase non initialisé (SDK ou cache PWA obsolète)');
+    }
+
     // Try new collection first; if permission denied/unavailable, fall through to legacy
     let doc = null, data = null;
     try {
+      stage = 'query_profils_by_email'; diag.stage = stage;
       const newSnap = await profilsRef().where('email', '==', email).get();
       if (!newSnap.empty) {
         const d = newSnap.docs[0].data();
         if (String(d.code_pin ?? d.pin) !== pin) { errEl.textContent = 'Code incorrect'; return; }
         doc = newSnap.docs[0]; data = d;
+        diag.source = 'profils';
       }
     } catch(_) { /* profils not accessible yet — fall through to users */ }
 
     if (!doc) {
       // Legacy path — users collection
+      stage = 'query_users_by_email'; diag.stage = stage;
       const oldSnap = await db.collection('users').where('email', '==', email).get();
       if (oldSnap.empty) { errEl.textContent = 'Email introuvable'; return; }
       const d = oldSnap.docs[0].data();
       if (String(d.pin) !== pin) { errEl.textContent = 'Code incorrect'; return; }
       doc = oldSnap.docs[0]; data = d;
+      diag.source = 'users_legacy';
+
+      // Auto-migrate legacy user profile (users -> profils) to avoid login dead-ends
+      try {
+        stage = 'auto_create_profil'; diag.stage = stage;
+        const existingProfil = await profilRef(doc.id).get();
+        if (!existingProfil.exists) {
+          await profilRef(doc.id).set({
+            nom: d.name || '',
+            email: d.email || email,
+            code_pin: d.pin || '',
+            photo: d.photo || null,
+            familyId: d.familyId || null,
+            createdAt: d.createdAt || ts(),
+          }, { merge: true });
+        }
+      } catch (_) { /* non-blocking */ }
     }
 
     const familyId = data.familyId || data.famille_id || null;
@@ -81,11 +261,15 @@ async function loginUser() {
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
     document.getElementById('login-overlay').classList.add('hidden');
     if (!familyId) {
+      stage = 'run_v1_migration'; diag.stage = stage;
       await runMigrationIfNeeded();
     } else {
       showSkeleton();
-      runV2MigrationIfNeeded().catch(e => console.warn('[migration]', e));
+      stage = 'run_v2_migration'; diag.stage = stage;
+      await runV2MigrationIfNeeded();
+      stage = 'load_resources'; diag.stage = stage;
       await loadResources();
+      stage = 'enter_app'; diag.stage = stage;
       enterApp();
       showToast(`Bonjour ${currentUser.name} !`);
       if (_pendingResourceJoinCode) {
@@ -93,7 +277,25 @@ async function loginUser() {
         _pendingResourceJoinCode = null;
       }
     }
-  } catch(e) { console.error(e); errEl.textContent = 'Erreur — réessayez'; }
+  } catch(e) {
+    diag.stage = stage;
+    diag.errorCode = e?.code || '';
+    diag.errorMessage = e?.message || String(e);
+    const payload = _recordAuthDiag(diag);
+    if (_isAuthDebugEnabled()) {
+      console.error('[auth login diagnostic]', diag, e);
+    } else {
+      console.error(e);
+    }
+    const uiError = _authErrorForUI(e, stage);
+    errEl.textContent = uiError;
+    const diagBox = document.getElementById('login-diagnostic');
+    if (diagBox && payload && _isAuthDebugEnabled()) {
+      _renderLoginDiagnostic(payload);
+      diagBox.style.display = 'block';
+    }
+    if (_isAuthDebugEnabled()) showToast(`Diagnostic login enregistré`);
+  }
 }
 
 // ---- SIGNUP ----
@@ -442,8 +644,8 @@ async function runMigrationIfNeeded() {
 
     hideMigrationBanner(banner);
     // Run v2 schema migration after v1 family migration
-    await runV2MigrationIfNeeded().catch(e => console.warn('[migration v2]', e));
-    loadResources();
+    await runV2MigrationIfNeeded();
+    await loadResources();
     enterApp();
     showToast('Migration terminée — bienvenue dans la nouvelle version !');
   } catch (e) {
@@ -579,8 +781,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (currentUser?.familyId) {
     // Show skeleton while data loads
     showSkeleton();
-    // Run data migration in background (non-blocking)
-    runV2MigrationIfNeeded().catch(e => console.warn('[migration]', e));
+    // Ensure migration completes before loading resources
+    await runV2MigrationIfNeeded();
     await loadResources();
     enterApp();
     if (_pendingResourceJoinCode) {

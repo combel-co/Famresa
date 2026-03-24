@@ -449,7 +449,7 @@
   <div class="ob-card">
     <button class="ob-back" onclick="document.getElementById('login-overlay').classList.add('hidden');showWelcomeScreen()">←</button>
     <div class="ob-emoji">👋</div>
-    <h2 style="margin-bottom:6px">Connexion</h2>
+    <h2 id="login-title" style="margin-bottom:6px">Connexion</h2>
     <p style="color:var(--text-light);margin-bottom:24px;font-size:14px">Entrez votre email et votre code secret.</p>
     <div class="ob-fields">
       <div class="input-group" style="margin-bottom:0">
@@ -467,6 +467,10 @@
       </div>
     </div>
     <div class="lock-error" id="login-error"></div>
+    <div id="login-diagnostic" style="display:none;margin-top:8px;padding:10px;border:1px dashed #d1d5db;border-radius:10px;background:#f8fafc">
+      <div id="login-diagnostic-text" style="font-size:12px;color:#4b5563;line-height:1.4"></div>
+      <button class="btn btn-outline" style="margin-top:8px;padding:10px 12px;font-size:13px" onclick="copyLastLoginDiagnostic()">Copier le diagnostic</button>
+    </div>
     <button class="btn btn-primary" style="margin-top:16px" onclick="loginUser()">Se connecter →</button>
   </div>
 </div>
@@ -738,14 +742,14 @@
 </div>
 
 <!-- JS modules (defer = non-blocking, preserves order) -->
-<script src="src/infra/firebase/firebase.client.js?v=4" defer></script>
-<script src="src/infra/firebase/firebase.mapper.js?v=4" defer></script>
-<script src="js/firebase.js?v=4" defer></script>
-<script src="js/app.js?v=4" defer></script>
+<script src="src/infra/firebase/firebase.client.js?v=6" defer></script>
+<script src="src/infra/firebase/firebase.mapper.js?v=5" defer></script>
+<script src="js/firebase.js?v=5" defer></script>
+<script src="js/app.js?v=5" defer></script>
 <script src="js/ui.js?v=4" defer></script>
 <script src="js/xp.js?v=4" defer></script>
 <script src="js/celebration.js?v=4" defer></script>
-<script src="js/auth.js?v=4" defer></script>
+<script src="js/auth.js?v=9" defer></script>
 <script src="js/fuel.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.repository.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.service.js?v=4" defer></script>
@@ -768,7 +772,7 @@
 <script src="js/checklist.js?v=4" defer></script>
 <script src="js/events.js?v=4" defer></script>
 <script src="js/guide.js?v=4" defer></script>
-<script src="js/migration.js?v=4" defer></script>
+<script src="js/migration.js?v=5" defer></script>
 
 <script>
 if ('serviceWorker' in navigator) {
