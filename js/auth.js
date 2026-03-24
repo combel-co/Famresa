@@ -43,10 +43,41 @@ function _authPublicErrorMessage(err) {
   return 'Erreur — réessayez';
 }
 
+function _stageReason(stage) {
+  switch (stage) {
+    case 'query_profils_by_email':
+    case 'query_users_by_email':
+      return 'Impossible de vérifier le compte';
+    case 'auto_create_profil':
+      return 'Impossible d’initialiser le profil';
+    case 'run_v1_migration':
+    case 'run_v2_migration':
+      return 'Migration des données incomplète';
+    case 'load_resources':
+      return 'Chargement des ressources impossible';
+    default:
+      return 'Erreur de connexion';
+  }
+}
+
+function _authErrorForUI(err, stage) {
+  const code = String(err?.code || '').trim();
+  const base = _authPublicErrorMessage(err);
+  if (base !== 'Erreur — réessayez') return base;
+  const stageMsg = _stageReason(stage);
+  if (_isAuthDebugEnabled()) {
+    const raw = String(err?.message || '').slice(0, 120);
+    return `${stageMsg}${code ? ` (${code})` : ''}${raw ? ` — ${raw}` : ''}`;
+  }
+  return stageMsg;
+}
+
 function _recordAuthDiag(diag) {
   try {
+    const ref = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
     const payload = {
       ...diag,
+      ref,
       at: new Date().toISOString(),
       userAgent: navigator.userAgent
     };
@@ -171,7 +202,9 @@ async function loginUser() {
     } else {
       console.error(e);
     }
-    errEl.textContent = _authPublicErrorMessage(e);
+    const uiError = _authErrorForUI(e, stage);
+    errEl.textContent = uiError;
+    if (_isAuthDebugEnabled()) showToast(`Diagnostic login enregistré`);
   }
 }
 
