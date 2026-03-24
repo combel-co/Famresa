@@ -11,7 +11,6 @@ let unsubscribe = null;
 let tempPhoto = null;
 let activeTab = 'dashboard';
 let fuelReportsByBooking = {};
-let unsubscribeFuelReports = null;
 let pendingFuelPromptBookingId = null;
 let suPendingFamilyId = null;
 
@@ -209,6 +208,13 @@ function getFuelReturnLevelForBooking(booking) {
   if (!booking) return null;
   if (booking.fuelReturnLevel !== undefined && booking.fuelReturnLevel !== null) return booking.fuelReturnLevel;
   return fuelReportsByBooking[booking.id]?.fuelReturnLevel ?? null;
+}
+
+function generateInviteCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
 }
 
 function getDateRange(startStr, endStr) {

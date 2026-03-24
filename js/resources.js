@@ -125,7 +125,7 @@ async function loadResources() {
     selectedResource = resources[0].id;
     renderResourceTabs();
     subscribeBookings();
-    subscribeFuelReports();
+    fuelReportsByBooking = {};
   } catch (e) {
     console.error('Firebase error (loadResources):', e);
     document.getElementById('cal-grid').innerHTML =
@@ -351,35 +351,6 @@ function subscribeBookings() {
     if (unsubNew) unsubNew();
     if (unsubLegacy) unsubLegacy();
   };
-}
-
-function handleBookingsSnapshot(snap) {
-  bookings = {};
-  snap.forEach(doc => {
-    const d = { id: doc.id, ...doc.data() };
-    expandBookingToMap(d);
-  });
-  renderCalendar();
-  renderExperiencePanels();
-  if (document.getElementById('booking-modal')?.classList.contains('open')) renderBmCalendar();
-}
-
-function expandBookingToMap(d) {
-  if (d.startDate && d.endDate) {
-    let cur = new Date(d.startDate + 'T00:00:00');
-    const end = new Date(d.endDate + 'T00:00:00');
-    while (cur <= end) {
-      const ds = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
-      bookings[ds] = d;
-      cur.setDate(cur.getDate() + 1);
-    }
-  } else if (d.date) {
-    bookings[d.date] = d;
-  }
-}
-
-function subscribeFuelReports() {
-  fuelReportsByBooking = {};
 }
 
 // ==========================================

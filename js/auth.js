@@ -171,13 +171,6 @@ async function signupJoinAdvance() {
   } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
 }
 
-function generateSignupInviteCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return code;
-}
-
 async function signupCreateAdvance() {
   if (_isSubmittingFamily) return;
   const familyName = (document.getElementById('su-family-name')?.value || '').trim();
@@ -189,7 +182,7 @@ async function signupCreateAdvance() {
   if (pin !== confirm) { errEl.textContent = 'Les codes ne correspondent pas'; return; }
   errEl.textContent = '';
   _isSubmittingFamily = true;
-  const inviteCode = generateSignupInviteCode();
+  const inviteCode = generateInviteCode();
   suInviteUrl = inviteCode;
   try {
     const familyDocRef = await famillesRef().add({
@@ -211,24 +204,11 @@ function copyInviteLink() {
 }
 
 function handleSignupPhoto(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const size = 120; canvas.width = size; canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      const min = Math.min(img.width, img.height);
-      ctx.drawImage(img, (img.width - min)/2, (img.height - min)/2, min, min, 0, 0, size, size);
-      suTempPhoto = canvas.toDataURL('image/jpeg', 0.6);
-      const preview = document.getElementById('su-photo-preview');
-      if (preview) { preview.innerHTML = `<img src="${suTempPhoto}" alt="">`; preview.classList.add('has-photo'); }
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
+  resizePhotoFile(input.files[0], (dataUrl) => {
+    suTempPhoto = dataUrl;
+    const preview = document.getElementById('su-photo-preview');
+    if (preview) { preview.innerHTML = `<img src="${dataUrl}" alt="">`; preview.classList.add('has-photo'); }
+  });
 }
 
 async function signupProfileAdvance() {
@@ -330,7 +310,7 @@ async function obStep2Advance() {
   _isSubmittingFamily = true;
   try {
     const familyDocRef = await famillesRef().add({
-      nom: 'Ma famille', pin: create, inviteCode: generateSignupInviteCode(),
+      nom: 'Ma famille', pin: create, inviteCode: generateInviteCode(),
       created_by: null, createdAt: ts()
     });
     suPendingFamilyId = familyDocRef.id;
@@ -425,7 +405,7 @@ async function runMigrationIfNeeded() {
       const familyDocRef = await db.collection('families').add({
         name: configData.familyName || 'Ma famille',
         pin:  configData.pin || '',
-        inviteCode: configData.inviteCode || generateSignupInviteCode(),
+        inviteCode: configData.inviteCode || generateInviteCode(),
         migratedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       familyId = familyDocRef.id;
@@ -533,35 +513,21 @@ async function saveProfileEdits() {
   } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
 }
 
-async function changeProfilePhoto(input) {
-  const file = input.files[0];
-  if (!file || !currentUser) return;
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const img = new Image();
-    img.onload = async () => {
-      const canvas = document.createElement('canvas');
-      const size = 120; canvas.width = size; canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      const min = Math.min(img.width, img.height);
-      ctx.drawImage(img, (img.width - min)/2, (img.height - min)/2, min, min, 0, 0, size, size);
-      const photo = canvas.toDataURL('image/jpeg', 0.6);
-      try {
-        // Update profil + famille_membre
-        await profilRef(currentUser.id).update({ photo });
-        const member = await getFamilleMember(currentUser.familyId, currentUser.id);
-        if (member) await familleMembresRef().doc(member.id).update({ photo });
-        currentUser.photo = photo;
-        localStorage.setItem('famcar_user', JSON.stringify(currentUser));
-        updateUserPill();
-        renderProfileTab();
-        showEditProfileSheet();
-        showToast('Photo mise à jour ✓');
-      } catch(e) { showToast('Erreur — réessayez'); }
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
+function changeProfilePhoto(input) {
+  if (!input.files[0] || !currentUser) return;
+  resizePhotoFile(input.files[0], async (photo) => {
+    try {
+      await profilRef(currentUser.id).update({ photo });
+      const member = await getFamilleMember(currentUser.familyId, currentUser.id);
+      if (member) await familleMembresRef().doc(member.id).update({ photo });
+      currentUser.photo = photo;
+      localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+      updateUserPill();
+      renderProfileTab();
+      showEditProfileSheet();
+      showToast('Photo mise à jour ✓');
+    } catch(e) { showToast('Erreur — réessayez'); }
+  });
 }
 
 function showChangePin() {
