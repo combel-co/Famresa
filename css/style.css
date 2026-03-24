@@ -6,6 +6,7 @@
     /* ── Texte ── */
     --text:            #1a1a18;   /* texte principal */
     --text-secondary:  #888780;   /* labels, sous-titres */
+    --text-light:      #888780;   /* labels secondaires, sous-titres */
     --text-muted:      #b0afa9;   /* hints, placeholders, nav inactive */
     /* ── Bordures & séparateurs ── */
     --border:          #e8e8e6;   /* cards, séparateurs */
@@ -403,28 +404,26 @@
   .tab-panel.active { display: block; padding-top: 14px; }
 
   .bottom-nav {
-    /* Pas de position:fixed nécessaire : nav est un flex item sous <main>.
-       Il ne peut jamais bouger, même sur iOS Safari. */
     flex-shrink: 0;
     width: 100%;
-    background: #ffffff;
-    border-top: 1.5px solid var(--border);
-    border-radius: 44px 44px 0 0;
-    box-shadow: 0 -8px 40px rgba(0,0,0,0.10);
+    background: var(--bg);
+    border-top: 1px solid var(--border);
     display: flex; justify-content: space-evenly; align-items: stretch;
-    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 120;
+    padding: 6px 16px calc(6px + env(safe-area-inset-bottom, 0px)); z-index: 120;
   }
   .bottom-nav button {
-    border: none; background: transparent; border-radius: 16px; padding: 7px 6px;
-    font-size: 12px; color: var(--text-light); font-weight: 600; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    border: none; background: transparent; border-radius: var(--radius-pill); padding: 6px 12px;
+    font-size: 11px; color: var(--text-muted); font-weight: 500; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
     flex: 1;
-    transition: color 0.15s;
+    transition: color 0.2s, background 0.2s;
+    -webkit-tap-highlight-color: transparent;
   }
-  .bottom-nav button::before {
-    content: attr(data-icon); font-size: 20px; line-height: 1;
+  .bottom-nav button svg { width: 22px; height: 22px; transition: transform 0.2s; }
+  .bottom-nav button.active {
+    color: var(--text);
   }
-  .bottom-nav button.active { background: var(--accent-light); color: var(--accent); }
+  .bottom-nav button.active svg { stroke-width: 2.5; transform: scale(1.08); }
 
 
   .profile-row {
