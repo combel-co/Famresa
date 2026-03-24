@@ -18,3 +18,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const ts = () => firebase.firestore.FieldValue.serverTimestamp();
+
+// Explicitly expose globals for cross-browser compatibility (notably iOS Safari/PWA)
+window.db = db;
+window.ts = ts;

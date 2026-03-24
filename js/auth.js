@@ -187,7 +187,9 @@ async function loginUser() {
   const diag = { flow: 'loginUser', email, stage };
   try {
     stage = 'firebase_ready_check'; diag.stage = stage;
-    if (!window.firebase || !window.db) {
+    const hasFirebase = typeof firebase !== 'undefined' && !!firebase && typeof firebase.firestore === 'function';
+    const hasDb = typeof db !== 'undefined' && !!db;
+    if (!hasFirebase || !hasDb) {
       throw new Error('Firebase non initialisé (SDK ou cache PWA obsolète)');
     }
 
