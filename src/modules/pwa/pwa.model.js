@@ -3,7 +3,7 @@
 // ==========================================
 
 const pwaModel = {
-  CACHE_NAME: 'famresa-v1',
+  CACHE_NAME: 'famresa-v5',
 
   SHELL_ASSETS: [
     '/Resa-voiture/',

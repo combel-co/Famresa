@@ -1,13 +1,17 @@
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const CACHE_NAME = 'famresa-' + CACHE_VERSION;
 
-// On install: cache the app shell
+// On install: cache the app shell + critical assets
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll([
         '/Resa-voiture/',
-        '/Resa-voiture/index.html'
+        '/Resa-voiture/index.html',
+        '/Resa-voiture/manifest.json',
+        '/Resa-voiture/css/style.css',
+        '/Resa-voiture/icons/icon-192.png',
+        '/Resa-voiture/icons/icon-512.png'
       ]);
     })
   );
