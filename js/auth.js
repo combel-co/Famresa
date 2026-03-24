@@ -1,6 +1,7 @@
 // ==========================================
 // AUTH — WELCOME / LOGIN / SIGNUP / PROFILE
 // ==========================================
+const AUTH_BUILD = 'auth-v11-20260324';
 
 function showWelcomeScreen() {
   hideSplash();
@@ -63,7 +64,7 @@ function _renderLoginDiagnostic(payload) {
     return;
   }
 
-  diagText.textContent = `Diagnostic ${payload.ref || 'n/a'}: ${payload.stage || 'unknown'}${payload.errorCode ? ` (${payload.errorCode})` : ''}. Vous pouvez copier ce message et me l’envoyer.`;
+  diagText.textContent = `Diagnostic ${payload.ref || 'n/a'} (${payload.build || 'build ?'}): ${payload.stage || 'unknown'}${payload.errorCode ? ` (${payload.errorCode})` : ''}. Vous pouvez copier ce message et me l’envoyer.`;
 }
 
 window.toggleLoginDiagnostic = function toggleLoginDiagnostic() {
@@ -131,9 +132,11 @@ function _recordAuthDiag(diag) {
     const ref = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
     const payload = {
       ...diag,
+      build: AUTH_BUILD,
       ref,
       at: new Date().toISOString(),
-      userAgent: navigator.userAgent
+      userAgent: navigator.userAgent,
+      swControlled: !!navigator.serviceWorker?.controller
     };
     localStorage.setItem('famresa_last_login_diag', JSON.stringify(payload));
     window.__famresaLastLoginDiag = payload;
@@ -161,6 +164,7 @@ window.copyLastLoginDiagnostic = async function copyLastLoginDiagnostic() {
     return;
   }
   const message = [
+    `Build: ${payload.build || '-'}`,
     `Ref: ${payload.ref || '-'}`,
     `Etape: ${payload.stage || '-'}`,
     `Code: ${payload.errorCode || '-'}`,
