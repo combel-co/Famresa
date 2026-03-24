@@ -144,12 +144,6 @@ function renderExperiencePanels() {
   // ── Prochaines réservations ──
   renderUpcomingBookings();
 
-  // KPI hidden elements (backward compat)
-  const kpiKmCard = document.getElementById('kpi-km-card');
-  const kpiCo2Card = document.getElementById('kpi-co2-card');
-  if (kpiKmCard) kpiKmCard.style.display = 'none';
-  if (kpiCo2Card) kpiCo2Card.style.display = 'none';
-
   const myMonthRides = monthEntries.filter(b => currentUser && b.userId === currentUser.id).length;
   const qsRides = document.getElementById('qs-rides');
   if (qsRides) qsRides.textContent = String(myMonthRides);

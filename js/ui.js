@@ -39,8 +39,7 @@ function setupPinInputs(inputs, onComplete) {
   });
 }
 
-function handlePhoto(input) {
-  const file = input.files[0];
+function resizePhotoFile(file, callback) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -51,13 +50,19 @@ function handlePhoto(input) {
       const ctx = canvas.getContext('2d');
       const min = Math.min(img.width, img.height);
       ctx.drawImage(img, (img.width - min)/2, (img.height - min)/2, min, min, 0, 0, size, size);
-      tempPhoto = canvas.toDataURL('image/jpeg', 0.6);
-      const preview = document.getElementById('photo-preview');
-      if (preview) { preview.innerHTML = `<img src="${tempPhoto}" alt="">`; preview.classList.add('has-photo'); }
+      callback(canvas.toDataURL('image/jpeg', 0.6));
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+function handlePhoto(input) {
+  resizePhotoFile(input.files[0], (dataUrl) => {
+    tempPhoto = dataUrl;
+    const preview = document.getElementById('photo-preview');
+    if (preview) { preview.innerHTML = `<img src="${dataUrl}" alt="">`; preview.classList.add('has-photo'); }
+  });
 }
 
 function updateUserPill() {

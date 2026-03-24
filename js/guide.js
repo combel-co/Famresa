@@ -37,11 +37,7 @@ async function refreshGuideCards() {
       </div>`;
     }).join('');
   } catch(e) {
-    // Firestore index may not exist yet for orderBy — fallback without ordering
-    try {
-    } catch(e2) {
-      el.innerHTML = '<div style="color:var(--danger);font-size:14px">Erreur de chargement.</div>';
-    }
+    el.innerHTML = '<div style="color:var(--danger);font-size:14px">Erreur de chargement.</div>';
   }
 }
 
