@@ -100,7 +100,7 @@ function hideSkeleton() {
   document.getElementById('skeleton-screen').style.display = 'none';
 }
 
-function enterApp() {
+function enterApp(targetTab) {
   hideSplash();
   hideSkeleton();
   const header = document.getElementById('app-header');
@@ -111,7 +111,46 @@ function enterApp() {
   requestAnimationFrame(_syncHeaderHeight);
   updateUserPill();
   loadFamilyName();
-  switchTab(activeTab || 'dashboard');
+  switchTab(targetTab || activeTab || 'dashboard');
   renderCalendar();
+  _initPullToRefresh();
   setTimeout(() => maybePromptPendingFuel(), 350);
+}
+
+let _pullToRefreshBound = false;
+let _ptrStartY = 0;
+let _ptrArmed = false;
+const _PTR_THRESHOLD = 110;
+
+function _isAppVisible() {
+  const appMain = document.getElementById('app-main');
+  return !!appMain && appMain.style.display !== 'none';
+}
+
+function _initPullToRefresh() {
+  if (_pullToRefreshBound) return;
+  _pullToRefreshBound = true;
+
+  window.addEventListener('touchstart', (e) => {
+    if (!_isAppVisible()) { _ptrArmed = false; return; }
+    if (document.querySelector('#overlay.open, #booking-modal.open')) { _ptrArmed = false; return; }
+    const atTop = (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
+    if (!atTop) { _ptrArmed = false; return; }
+    _ptrStartY = e.touches?.[0]?.clientY || 0;
+    _ptrArmed = true;
+  }, { passive: true });
+
+  window.addEventListener('touchmove', (e) => {
+    if (!_ptrArmed) return;
+    const currentY = e.touches?.[0]?.clientY || 0;
+    const delta = currentY - _ptrStartY;
+    if (delta < _PTR_THRESHOLD) return;
+    _ptrArmed = false;
+    showSkeleton();
+    showToast('Actualisation…');
+    setTimeout(() => location.reload(), 140);
+  }, { passive: true });
+
+  window.addEventListener('touchend', () => { _ptrArmed = false; }, { passive: true });
+  window.addEventListener('touchcancel', () => { _ptrArmed = false; }, { passive: true });
 }

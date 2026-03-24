@@ -56,21 +56,29 @@ async function runV2MigrationIfNeeded() {
       await batch.commit();
     }
 
-    // ── 3. Migrate PROFILS (users → profils) ──
-    const userDoc = await db.collection('users').doc(currentUser.id).get();
-    if (userDoc.exists) {
+    // ── 3. Migrate PROFILS (users → profils) for all family members ──
+    const memberIds = new Set([currentUser.id]);
+    try {
+      membersSnap.forEach(doc => memberIds.add(doc.id));
+    } catch (_) {}
+
+    for (const memberId of memberIds) {
+      const existingProfil = await profilRef(memberId).get();
+      if (existingProfil.exists) continue;
+
+      const userDoc = await db.collection('users').doc(memberId).get();
+      if (!userDoc.exists) continue;
+
       const d = userDoc.data();
-      const existingProfil = await profilRef(currentUser.id).get();
-      if (!existingProfil.exists) {
-        await profilRef(currentUser.id).set({
-          nom: currentUser.name || d.name || '',
-          email: d.email || currentUser.email || '',
-          code_pin: d.pin || '',
-          photo: currentUser.photo || d.photo || null,
-          familyId: d.familyId || familyId,
-          createdAt: d.createdAt || ts(),
-        });
-      }
+      const memberMeta = membersSnap.docs.find(doc => doc.id === memberId)?.data() || {};
+      await profilRef(memberId).set({
+        nom: memberMeta.name || d.name || (memberId === currentUser.id ? currentUser.name : '') || '',
+        email: d.email || memberMeta.email || (memberId === currentUser.id ? currentUser.email : '') || '',
+        code_pin: d.pin || '',
+        photo: memberMeta.photo || d.photo || (memberId === currentUser.id ? currentUser.photo : null) || null,
+        familyId: d.familyId || familyId,
+        createdAt: d.createdAt || memberMeta.createdAt || ts(),
+      }, { merge: true });
     }
 
     // ── 4. Migrate RESSOURCES (families/{id}/resources → ressources) ──
@@ -168,6 +176,13 @@ async function runV2MigrationIfNeeded() {
       }
       await batch.commit();
     }
+
+    // Mark migration completion server-side for cleanup orchestration.
+    try {
+      await famillesRef().doc(familyId).set({
+        migration_v2_completed_at: ts(),
+      }, { merge: true });
+    } catch (_) {}
 
     localStorage.setItem('famresa_v2_migrated', '1');
     console.log('[migration] v2 migration complete ✓');

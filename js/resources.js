@@ -9,6 +9,17 @@ window._myResourceRoles = {};
 async function loadResources() {
   try {
     const familyId = currentUser.familyId;
+    let allowLegacyFallback = (typeof isLegacyFallbackAllowed === 'function')
+      ? isLegacyFallbackAllowed()
+      : true;
+    try {
+      const famDoc = await familleRef(familyId).get();
+      if (famDoc.exists) {
+        const fd = famDoc.data() || {};
+        allowLegacyFallback = fd.disable_legacy_fallback !== true;
+        window._legacyFallbackAllowed = allowLegacyFallback;
+      }
+    } catch (_) {}
 
     // ── 1. Load resources (new collection first, legacy fallback) ──
     let allResources = [];
@@ -16,14 +27,14 @@ async function loadResources() {
       allResources = await getFamilleRessources(familyId);
     } catch(_) {}
 
-    if (allResources.length === 0) {
+    if (allowLegacyFallback && allResources.length === 0) {
       // Fallback: legacy families/{id}/resources then cars
       try {
         const snap = await db.collection('families').doc(familyId).collection('resources').get();
         snap.forEach(d => allResources.push({ id: d.id, ...d.data() }));
       } catch(_) {}
     }
-    if (allResources.length === 0) {
+    if (allowLegacyFallback && allResources.length === 0) {
       try {
         const snap = await db.collection('families').doc(familyId).collection('cars').get();
         snap.forEach(d => allResources.push({ id: d.id, type: 'car', ...d.data() }));
@@ -49,7 +60,7 @@ async function loadResources() {
       myAccessEntries = await getMyResourceAccessEntries(currentUser.id, familyId);
     } catch(_) {}
 
-    if (myAccessEntries.length === 0) {
+    if (allowLegacyFallback && myAccessEntries.length === 0) {
       // Fallback: legacy resource_access
       try {
         const snap = await db.collection('resource_access').where('profileId', '==', currentUser.id).get();
@@ -63,10 +74,12 @@ async function loadResources() {
       let role = 'member';
       try {
         let famDoc = null;
-        try {
-          const d = await db.collection('families').doc(familyId).get();
-          if (d.exists) famDoc = d;
-        } catch(_) {}
+        if (allowLegacyFallback) {
+          try {
+            const d = await db.collection('families').doc(familyId).get();
+            if (d.exists) famDoc = d;
+          } catch(_) {}
+        }
         if (!famDoc) {
           try {
             const d = await familleRef(familyId).get();
@@ -317,32 +330,41 @@ function subscribeBookings() {
       });
   } catch(_) { _readyNew = true; }
 
+  const allowLegacyFallback = (typeof isLegacyFallbackAllowed === 'function')
+    ? isLegacyFallbackAllowed()
+    : true;
+
   // Legacy collection: families/{id}/bookings
   let unsubLegacy = null;
-  try {
-    const familyId = currentUser.familyId;
-    const legacyCol = db.collection('families').doc(familyId).collection('bookings');
-    // Subscribe by resourceId first, then carId for old bookings
-    unsubLegacy = legacyCol
-      .where('resourceId', '==', selectedResource)
-      .onSnapshot(snap => {
-        _bookingsLegacy = {};
-        snap.forEach(doc => _expandToMap({ id: doc.id, ...doc.data() }, _bookingsLegacy));
-        // Also pick up carId-only bookings
-        legacyCol.where('carId', '==', selectedResource).get().then(snap2 => {
-          snap2.forEach(doc => {
-            const d = { id: doc.id, ...doc.data() };
-            if (!d.resourceId) _expandToMap(d, _bookingsLegacy);
-          });
+  if (allowLegacyFallback) {
+    try {
+      const familyId = currentUser.familyId;
+      const legacyCol = db.collection('families').doc(familyId).collection('bookings');
+      // Subscribe by resourceId first, then carId for old bookings
+      unsubLegacy = legacyCol
+        .where('resourceId', '==', selectedResource)
+        .onSnapshot(snap => {
+          _bookingsLegacy = {};
+          snap.forEach(doc => _expandToMap({ id: doc.id, ...doc.data() }, _bookingsLegacy));
+          // Also pick up carId-only bookings
+          legacyCol.where('carId', '==', selectedResource).get().then(snap2 => {
+            snap2.forEach(doc => {
+              const d = { id: doc.id, ...doc.data() };
+              if (!d.resourceId) _expandToMap(d, _bookingsLegacy);
+            });
+            _readyLegacy = true;
+            if (_readyNew) _rebuild();
+          }).catch(() => { _readyLegacy = true; if (_readyNew) _rebuild(); });
+        }, err => {
+          console.warn('[bookings legacy] snapshot error:', err);
           _readyLegacy = true;
           if (_readyNew) _rebuild();
-        }).catch(() => { _readyLegacy = true; if (_readyNew) _rebuild(); });
-      }, err => {
-        console.warn('[bookings legacy] snapshot error:', err);
-        _readyLegacy = true;
-        if (_readyNew) _rebuild();
-      });
-  } catch(_) {
+        });
+    } catch(_) {
+      _readyLegacy = true;
+      if (_readyNew) _rebuild();
+    }
+  } else {
     _readyLegacy = true;
     if (_readyNew) _rebuild();
   }
