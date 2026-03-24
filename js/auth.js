@@ -78,7 +78,7 @@ async function loginUser() {
     }
 
     currentUser = { id: doc.id, name, email: data.email, photo, familyId, createdAt };
-    localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+    localStorage.setItem('famresa_user', JSON.stringify(currentUser));
     document.getElementById('login-overlay').classList.add('hidden');
     if (!familyId) {
       await runMigrationIfNeeded();
@@ -279,7 +279,7 @@ async function signupProfileAdvance() {
     }
 
     currentUser = { id: ref.id, name, email, photo: suTempPhoto || null, familyId: suPendingFamilyId };
-    localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+    localStorage.setItem('famresa_user', JSON.stringify(currentUser));
     document.getElementById('signup-overlay').classList.add('hidden');
     if (_pendingResourceJoinCode) {
       await loadResources();
@@ -363,7 +363,7 @@ async function obStep3Advance() {
     });
     await familleRef(suPendingFamilyId).update({ created_by: ref.id });
     currentUser = { id: ref.id, name, email, photo: tempPhoto || null, familyId: suPendingFamilyId };
-    localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+    localStorage.setItem('famresa_user', JSON.stringify(currentUser));
     showOnboardingStep(4);
   } catch (e) { errEl.textContent = 'Erreur — réessayez'; }
 }
@@ -458,7 +458,7 @@ async function runMigrationIfNeeded() {
     }
 
     currentUser.familyId = familyId;
-    localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+    localStorage.setItem('famresa_user', JSON.stringify(currentUser));
 
     hideMigrationBanner(banner);
     // Run v2 schema migration after v1 family migration
@@ -525,7 +525,7 @@ async function saveProfileEdits() {
     // Update local state
     currentUser.name  = name;
     currentUser.email = email;
-    localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+    localStorage.setItem('famresa_user', JSON.stringify(currentUser));
     updateUserPill();
     renderProfileTab();
     closeSheet();
@@ -552,7 +552,7 @@ async function changeProfilePhoto(input) {
         const member = await getFamilleMember(currentUser.familyId, currentUser.id);
         if (member) await familleMembresRef().doc(member.id).update({ photo });
         currentUser.photo = photo;
-        localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+        localStorage.setItem('famresa_user', JSON.stringify(currentUser));
         updateUserPill();
         renderProfileTab();
         showEditProfileSheet();
@@ -596,7 +596,7 @@ async function saveNewPin() {
 
 function logout() {
   currentUser = null;
-  localStorage.removeItem('famcar_user');
+  localStorage.removeItem('famresa_user');
   closeSheet();
   showWelcomeScreen();
   showToast('Déconnecté');

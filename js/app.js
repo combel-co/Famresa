@@ -1,7 +1,12 @@
 // ==========================================
 // GLOBAL STATE
 // ==========================================
-let currentUser = JSON.parse(localStorage.getItem('famcar_user') || 'null');
+// Migrate legacy localStorage key → new branding
+if (localStorage.getItem('famcar_user') && !localStorage.getItem('famresa_user')) {
+  localStorage.setItem('famresa_user', localStorage.getItem('famcar_user'));
+  localStorage.removeItem('famcar_user');
+}
+let currentUser = JSON.parse(localStorage.getItem('famresa_user') || 'null');
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let bookings = {};
@@ -98,7 +103,7 @@ function selectFamily(familyId) {
   const fam = _userFamilies.find(f => f.id === familyId);
   if (!fam) return;
   currentUser.familyId = familyId;
-  localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+  localStorage.setItem('famresa_user', JSON.stringify(currentUser));
   updateFamilyPill(fam.name);
   const picker = document.getElementById('family-picker-dropdown');
   if (picker) picker.style.display = 'none';
