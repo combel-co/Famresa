@@ -25,6 +25,48 @@ function connectUser() {
   setTimeout(() => document.getElementById('login-email')?.focus(), 300);
 }
 
+function _isAuthDebugEnabled() {
+  try {
+    const qs = new URLSearchParams(location.search);
+    return qs.get('debug_auth') === '1' || localStorage.getItem('famresa_debug_auth') === '1';
+  } catch (_) {
+    return false;
+  }
+}
+
+function _authPublicErrorMessage(err) {
+  const code = String(err?.code || '').toLowerCase();
+  if (code.includes('permission-denied')) return 'Accès refusé Firestore (règles) — contactez l’admin';
+  if (code.includes('unavailable')) return 'Serveur indisponible — vérifiez votre connexion';
+  if (code.includes('deadline-exceeded')) return 'Délai dépassé — réessayez';
+  if (code.includes('failed-precondition')) return 'Configuration Firestore incomplète';
+  return 'Erreur — réessayez';
+}
+
+function _recordAuthDiag(diag) {
+  try {
+    const payload = {
+      ...diag,
+      at: new Date().toISOString(),
+      userAgent: navigator.userAgent
+    };
+    localStorage.setItem('famresa_last_login_diag', JSON.stringify(payload));
+    window.__famresaLastLoginDiag = payload;
+  } catch (_) {}
+}
+
+window.showLastLoginDiagnostic = function showLastLoginDiagnostic() {
+  try {
+    const raw = localStorage.getItem('famresa_last_login_diag');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    console.table(parsed);
+    return parsed;
+  } catch (_) {
+    return null;
+  }
+};
+
 async function loginUser() {
   const email = (document.getElementById('login-email')?.value || '').trim().toLowerCase();
   const pin = Array.from(document.querySelectorAll('#login-pin input')).map(i => i.value.replace(/\D/g, '')).join('');
@@ -32,25 +74,47 @@ async function loginUser() {
   if (!email || !email.includes('@')) { errEl.textContent = 'Email invalide'; return; }
   if (pin.length < 4) { errEl.textContent = 'Entrez votre code à 4 chiffres'; return; }
   errEl.textContent = '';
+  let stage = 'start';
+  const diag = { flow: 'loginUser', email, stage };
   try {
     // Try new collection first; if permission denied/unavailable, fall through to legacy
     let doc = null, data = null;
     try {
+      stage = 'query_profils_by_email'; diag.stage = stage;
       const newSnap = await profilsRef().where('email', '==', email).get();
       if (!newSnap.empty) {
         const d = newSnap.docs[0].data();
         if (String(d.code_pin ?? d.pin) !== pin) { errEl.textContent = 'Code incorrect'; return; }
         doc = newSnap.docs[0]; data = d;
+        diag.source = 'profils';
       }
     } catch(_) { /* profils not accessible yet — fall through to users */ }
 
     if (!doc) {
       // Legacy path — users collection
+      stage = 'query_users_by_email'; diag.stage = stage;
       const oldSnap = await db.collection('users').where('email', '==', email).get();
       if (oldSnap.empty) { errEl.textContent = 'Email introuvable'; return; }
       const d = oldSnap.docs[0].data();
       if (String(d.pin) !== pin) { errEl.textContent = 'Code incorrect'; return; }
       doc = oldSnap.docs[0]; data = d;
+      diag.source = 'users_legacy';
+
+      // Auto-migrate legacy user profile (users -> profils) to avoid login dead-ends
+      try {
+        stage = 'auto_create_profil'; diag.stage = stage;
+        const existingProfil = await profilRef(doc.id).get();
+        if (!existingProfil.exists) {
+          await profilRef(doc.id).set({
+            nom: d.name || '',
+            email: d.email || email,
+            code_pin: d.pin || '',
+            photo: d.photo || null,
+            familyId: d.familyId || null,
+            createdAt: d.createdAt || ts(),
+          }, { merge: true });
+        }
+      } catch (_) { /* non-blocking */ }
     }
 
     const familyId = data.familyId || data.famille_id || null;
@@ -81,11 +145,15 @@ async function loginUser() {
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
     document.getElementById('login-overlay').classList.add('hidden');
     if (!familyId) {
+      stage = 'run_v1_migration'; diag.stage = stage;
       await runMigrationIfNeeded();
     } else {
       showSkeleton();
-      runV2MigrationIfNeeded().catch(e => console.warn('[migration]', e));
+      stage = 'run_v2_migration'; diag.stage = stage;
+      await runV2MigrationIfNeeded();
+      stage = 'load_resources'; diag.stage = stage;
       await loadResources();
+      stage = 'enter_app'; diag.stage = stage;
       enterApp();
       showToast(`Bonjour ${currentUser.name} !`);
       if (_pendingResourceJoinCode) {
@@ -93,7 +161,18 @@ async function loginUser() {
         _pendingResourceJoinCode = null;
       }
     }
-  } catch(e) { console.error(e); errEl.textContent = 'Erreur — réessayez'; }
+  } catch(e) {
+    diag.stage = stage;
+    diag.errorCode = e?.code || '';
+    diag.errorMessage = e?.message || String(e);
+    _recordAuthDiag(diag);
+    if (_isAuthDebugEnabled()) {
+      console.error('[auth login diagnostic]', diag, e);
+    } else {
+      console.error(e);
+    }
+    errEl.textContent = _authPublicErrorMessage(e);
+  }
 }
 
 // ---- SIGNUP ----
@@ -442,8 +521,8 @@ async function runMigrationIfNeeded() {
 
     hideMigrationBanner(banner);
     // Run v2 schema migration after v1 family migration
-    await runV2MigrationIfNeeded().catch(e => console.warn('[migration v2]', e));
-    loadResources();
+    await runV2MigrationIfNeeded();
+    await loadResources();
     enterApp();
     showToast('Migration terminée — bienvenue dans la nouvelle version !');
   } catch (e) {
@@ -579,8 +658,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (currentUser?.familyId) {
     // Show skeleton while data loads
     showSkeleton();
-    // Run data migration in background (non-blocking)
-    runV2MigrationIfNeeded().catch(e => console.warn('[migration]', e));
+    // Ensure migration completes before loading resources
+    await runV2MigrationIfNeeded();
     await loadResources();
     enterApp();
     if (_pendingResourceJoinCode) {
