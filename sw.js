@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v7';
 const CACHE_NAME = 'famresa-' + CACHE_VERSION;
 
 // On install: cache the app shell + critical assets
@@ -40,8 +40,8 @@ self.addEventListener('fetch', event => {
                  url.pathname.endsWith('.html');
   const isAppCode = url.pathname.endsWith('.js') || url.pathname.endsWith('.css');
 
-  if (isHTML || isAppCode) {
-    // Network first: always try fresh code, fallback to cache if offline or 404
+  if (isHTML) {
+    // Network first for documents
     event.respondWith(
       fetch(event.request)
         .then(response => {
@@ -58,6 +58,19 @@ self.addEventListener('fetch', event => {
           caches.match(event.request)
             .then(cached => cached || caches.match('/Resa-voiture/index.html'))
         )
+    );
+  } else if (isAppCode) {
+    // Network first for JS/CSS, but never fallback to HTML to avoid mixed/stale runtime
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
     );
   } else {
     // Cache first for fonts, images and other static assets (GET only)
