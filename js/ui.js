@@ -120,7 +120,7 @@ function enterApp(targetTab) {
 let _pullToRefreshBound = false;
 let _ptrStartY = 0;
 let _ptrArmed = false;
-const _PTR_THRESHOLD = 110;
+const _PTR_THRESHOLD = 160;
 const _PTR_CIRCUMFERENCE = 94.25; // 2 * π * 15
 
 function _isAppVisible() {
