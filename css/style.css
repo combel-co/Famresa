@@ -66,6 +66,7 @@
     height: 100vh;        /* fallback navigateurs anciens */
     height: 100dvh;       /* réécrit pour prendre dvh si supporté */
     overflow: hidden;     /* body lui-même ne scrolle pas */
+    overscroll-behavior: none;   /* empêche le bounce/overscroll natif du navigateur */
     -webkit-font-smoothing: antialiased;
   }
 
@@ -138,6 +139,7 @@
     flex: 1;              /* occupe tout l'espace entre header et nav */
     overflow-y: auto;     /* seule zone de scroll de la page */
     overflow-x: hidden;
+    overscroll-behavior-y: none;  /* empêche le pull-down natif du navigateur */
     max-width: 520px;
     margin: 0 auto;
     width: 100%;

@@ -120,7 +120,7 @@ function enterApp(targetTab) {
 let _pullToRefreshBound = false;
 let _ptrStartY = 0;
 let _ptrArmed = false;
-const _PTR_THRESHOLD = 110;
+const _PTR_THRESHOLD = 160;
 const _PTR_CIRCUMFERENCE = 94.25; // 2 * π * 15
 
 function _isAppVisible() {
@@ -155,6 +155,9 @@ function _initPullToRefresh() {
       return;
     }
 
+    // Block native overscroll (iOS bounce) while pulling
+    e.preventDefault();
+
     // Progress from 0 to 1 based on pull distance
     const progress = Math.min(delta / _PTR_THRESHOLD, 1);
     const indicatorH = Math.min(delta * 0.45, 48);
@@ -170,7 +173,7 @@ function _initPullToRefresh() {
       showToast('Actualisation…');
       setTimeout(() => location.reload(), 400);
     }
-  }, { passive: true });
+  }, { passive: false });
 
   function _ptrReset() {
     if (!_ptrArmed && indicator?.classList.contains('refreshing')) return;
