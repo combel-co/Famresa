@@ -124,6 +124,15 @@
 
 <main id="app-main" style="display:none;">
 
+  <!-- Pull-to-refresh indicator -->
+  <div id="ptr-indicator" class="ptr-indicator">
+    <svg class="ptr-spinner" viewBox="0 0 36 36">
+      <circle class="ptr-track" cx="18" cy="18" r="15" fill="none" stroke-width="3"/>
+      <circle class="ptr-fill" cx="18" cy="18" r="15" fill="none" stroke-width="3"
+              stroke-dasharray="94.25" stroke-dashoffset="94.25" stroke-linecap="round"/>
+    </svg>
+  </div>
+
   <!-- Resource tabs (populated by renderResourceTabs()) -->
   <div class="resource-tabs" id="resource-tabs"></div>
 

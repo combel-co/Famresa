@@ -121,6 +121,7 @@ let _pullToRefreshBound = false;
 let _ptrStartY = 0;
 let _ptrArmed = false;
 const _PTR_THRESHOLD = 110;
+const _PTR_CIRCUMFERENCE = 94.25; // 2 * π * 15
 
 function _isAppVisible() {
   const appMain = document.getElementById('app-main');
@@ -131,26 +132,56 @@ function _initPullToRefresh() {
   if (_pullToRefreshBound) return;
   _pullToRefreshBound = true;
 
+  const indicator = document.getElementById('ptr-indicator');
+  const fillCircle = indicator?.querySelector('.ptr-fill');
+
   window.addEventListener('touchstart', (e) => {
     if (!_isAppVisible()) { _ptrArmed = false; return; }
     if (document.querySelector('#overlay.open, #booking-modal.open')) { _ptrArmed = false; return; }
-    const atTop = (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
+    const main = document.getElementById('app-main');
+    const atTop = main ? main.scrollTop <= 0 : (window.scrollY || 0) <= 0;
     if (!atTop) { _ptrArmed = false; return; }
     _ptrStartY = e.touches?.[0]?.clientY || 0;
     _ptrArmed = true;
   }, { passive: true });
 
   window.addEventListener('touchmove', (e) => {
-    if (!_ptrArmed) return;
+    if (!_ptrArmed || !indicator || !fillCircle) return;
     const currentY = e.touches?.[0]?.clientY || 0;
     const delta = currentY - _ptrStartY;
-    if (delta < _PTR_THRESHOLD) return;
-    _ptrArmed = false;
-    showSkeleton();
-    showToast('Actualisation…');
-    setTimeout(() => location.reload(), 140);
+    if (delta <= 0) {
+      indicator.style.height = '0';
+      indicator.classList.remove('active');
+      return;
+    }
+
+    // Progress from 0 to 1 based on pull distance
+    const progress = Math.min(delta / _PTR_THRESHOLD, 1);
+    const indicatorH = Math.min(delta * 0.45, 48);
+    indicator.classList.add('active');
+    indicator.style.height = indicatorH + 'px';
+    fillCircle.style.strokeDashoffset = _PTR_CIRCUMFERENCE * (1 - progress);
+
+    if (progress >= 1) {
+      _ptrArmed = false;
+      indicator.classList.remove('active');
+      indicator.classList.add('refreshing');
+      indicator.style.height = '';
+      showToast('Actualisation…');
+      setTimeout(() => location.reload(), 400);
+    }
   }, { passive: true });
 
-  window.addEventListener('touchend', () => { _ptrArmed = false; }, { passive: true });
-  window.addEventListener('touchcancel', () => { _ptrArmed = false; }, { passive: true });
+  function _ptrReset() {
+    if (!_ptrArmed && indicator?.classList.contains('refreshing')) return;
+    _ptrArmed = false;
+    if (indicator) {
+      indicator.classList.remove('active');
+      indicator.style.height = '0';
+    }
+    if (fillCircle) fillCircle.style.strokeDashoffset = _PTR_CIRCUMFERENCE;
+  }
+
+  window.addEventListener('touchend', _ptrReset, { passive: true });
+  window.addEventListener('touchcancel', _ptrReset, { passive: true });
 }
