@@ -155,6 +155,9 @@ function _initPullToRefresh() {
       return;
     }
 
+    // Block native overscroll (iOS bounce) while pulling
+    e.preventDefault();
+
     // Progress from 0 to 1 based on pull distance
     const progress = Math.min(delta / _PTR_THRESHOLD, 1);
     const indicatorH = Math.min(delta * 0.45, 48);
@@ -170,7 +173,7 @@ function _initPullToRefresh() {
       showToast('Actualisation…');
       setTimeout(() => location.reload(), 400);
     }
-  }, { passive: true });
+  }, { passive: false });
 
   function _ptrReset() {
     if (!_ptrArmed && indicator?.classList.contains('refreshing')) return;
