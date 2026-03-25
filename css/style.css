@@ -448,7 +448,7 @@
     background: var(--bg);
     border-top: 1px solid var(--border);
     display: flex; justify-content: space-evenly; align-items: stretch;
-    padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 120;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 120;
   }
   .bottom-nav button {
     border: none; background: transparent; border-radius: var(--radius-pill); padding: 6px 12px;
