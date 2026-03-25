@@ -839,12 +839,14 @@
   }
 
   navigator.serviceWorker.register('/Resa-voiture/sw.js').then(reg => {
+    // Check for updates on every page load
+    reg.update();
     reg.addEventListener('updatefound', () => {
       const newSW = reg.installing;
       newSW.addEventListener('statechange', () => {
         if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-          document.getElementById('sw-update-banner').style.display = 'flex';
-          window._pendingSW = newSW;
+          // Auto-apply update immediately
+          newSW.postMessage('skipWaiting');
         }
       });
     });

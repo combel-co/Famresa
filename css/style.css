@@ -446,7 +446,7 @@
     background: var(--bg);
     border-top: 1px solid var(--border);
     display: flex; justify-content: space-evenly; align-items: stretch;
-    padding: 6px 16px calc(6px + env(safe-area-inset-bottom, 0px)); z-index: 120;
+    padding: 10px 16px calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 120;
   }
   .bottom-nav button {
     border: none; background: transparent; border-radius: var(--radius-pill); padding: 6px 12px;
@@ -1112,7 +1112,7 @@
   .bm-footer {
     flex-shrink: 0; background: white;
     border-top: 1px solid var(--border);
-    padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px));
+    padding: 14px 20px calc(20px + env(safe-area-inset-bottom, 0px));
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
   }
   .bm-reset-btn {
