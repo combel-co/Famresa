@@ -207,17 +207,105 @@ function _syncHeaderHeight() {
     document.documentElement.style.setProperty('--header-h', h.offsetHeight + 'px');
 }
 
+if (!window.__splashController) {
+  window.__splashController = {
+    minMs: 2000,
+    startedAt: Date.now(),
+    hideTimerId: null,
+    hiding: false,
+    lifecycleBound: false,
+    wasHidden: false,
+    lastResumeAt: 0,
+  };
+}
+
+function showSplash(options) {
+  const opts = options || {};
+  const ctrl = window.__splashController;
+  const splash = document.getElementById('splash-screen');
+  if (!ctrl || !splash) return;
+
+  if (ctrl.hideTimerId) {
+    clearTimeout(ctrl.hideTimerId);
+    ctrl.hideTimerId = null;
+  }
+
+  if (opts.resetTimer !== false) ctrl.startedAt = Date.now();
+  ctrl.hiding = false;
+
+  splash.style.display = 'flex';
+  splash.style.opacity = '1';
+
+  // Restart the progress animation each time splash is shown.
+  const bar = document.getElementById('splash-bar');
+  if (bar) {
+    bar.style.animation = 'none';
+    // Force reflow before re-applying animation.
+    void bar.offsetWidth;
+    bar.style.animation = 'splashFill 1.8s cubic-bezier(0.4,0,0.2,1) forwards';
+  }
+}
+
 function hideSplash() {
+  const ctrl = window.__splashController;
   if (window.__startupCacheCheckPending) {
     window.__startupHideSplashRequested = true;
     return;
   }
-  const splash = document.getElementById('splash-screen');
-  if (splash) {
-    splash.style.opacity = '0';
-    setTimeout(() => splash.style.display = 'none', 300);
+
+  if (!ctrl) return;
+
+  const remainingMs = Math.max(0, ctrl.minMs - (Date.now() - ctrl.startedAt));
+  if (remainingMs > 0) {
+    if (ctrl.hideTimerId) clearTimeout(ctrl.hideTimerId);
+    ctrl.hideTimerId = setTimeout(() => {
+      ctrl.hideTimerId = null;
+      hideSplash();
+    }, remainingMs);
+    return;
   }
+
+  const splash = document.getElementById('splash-screen');
+  if (!splash || ctrl.hiding) return;
+  ctrl.hiding = true;
+  splash.style.opacity = '0';
+  setTimeout(() => {
+    splash.style.display = 'none';
+    ctrl.hiding = false;
+  }, 300);
 }
+
+function _initSplashLifecycle() {
+  const ctrl = window.__splashController;
+  if (!ctrl || ctrl.lifecycleBound) return;
+  ctrl.lifecycleBound = true;
+
+  function _resumeWithSplash() {
+    const now = Date.now();
+    if (now - ctrl.lastResumeAt < 1000) return; // guard double events on iOS
+    ctrl.lastResumeAt = now;
+    showSplash({ resetTimer: true });
+    hideSplash();
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      ctrl.wasHidden = true;
+      return;
+    }
+    if (document.visibilityState === 'visible' && ctrl.wasHidden) {
+      ctrl.wasHidden = false;
+      _resumeWithSplash();
+    }
+  });
+
+  window.addEventListener('pageshow', (e) => {
+    // On iOS, pageshow can fire when returning from bfcache/background.
+    if (e.persisted || ctrl.wasHidden) _resumeWithSplash();
+  });
+}
+
+_initSplashLifecycle();
 
 function showSkeleton() {
   hideSplash();
