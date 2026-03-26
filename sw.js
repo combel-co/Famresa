@@ -18,6 +18,15 @@ function withBase(path) {
   return base + path.replace(/^\/+/, '');
 }
 
+function canCacheRequest(request) {
+  try {
+    const protocol = new URL(request.url).protocol;
+    return protocol === 'http:' || protocol === 'https:';
+  } catch (_) {
+    return false;
+  }
+}
+
 // On install: cache the app shell + critical assets
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -62,7 +71,7 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(event.request)
         .then(response => {
-          if (response.ok) {
+          if (response.ok && canCacheRequest(event.request)) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
             return response;
@@ -81,7 +90,7 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(event.request)
         .then(response => {
-          if (response.ok) {
+          if (response.ok && canCacheRequest(event.request)) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
           }
@@ -95,7 +104,7 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       caches.match(event.request).then(cached => {
         return cached || fetch(event.request).then(response => {
-          if (response.ok) {
+          if (response.ok && canCacheRequest(event.request)) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
           }

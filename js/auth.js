@@ -32,6 +32,11 @@ function connectUser() {
   // If needed, user can tap email manually.
 }
 
+// Legacy hook kept for compatibility with older auth flows.
+function _setupLoginDiagGesture() {
+  // No-op: diagnostic is now opened via the explicit "i" button.
+}
+
 function _renderLoginDiagnostic(payload) {
   const diagBox = document.getElementById('login-diagnostic');
   const diagText = document.getElementById('login-diagnostic-text');
