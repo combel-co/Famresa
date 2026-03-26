@@ -231,7 +231,6 @@
       <div class="legend" style="margin-bottom:130px">
         <span><span class="legend-dot" style="background:var(--accent)"></span> Ma résa</span>
         <span><span class="legend-dot" style="background:var(--accent-light);border:1px solid var(--accent)"></span> Réservé</span>
-        <span><span class="legend-dot" style="background:#f0f0f0"></span> Dispo</span>
       </div>
     </div>
   </section>
@@ -449,11 +448,6 @@
 
   </div>
   <div class="bm-footer">
-    <div class="bm-footer-meta">
-      <div class="bm-progress-text" id="bm-progress-text" aria-live="polite">Étape 1 sur 3</div>
-      <div class="bm-inline-feedback" id="bm-inline-feedback" aria-live="polite"></div>
-      <div class="bm-footer-recap" id="bm-footer-recap" aria-live="polite"></div>
-    </div>
     <div class="bm-footer-actions">
       <button class="bm-reset-btn" onclick="resetBookingModal()">Réinitialiser</button>
       <button class="bm-next-btn" id="bm-next-btn" onclick="bmNextStep()">Suivant</button>
@@ -467,6 +461,19 @@
     <div class="celebration-title" id="cel-title">Réservation confirmée !</div>
     <div class="celebration-xp" id="cel-xp">+20 XP</div>
     <div class="celebration-sub" id="cel-sub">La voiture est à toi</div>
+    <div class="celebration-recap-card" id="cel-recap-card" style="display:none">
+      <div class="cel-recap-header">
+        <div class="cel-recap-icon" id="cel-recap-icon">🏠</div>
+        <div>
+          <div class="cel-recap-name" id="cel-recap-name">Ressource</div>
+          <div class="cel-recap-sub" id="cel-recap-sub">Réservation famille</div>
+        </div>
+      </div>
+      <div class="cel-recap-row"><div>Arrivée</div><div id="cel-recap-arrivee">—</div></div>
+      <div class="cel-recap-row"><div>Départ</div><div id="cel-recap-depart">—</div></div>
+      <div class="cel-recap-row"><div>Durée</div><div id="cel-recap-duree">—</div></div>
+      <div class="cel-recap-row"><div>Participants</div><div id="cel-recap-participants">—</div></div>
+    </div>
   </div>
   <div class="confetti-container" id="confetti-container"></div>
 </div>

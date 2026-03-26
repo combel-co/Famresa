@@ -38,30 +38,22 @@ function bmCanProceedFromStep(step) {
   return true;
 }
 
-function bmGetRecapRows() {
-  const { isHouse } = bmGetContext();
-  const start = bm.startDate
-    ? new Date(bm.startDate + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
-    : '—';
-  const end = bm.endDate
-    ? new Date(bm.endDate + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
-    : (bm.startDate ? start : '—');
-  const who = bm.booker ? bm.booker.name : 'Moi-même';
-  const where = isHouse
-    ? (document.getElementById('bm-motif-input')?.value.trim() || 'Séjour')
-    : (bm.destinations[0]?.name || 'Flexible');
-  return [
-    `Dates: ${start} → ${end}`,
-    `Heures: ${bm.startHour} → ${bm.endHour}`,
-    `Pour: ${who}`,
-    `${isHouse ? 'Motif' : 'Destination'}: ${where}`
-  ];
-}
-
-function bmUpdateFooterRecap() {
-  const recap = document.getElementById('bm-footer-recap');
-  if (!recap) return;
-  recap.innerHTML = bmGetRecapRows().map(x => `<span>${x}</span>`).join('');
+function bmBuildCelebrationRecap(resource, iconFallback) {
+  const startDate = bm.startDate ? new Date(bm.startDate + 'T00:00:00') : null;
+  const endDate = (bm.endDate || bm.startDate) ? new Date((bm.endDate || bm.startDate) + 'T00:00:00') : null;
+  const nights = (startDate && endDate)
+    ? Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 86400000))
+    : 1;
+  const participant = bm.booker?.name || currentUser?.name || 'Moi-même';
+  return {
+    icon: resource?.emoji || iconFallback || '🏠',
+    name: resource?.name || 'Ressource',
+    sub: resource?.familyName || 'Réservation famille',
+    arrivee: startDate ? startDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'short' }) : '—',
+    depart: endDate ? endDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'short' }) : '—',
+    duree: `${nights} ${nights > 1 ? 'nuits' : 'nuit'}`,
+    participants: participant
+  };
 }
 
 function bmScrollToStep(step) {
@@ -134,31 +126,19 @@ function renderBmSteps() {
     nextBtn.setAttribute('aria-disabled', String(nextBtn.disabled));
   }
 
-  const progress = document.getElementById('bm-progress-text');
-  if (progress) {
-    progress.textContent = isEditing
-      ? 'Mode édition'
-      : `Étape ${currentIndex + 1} sur ${steps.length}`;
-  }
-
   const destSection = document.getElementById('bm-dest-section');
   const motifSection = document.getElementById('bm-motif-section');
   if (destSection) destSection.style.display = isHouse ? 'none' : '';
   if (motifSection) motifSection.style.display = isHouse ? '' : 'none';
-
-  bmUpdateFooterRecap();
 }
 
 function bmNextStep() {
   const steps = bmBuildStepConfig();
   const currentIndex = Math.max(0, steps.indexOf(bmCurrentStep));
   if (!bmCanProceedFromStep(bmCurrentStep)) {
-    const feedback = document.getElementById('bm-inline-feedback');
-    if (feedback) feedback.textContent = 'Complétez cette étape pour continuer.';
+    showToast('Complète cette étape pour continuer.');
     return;
   }
-  const feedback = document.getElementById('bm-inline-feedback');
-  if (feedback) feedback.textContent = '';
   if (currentIndex >= steps.length - 1) {
     confirmRangeBooking();
     return;
@@ -194,7 +174,6 @@ function openBookingModal() {
   const mi = document.getElementById('bm-motif-input'); if (mi) mi.value = '';
   const ni = document.getElementById('bm-external-name'); if (ni) ni.value = '';
   const hint = document.getElementById('bm-dates-hint'); if (hint) hint.textContent = 'Sélectionnez votre date de départ';
-  const feedback = document.getElementById('bm-inline-feedback'); if (feedback) feedback.textContent = '';
   renderDestSuggestions('');
   renderBmCalendar();
   renderBmSteps();
@@ -220,11 +199,8 @@ function renderBmCalendar() {
     const year = d.getFullYear(); const month = d.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     let firstDay = d.getDay() - 1; if (firstDay < 0) firstDay = 6;
-    const availBands = reservationService.computeAvailBands(year, month, daysInMonth, bookings);
-
     html += `<div class="bm-month-block">`;
     html += `<div class="bm-month-label">${d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</div>`;
-    if (availBands.length > 0) html += `<div class="bm-avail-band">✓ Disponible : ${availBands.join(', ')}</div>`;
     html += `<div class="bm-cal-grid">`;
     for (let i = 0; i < firstDay; i++) html += `<div class="bm-day bm-empty"></div>`;
 
@@ -337,7 +313,6 @@ function resetBookingModal() {
   bm.booker = null; bm.bookerTab = 'member';
   bmCurrentStep = 'dates';
   const hint = document.getElementById('bm-dates-hint'); if (hint) hint.textContent = 'Sélectionnez votre date de départ';
-  const feedback = document.getElementById('bm-inline-feedback'); if (feedback) feedback.textContent = '';
   const di = document.getElementById('bm-dest-input'); if (di) di.value = '';
   const mi = document.getElementById('bm-motif-input'); if (mi) mi.value = '';
   const ni = document.getElementById('bm-external-name'); if (ni) ni.value = '';
@@ -394,8 +369,6 @@ function selectBooker(memberId) {
 function switchBookerTab(tab) {
   bm.bookerTab = tab;
   bm.booker = null;
-  const feedback = document.getElementById('bm-inline-feedback');
-  if (feedback) feedback.textContent = '';
   const memberList = document.getElementById('bm-booker-member-list');
   const externalDiv = document.getElementById('bm-booker-external');
   const tabs = document.querySelectorAll('#bm-booker-tabs .bm-booker-tab');
@@ -414,13 +387,10 @@ function switchBookerTab(tab) {
 
 function onExternalNameInput(val) {
   const name = (val || '').trim();
-  const feedback = document.getElementById('bm-inline-feedback');
   if (name) {
     bm.booker = { id: 'external', name, photo: null, type: 'external' };
-    if (feedback) feedback.textContent = '';
   } else {
     bm.booker = null;
-    if (feedback && bmCurrentStep === 'booker') feedback.textContent = 'Entrez le nom du locataire externe.';
   }
   renderBmSteps();
 }
@@ -464,6 +434,7 @@ async function confirmRangeBooking() {
 
   try {
     const booker = _resolveBooker();
+    window.__lastCelebrationRecap = bmBuildCelebrationRecap(res, res?.emoji || '🚗');
     const result = await reservationService.createCarReservation({
       resourceId: selectedResource,
       userId: booker.id,
@@ -498,6 +469,7 @@ async function createStay() {
 
   try {
     const booker = _resolveBooker();
+    window.__lastCelebrationRecap = bmBuildCelebrationRecap(resources.find(r => r.id === selectedResource), '🏠');
     const result = await reservationService.createStayReservation({
       resourceId: selectedResource,
       userId: booker.id,

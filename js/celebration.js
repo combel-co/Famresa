@@ -26,6 +26,21 @@ function celebrate(icon, title, xpText, subtitle) {
   document.getElementById('cel-title').textContent = title || 'Super !';
   document.getElementById('cel-xp').textContent = xpText || '';
   document.getElementById('cel-sub').textContent = subtitle || '';
+  const recapCard = document.getElementById('cel-recap-card');
+  const recap = window.__lastCelebrationRecap;
+  if (recapCard && recap) {
+    document.getElementById('cel-recap-icon').textContent = recap.icon || '🏠';
+    document.getElementById('cel-recap-name').textContent = recap.name || 'Ressource';
+    document.getElementById('cel-recap-sub').textContent = recap.sub || 'Réservation famille';
+    document.getElementById('cel-recap-arrivee').textContent = recap.arrivee || '—';
+    document.getElementById('cel-recap-depart').textContent = recap.depart || '—';
+    document.getElementById('cel-recap-duree').textContent = recap.duree || '—';
+    document.getElementById('cel-recap-participants').textContent = recap.participants || '—';
+    recapCard.style.display = '';
+  } else if (recapCard) {
+    recapCard.style.display = 'none';
+  }
+  window.__lastCelebrationRecap = null;
   celEl.style.display = 'flex';
   setTimeout(() => {
     celEl.style.display = 'none';
