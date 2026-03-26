@@ -254,12 +254,16 @@ function renderBmCalendar() {
           : `<div class="bm-booking-avatar">${getInitials(booking.userName || '?')}</div>`;
       }
 
-      const onclick = (!isPast && !booking) ? `onclick="onBmDayClick('${ds}')"` : '';
-      html += `<div class="${classes.join(' ')}" ${onclick}><span class="bm-day-num">${day}</span>${avHtml}</div>`;
+      const isInteractive = !isPast && !booking;
+      const onAction = isInteractive
+        ? `onclick="onBmDayClick('${ds}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();onBmDayClick('${ds}')}" tabindex="0" role="button" aria-label="Sélectionner le ${day}"`
+        : 'aria-disabled="true" tabindex="-1"';
+      html += `<div class="${classes.join(' ')}" ${onAction}><span class="bm-day-num">${day}</span>${avHtml}</div>`;
     }
     html += `</div></div>`;
   }
-  const signature = `${bm.startDate || ''}|${bm.endDate || ''}|${Object.keys(bookings || {}).length}`;
+  const bookingKeys = Object.keys(bookings || {}).sort().join(',');
+  const signature = `${bm.startDate || ''}|${bm.endDate || ''}|${bookingKeys}`;
   if (signature !== bmCalendarSignature || container.innerHTML !== html) {
     container.innerHTML = html;
     bmCalendarSignature = signature;
@@ -301,7 +305,7 @@ function renderDestSuggestions(query) {
   const list = q ? reservationService.DEST_PRESETS.filter(d => d.name.toLowerCase().includes(q)) : reservationService.DEST_PRESETS;
   container.innerHTML = list.map(d => {
     const sel = bm.destinations.some(x => x.name === d.name);
-    return `<button class="bm-dest-chip${sel ? ' selected' : ''}" onclick="toggleDestination('${d.name.replace(/'/g,"\\'")}',${d.km})">${d.name}</button>`;
+    return `<button type="button" class="bm-dest-chip${sel ? ' selected' : ''}" onclick="toggleDestination('${d.name.replace(/'/g,"\\'")}',${d.km})" aria-pressed="${sel ? 'true' : 'false'}">${d.name}</button>`;
   }).join('');
 }
 
@@ -360,7 +364,7 @@ function renderBookerMemberList() {
   const container = document.getElementById('bm-booker-member-list');
   if (!container) return;
   // "Moi-même" option + all members
-  let html = `<div class="bm-member-item${!bm.booker ? ' selected' : ''}" onclick="selectBooker(null)">
+  let html = `<div class="bm-member-item${!bm.booker ? ' selected' : ''}" onclick="selectBooker(null)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectBooker(null)}" tabindex="0" role="button" aria-pressed="${!bm.booker ? 'true' : 'false'}">
     <div class="bm-member-avatar">${currentUser.photo ? '<img src="' + currentUser.photo + '" alt="">' : getInitials(currentUser.name || '?')}</div>
     <div class="bm-member-name">Moi-même</div>
   </div>`;
@@ -368,7 +372,7 @@ function renderBookerMemberList() {
     if (m.id === currentUser.id) continue;
     const sel = bm.booker && bm.booker.id === m.id ? ' selected' : '';
     const avatar = m.photo ? '<img src="' + m.photo + '" alt="">' : (m.initials || '?');
-    html += `<div class="bm-member-item${sel}" onclick="selectBooker('${m.id}')">
+    html += `<div class="bm-member-item${sel}" onclick="selectBooker('${m.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectBooker('${m.id}')}" tabindex="0" role="button" aria-pressed="${sel ? 'true' : 'false'}">
       <div class="bm-member-avatar">${avatar}</div>
       <div class="bm-member-name">${m.name}</div>
     </div>`;
