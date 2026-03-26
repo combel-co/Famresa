@@ -169,9 +169,9 @@ const reservationService = {
    * Early return with time update, optional vehicle status, and fuel level.
    * @param {string} bookingId
    * @param {string} resourceId
-   * @param {{ returnHour: string, needsCleaning?: boolean, needsRepair?: boolean, notes?: string, fuelLevel?: number|null }} options
+   * @param {{ returnHour: string, needsCleaning?: boolean, needsRepair?: boolean, notes?: string, fuelLevel?: number|null, cleanliness?: string|null, reportedBy?: string|null }} options
    */
-  async earlyReturn(bookingId, resourceId, { returnHour, needsCleaning, needsRepair, notes, fuelLevel }) {
+  async earlyReturn(bookingId, resourceId, { returnHour, needsCleaning, needsRepair, notes, fuelLevel, cleanliness, reportedBy }) {
     const today = new Date().toISOString().slice(0, 10);
 
     // Mark reservation as returned
@@ -184,6 +184,10 @@ const reservationService = {
     if (fuelLevel !== null && fuelLevel !== undefined) {
       reservationUpdate.fuelReturnLevel = fuelLevel;
     }
+    if (cleanliness) reservationUpdate.carCleanliness = cleanliness;
+    if (notes) reservationUpdate.carReturnNote = notes;
+    if (reportedBy) reservationUpdate.reportedBy = reportedBy;
+    reservationUpdate.reportedAt = new Date().toISOString();
     await reservationRepository.update(bookingId, reservationUpdate);
 
     // Update resource: fuel level and/or vehicle status
@@ -195,9 +199,24 @@ const reservationService = {
         needsCleaning: needsCleaning || false,
         needsRepair: needsRepair || false,
         notes: notes || '',
+        carCleanliness: cleanliness || null,
+        carReturnNote: notes || '',
+        reportedBy: reportedBy || null,
         reportedAt: new Date().toISOString()
       });
     }
+  },
+
+  /**
+   * Declare house exit state (manual, declarative).
+   */
+  async reportHouseExitState(resourceId, { state, note, reportedBy }) {
+    await resourceRepository.updateStatus(resourceId, {
+      houseExitState: state || null,
+      houseExitNote: note || '',
+      reportedBy: reportedBy || null,
+      reportedAt: new Date().toISOString()
+    });
   },
 
   /**

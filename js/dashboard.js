@@ -13,6 +13,42 @@ function formatRelativeDate(dateStr) {
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
 }
 
+function getResourceBookingForDate(dateStr, resourceId) {
+  const b = bookings[dateStr];
+  if (!b || b.returnedAt) return null;
+  const bResourceId = b.ressource_id || b.resourceId || selectedResource;
+  if (resourceId && bResourceId !== resourceId) return null;
+  return b;
+}
+
+function getCurrentResourceBookingState(resourceId) {
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const todayBooking = getResourceBookingForDate(todayStr, resourceId);
+  if (todayBooking) {
+    const end = todayBooking.endDate || todayBooking.date_fin || todayStr;
+    const next = new Date(end + 'T00:00:00');
+    next.setDate(next.getDate() + 1);
+    const nextStr = `${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}-${String(next.getDate()).padStart(2,'0')}`;
+    return {
+      occupied: true,
+      booking: todayBooking,
+      occupiedUntil: end,
+      freeFrom: nextStr
+    };
+  }
+
+  const d = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let freeUntil = null;
+  for (let i = 0; i < 120; i++) {
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (getResourceBookingForDate(ds, resourceId)) break;
+    freeUntil = ds;
+    d.setDate(d.getDate() + 1);
+  }
+  return { occupied: false, freeUntil: freeUntil || todayStr };
+}
+
 function getNextFreeDate() {
   const d = new Date();
   for (let i = 0; i < 60; i++) {
@@ -21,6 +57,105 @@ function getNextFreeDate() {
     d.setDate(d.getDate() + 1);
   }
   return null;
+}
+
+function renderTripBanner(resourceId) {
+  const banner = document.getElementById('trip-banner');
+  if (!banner || !currentUser) return;
+  const titleEl = document.getElementById('trip-banner-title');
+  const subEl = document.getElementById('trip-banner-sub');
+  const iconEl = document.getElementById('trip-banner-icon');
+  const res = resources.find(r => r.id === resourceId);
+  const today = new Date();
+  const upcomingMine = getUniqueBookingsSorted()
+    .filter((b) => {
+      const bRes = b.ressource_id || b.resourceId || selectedResource;
+      const start = b.startDate || b.date || '';
+      return b.userId === currentUser.id && bRes === resourceId && start >= today.toISOString().slice(0, 10);
+    })
+    .sort((a, b) => (a.startDate || a.date || '').localeCompare(b.startDate || b.date || ''))[0];
+
+  if (!upcomingMine) {
+    banner.style.display = 'none';
+    return false;
+  }
+  const start = new Date((upcomingMine.startDate || upcomingMine.date) + 'T00:00:00');
+  const diffDays = Math.ceil((start.getTime() - today.setHours(0, 0, 0, 0)) / 86400000);
+  if (diffDays < 0 || diffDays > 7) {
+    banner.style.display = 'none';
+    return false;
+  }
+
+  const endDate = upcomingMine.endDate || upcomingMine.startDate || upcomingMine.date;
+  const nights = Math.max(1, Math.round((new Date(endDate + 'T00:00:00') - new Date((upcomingMine.startDate || upcomingMine.date) + 'T00:00:00')) / 86400000));
+  if (titleEl) titleEl.textContent = `${res?.name || 'Ressource'} · dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+  if (subEl) subEl.textContent = `${formatRelativeDate(upcomingMine.startDate || upcomingMine.date)} → ${formatRelativeDate(endDate)} · ${nights} nuit${nights > 1 ? 's' : ''}`;
+  if (iconEl) iconEl.textContent = res?.emoji || (res?.type === 'house' ? '🏠' : '🚗');
+  banner.style.display = '';
+  return true;
+}
+
+function renderWeekStrip(resourceId) {
+  const wrap = document.getElementById('dash-week-strip');
+  if (!wrap) return;
+  const labels = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+  const today = new Date();
+  const base = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const booking = getResourceBookingForDate(ds, resourceId);
+    const isToday = i === 0;
+    const isMine = booking && currentUser && booking.userId === currentUser.id;
+    const dayLabel = isToday ? 'Auj' : labels[d.getDay()];
+    let av = '<div class="dash-week-free"></div>';
+    if (booking) {
+      const initials = getInitials(booking.userName || '?');
+      let cls = '';
+      if (initials === 'AG') cls = 'ag';
+      else if (initials === 'MC') cls = 'mc';
+      else if (initials === 'GA') cls = 'ga';
+      av = `<div class="dash-week-avatar ${cls}">${initials}</div>`;
+    }
+    html += `<div class="dash-week-day${isToday ? ' today' : ''}${isMine ? ' mine' : ''}">
+      <div class="dash-week-lbl">${dayLabel}</div>
+      <div class="dash-week-num">${d.getDate()}</div>
+      ${av}
+    </div>`;
+  }
+  wrap.innerHTML = html;
+}
+
+function renderBedIcons(totalBeds, occupiedBeds) {
+  const total = Math.max(0, Number(totalBeds || 0));
+  const occupied = Math.max(0, Math.min(total, Number(occupiedBeds || 0)));
+  const shown = Math.min(total, 8);
+  let icons = '';
+  for (let i = 0; i < shown; i++) {
+    const filled = i < occupied;
+    icons += `<span style="opacity:${filled ? '1' : '0.25'}">🛏</span>`;
+  }
+  return `<div style="font-size:11px;line-height:1.1;display:flex;gap:2px;align-items:center">${icons}</div>`;
+}
+
+function getCtClass(ctLabel) {
+  if (!ctLabel) return '';
+  const now = new Date();
+  const yearMatch = String(ctLabel).match(/(20\d{2})/);
+  if (!yearMatch) return '';
+  const year = Number(yearMatch[1]);
+  const monthMap = { jan: 0, fev: 1, fév: 1, mar: 2, avr: 3, mai: 4, jun: 5, jui: 6, jul: 6, aou: 7, août: 7, sep: 8, oct: 9, nov: 10, dec: 11, déc: 11 };
+  const lower = ctLabel.toLowerCase();
+  let month = 11;
+  Object.keys(monthMap).forEach((k) => {
+    if (lower.includes(k)) month = monthMap[k];
+  });
+  const expiry = new Date(year, month, 1);
+  const diffMonths = (expiry.getFullYear() - now.getFullYear()) * 12 + (expiry.getMonth() - now.getMonth());
+  if (diffMonths < 0) return 'warn';
+  if (diffMonths <= 3) return 'warn';
+  return 'ok';
 }
 
 function renderUpcomingBookings() {
@@ -46,15 +181,19 @@ function renderUpcomingBookings() {
     const isMe = currentUser && b.userId === currentUser.id;
     const avClass = `ccv2-booking-av${isMe ? ' me' : ''}`;
     const av = b.photo ? `<img src="${b.photo}" alt="">` : getInitials(b.userName || 'C');
-    const dateLabel = formatRelativeDate(b.startDate || b.date || '');
+    const startDate = b.startDate || b.date || '';
+    const rawDiff = Math.ceil((new Date(startDate + 'T00:00:00') - new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00')) / 86400000);
+    const dateLabel = (isMe && rawDiff >= 0 && rawDiff <= 7)
+      ? `Dans ${rawDiff} jour${rawDiff > 1 ? 's' : ''}`
+      : formatRelativeDate(startDate);
     const dest = getBookingDestinationLabel(b);
     return `<div class="ccv2-booking-row">
       <div class="${avClass}">${av}</div>
       <div class="ccv2-booking-info">
-        <div class="ccv2-booking-name">${b.userName || 'Utilisateur'}</div>
+        <div class="ccv2-booking-name">${b.userName || 'Utilisateur'}${isMe ? ' · moi' : ''}</div>
         <div class="ccv2-booking-dest">${dest}</div>
       </div>
-      <div class="ccv2-booking-date">${dateLabel}</div>
+      <div class="ccv2-booking-date${isMe && rawDiff >= 0 && rawDiff <= 7 ? ' soon' : ''}">${dateLabel}</div>
     </div>`;
   }).join('');
 }
@@ -62,16 +201,22 @@ function renderUpcomingBookings() {
 function renderExperiencePanels() {
   const monthEntries = getMonthBookingEntries();
   const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
-  const todayBookingRaw = bookings[todayStr];
-  const todayBooking = todayBookingRaw && !todayBookingRaw.returnedAt ? todayBookingRaw : null;
   const res = resources.find(r => r.id === selectedResource);
   const isHouse = res && res.type === 'house';
+  const state = getCurrentResourceBookingState(selectedResource);
+  const todayBooking = state.occupied ? state.booking : null;
 
-  // ── Nom, emoji, sous-titre ──
+  // ── Nom, media, sous-titre ──
   const cardEmoji = document.getElementById('resource-card-emoji');
+  const cardPhoto = document.getElementById('resource-card-photo');
   const cardTitle = document.getElementById('resource-card-title');
   const cardSubtitle = document.getElementById('resource-card-subtitle');
   if (cardEmoji) cardEmoji.textContent = res?.emoji || (isHouse ? '🏠' : '🚗');
+  if (cardPhoto) {
+    if (res?.photoUrl) cardPhoto.innerHTML = `<img src="${res.photoUrl}" alt="">`;
+    else if (isHouse) cardPhoto.innerHTML = '';
+    else cardPhoto.innerHTML = `<span id="resource-card-emoji">${res?.emoji || '🚗'}</span>`;
+  }
   if (cardTitle) cardTitle.textContent = res?.name || (isHouse ? 'Maison' : 'Voiture');
   if (cardSubtitle) {
     if (!isHouse && res?.plaque) cardSubtitle.textContent = res.plaque;
@@ -82,28 +227,88 @@ function renderExperiencePanels() {
   // ── Badge disponibilité ──
   const badge = document.getElementById('availability-badge');
   const statusText = document.getElementById('car-status-text');
+  const mainCard = document.getElementById('resource-main-card');
+  if (mainCard) {
+    mainCard.classList.remove('state-available', 'state-occupied', 'state-soon');
+  }
   if (badge && statusText) {
     if (todayBooking) {
       badge.className = 'ccv2-badge reserved';
-      statusText.textContent = isHouse ? `Séjour de ${todayBooking.userName}` : `En cours · ${todayBooking.userName}`;
+      statusText.textContent = isHouse ? 'Occupee' : 'Occupee';
+      if (mainCard) mainCard.classList.add('state-occupied');
     } else {
       badge.className = 'ccv2-badge available';
-      statusText.textContent = isHouse ? 'Disponible' : 'Disponible';
+      statusText.textContent = 'Libre';
+      if (mainCard) mainCard.classList.add('state-available');
     }
   }
 
   // ── Info grid (voiture) ──
   const infoGrid = document.getElementById('car-info-grid');
-  if (infoGrid) infoGrid.style.display = isHouse ? 'none' : '';
+  if (infoGrid) infoGrid.style.display = '';
+  if (infoGrid) infoGrid.onclick = isHouse ? showGuideSheet : showCarInfo;
 
-  const infoPlaque = document.getElementById('info-plaque');
   const infoAssurance = document.getElementById('info-assurance');
   const infoCt = document.getElementById('info-ct');
-  const infoKmOdo = document.getElementById('info-km-odo');
-  if (infoPlaque) infoPlaque.textContent = res?.plaque || '—';
-  if (infoAssurance) infoAssurance.textContent = res?.assurance || '—';
-  if (infoCt) infoCt.textContent = res?.ct || '—';
-  if (infoKmOdo) infoKmOdo.textContent = res?.kmOdometer ? `${Number(res.kmOdometer).toLocaleString('fr-FR')} km` : '—';
+  if (isHouse && infoGrid) {
+    const capacity = Number(res?.capacity || 8);
+    const occupiedBeds = Number(todayBooking?.occupiedBeds || todayBooking?.guestCount || todayBooking?.peopleCount || (state.occupied ? 1 : 0));
+    const beds = renderBedIcons(capacity, occupiedBeds);
+    const exitRaw = res?.houseExitState || '';
+    const exitLabel = exitRaw === 'nickel' ? 'Nickel'
+      : exitRaw === 'cleanup' ? 'A nettoyer'
+      : exitRaw === 'issue' ? 'Probleme'
+      : 'Non renseigne';
+    infoGrid.innerHTML = `
+      <div class="dash-kpi-item">
+        <div class="ccv2-label">Capacite</div>
+        <div class="ccv2-value">${occupiedBeds}/${capacity} couchages</div>
+        ${beds}
+      </div>
+      <div class="dash-kpi-item">
+        <div class="ccv2-label">Guide d'entree</div>
+        <div class="ccv2-value ok">Acceder</div>
+      </div>
+      <div class="dash-kpi-item">
+        <div class="ccv2-label">Etat laisse</div>
+        <div class="ccv2-value ${exitRaw === 'issue' ? 'warn' : (exitRaw === 'cleanup' ? 'warn' : (exitRaw === 'nickel' ? 'ok' : ''))}">${exitLabel}</div>
+      </div>
+    `;
+  } else {
+    if (infoGrid && !document.getElementById('info-assurance')) {
+      infoGrid.innerHTML = `
+      <div class="dash-kpi-item" id="cell-assurance">
+        <div class="ccv2-label">Assurance</div>
+        <div class="ccv2-value" id="info-assurance">—</div>
+      </div>
+      <div class="dash-kpi-item" id="cell-ct">
+        <div class="ccv2-label">CT</div>
+        <div class="ccv2-value" id="info-ct">—</div>
+      </div>
+      <div class="dash-kpi-item" id="car-fuel-row">
+        <div class="ccv2-label">Reservoir</div>
+        <div id="car-fuel-display"></div>
+      </div>`;
+    }
+    const assuranceEl = document.getElementById('info-assurance');
+    const kpiLabel = document.querySelector('#cell-assurance .ccv2-label');
+    const clean = res?.carCleanliness || '';
+    const cleanLabel = clean === 'clean' ? 'Propre' : clean === 'average' ? 'Moyenne' : clean === 'dirty' ? 'Sale' : 'Non renseigne';
+    const ctEl = document.getElementById('info-ct');
+    if (kpiLabel) kpiLabel.textContent = 'Proprete';
+    if (assuranceEl) {
+      assuranceEl.textContent = cleanLabel;
+      assuranceEl.classList.remove('ok', 'warn');
+      if (clean === 'clean') assuranceEl.classList.add('ok');
+      if (clean === 'average' || clean === 'dirty') assuranceEl.classList.add('warn');
+    }
+    if (ctEl) {
+      ctEl.textContent = res?.ct || '—';
+      ctEl.classList.remove('ok', 'warn');
+      const ctClass = getCtClass(res?.ct || '');
+      if (ctClass) ctEl.classList.add(ctClass);
+    }
+  }
 
   // ── Réservoir ──
   const fuelDisplay = document.getElementById('car-fuel-display');
@@ -120,7 +325,10 @@ function renderExperiencePanels() {
 
   // ── Bouton Réserver ──
   const reserveBtn = document.getElementById('reserve-cta-btn');
-  if (reserveBtn) reserveBtn.textContent = isHouse ? 'Réserver la maison' : 'Réserver la voiture';
+  if (reserveBtn) {
+    if (state.occupied) reserveBtn.textContent = `Réserver dès le ${formatRelativeDate(state.freeFrom)}`;
+    else reserveBtn.textContent = isHouse ? 'Réserver la maison' : 'Réserver la voiture';
+  }
 
   // ── Bouton "Rendre plus tôt" (visible si réservation active aujourd'hui pour moi, voiture uniquement) ──
   const earlyReturnContainer = document.getElementById('early-return-container');
@@ -137,9 +345,20 @@ function renderExperiencePanels() {
   // ── Prochain créneau libre ──
   const nextSlot = document.getElementById('next-slot-text');
   if (nextSlot) {
-    const freeDate = getNextFreeDate();
-    nextSlot.textContent = freeDate ? `Prochain créneau libre · ${formatRelativeDate(freeDate)}` : '';
+    if (state.occupied) {
+      const who = todayBooking?.userName || 'Quelqu’un';
+      nextSlot.innerHTML = `${who} · <strong>jusqu'au ${formatRelativeDate(state.occupiedUntil)}</strong> · libre dès ${formatRelativeDate(state.freeFrom)}`;
+    } else {
+      nextSlot.innerHTML = `Libre <strong>jusqu'au ${formatRelativeDate(state.freeUntil)}</strong>`;
+    }
   }
+
+  const hasSoonTrip = renderTripBanner(selectedResource);
+  if (hasSoonTrip && !state.occupied && mainCard) {
+    mainCard.classList.remove('state-available');
+    mainCard.classList.add('state-soon');
+  }
+  renderWeekStrip(selectedResource);
 
   // ── Prochaines réservations ──
   renderUpcomingBookings();

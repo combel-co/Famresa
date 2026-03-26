@@ -159,48 +159,60 @@
       </article>
     </div>
 
-    <!-- Carte voiture v2 (inline design) -->
+    <div class="dash-trip-banner" id="trip-banner" style="display:none">
+      <div class="dash-trip-icon" id="trip-banner-icon">🏠</div>
+      <div class="dash-trip-copy">
+        <div class="dash-trip-kicker">Votre sejour approche</div>
+        <div class="dash-trip-title" id="trip-banner-title">Le 5 · dans 2 jours</div>
+        <div class="dash-trip-sub" id="trip-banner-sub">27 mars -> 30 mars · 3 nuits</div>
+      </div>
+    </div>
+
+    <!-- Carte ressource dashboard -->
     <div class="ccv2-card" id="resource-main-card">
-      <div class="ccv2-top">
-        <div>
-          <div class="ccv2-name" id="resource-card-title">Voiture</div>
-          <div class="ccv2-model" id="resource-card-subtitle">—</div>
+      <div class="dash-hero">
+        <div class="dash-hero-media" id="resource-card-photo">
+          <span id="resource-card-emoji">🚗</span>
         </div>
-        <div class="ccv2-badge available" id="availability-badge">
-          <div class="ccv2-dot" id="car-status-dot"></div>
-          <span id="car-status-text">Disponible</span>
+        <div class="dash-hero-overlay"></div>
+        <div class="dash-hero-content">
+          <div>
+            <div class="ccv2-name" id="resource-card-title">Voiture</div>
+            <div class="ccv2-model" id="resource-card-subtitle">—</div>
+          </div>
+          <div class="ccv2-badge available" id="availability-badge">
+            <div class="ccv2-dot" id="car-status-dot"></div>
+            <span id="car-status-text">Disponible</span>
+          </div>
         </div>
       </div>
-      <div class="ccv2-illustration"><span id="resource-card-emoji">🚗</span></div>
-      <div class="ccv2-grid" id="car-info-grid" onclick="showCarInfo()">
-        <div class="ccv2-cell" id="cell-plaque">
-          <div class="ccv2-label">Immatriculation</div>
-          <div class="ccv2-value" id="info-plaque">—</div>
-        </div>
-        <div class="ccv2-cell" id="cell-assurance">
+      <div class="dash-context-strip" id="dash-context-strip">
+        <div class="dash-context-text" id="next-slot-text">Libre jusqu'au 16 avril</div>
+        <div class="dash-context-link" id="dash-context-link">Voir le calendrier →</div>
+      </div>
+      <div class="dash-kpi-strip" id="car-info-grid" onclick="showCarInfo()">
+        <div class="dash-kpi-item" id="cell-assurance">
           <div class="ccv2-label">Assurance</div>
           <div class="ccv2-value" id="info-assurance">—</div>
         </div>
-        <div class="ccv2-cell" id="cell-ct">
-          <div class="ccv2-label">Contrôle technique</div>
+        <div class="dash-kpi-item" id="cell-ct">
+          <div class="ccv2-label">CT</div>
           <div class="ccv2-value" id="info-ct">—</div>
         </div>
-        <div class="ccv2-cell" id="cell-km-odo">
-          <div class="ccv2-label">Kilométrage</div>
-          <div class="ccv2-value" id="info-km-odo">—</div>
-        </div>
-        <div class="ccv2-cell full" id="car-fuel-row">
-          <div class="ccv2-label">Réservoir</div>
+        <div class="dash-kpi-item" id="car-fuel-row">
+          <div class="ccv2-label">Reservoir</div>
           <div id="car-fuel-display"></div>
         </div>
       </div>
       <div class="ccv2-reserve-wrap">
         <button class="ccv2-btn-reserve" id="reserve-cta-btn" onclick="openBookingModal()">Réserver la voiture</button>
         <div id="early-return-container" style="display:none"></div>
-        <button class="ccv2-btn-manage" onclick="showResourceManagePage(selectedResource)" style="margin-top:8px;width:100%;padding:10px;border:1.5px solid var(--accent,#4f8cff);background:transparent;color:var(--accent,#4f8cff);border-radius:12px;font-size:0.97em;font-weight:600;cursor:pointer;">Gérer la ressource</button>
+        <button class="ccv2-btn-manage-link" onclick="showResourceManagePage(selectedResource)">Gerer la ressource</button>
       </div>
-      <div class="ccv2-next-slot" id="next-slot-text">Prochain créneau libre · Aujourd'hui</div>
     </div>
+
+    <div class="ccv2-section-label">Cette semaine</div>
+    <div class="dash-week-strip" id="dash-week-strip"></div>
 
     <div id="post-trip-reminder"></div>
 
