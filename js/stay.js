@@ -70,6 +70,7 @@ async function showStaySheet(groupId, bookingHint) {
       <div style="display:flex;flex-direction:column;gap:10px">
         <button class="btn btn-primary" onclick="showChecklistSheet('${groupId}', 'checkin')">✅ Checklist arrivée</button>
         <button class="btn btn-primary" onclick="showChecklistSheet('${groupId}', 'checkout')">📋 Checklist départ</button>
+        <button class="btn" style="background:#eff6ff;color:var(--accent)" onclick="showHouseExitReportSheet('${groupId}')">🧾 Etat de sortie</button>
         <button class="btn" style="background:var(--accent-light);color:var(--accent)" onclick="showEventsSheet('${groupId}')">📝 Journal du séjour</button>
         <button class="btn" style="background:#f0fdf4;color:#16a34a" onclick="showGuideSheet()">📖 Guide maison</button>
       </div>
@@ -77,6 +78,51 @@ async function showStaySheet(groupId, bookingHint) {
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>
     </div>`;
   document.getElementById('overlay').classList.add('open');
+}
+
+function showHouseExitReportSheet(groupId) {
+  document.getElementById('sheet-content').innerHTML = `
+    <div class="login-sheet">
+      <h2>Etat laisse a la maison</h2>
+      <div class="input-group">
+        <label>Etat</label>
+        <select id="house-exit-state">
+          <option value="">Non renseigne</option>
+          <option value="nickel">Nickel</option>
+          <option value="cleanup">A nettoyer</option>
+          <option value="issue">Probleme signale</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Note (optionnel)</label>
+        <textarea id="house-exit-note" rows="3" placeholder="Ex: draps laves, ampoule salon HS" style="resize:none;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;width:100%"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="submitHouseExitReport('${groupId}')">Valider</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="showStaySheet('${groupId}')">Retour</button>
+    </div>`;
+}
+
+async function submitHouseExitReport(groupId) {
+  const state = document.getElementById('house-exit-state')?.value || '';
+  const note = (document.getElementById('house-exit-note')?.value || '').trim();
+  try {
+    await reservationService.reportHouseExitState(selectedResource, {
+      state,
+      note,
+      reportedBy: currentUser?.name || null
+    });
+    const res = resources.find(r => r.id === selectedResource);
+    if (res) {
+      res.houseExitState = state || null;
+      res.houseExitNote = note || '';
+      res.reportedBy = currentUser?.name || null;
+      res.reportedAt = new Date().toISOString();
+    }
+    showToast('Etat de sortie enregistre ✓');
+    showStaySheet(groupId);
+  } catch (_) {
+    showToast('Erreur — reessayez');
+  }
 }
 
 function confirmCancelStay(groupId) {

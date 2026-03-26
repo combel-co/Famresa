@@ -153,7 +153,9 @@
     max-width: 520px;
     margin: 0 auto;
     width: 100%;
-    padding: 0 20px 20px;
+    padding: 0 20px calc(20px + env(safe-area-inset-bottom) + 76px);
+    position: relative;
+    z-index: 1;
   }
 
   /* ---- PULL-TO-REFRESH INDICATOR ---- */
@@ -196,6 +198,8 @@
   /* ═══════════════════════════════════════════
      CALENDAR
      ═══════════════════════════════════════════ */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
   /* ---- CALENDAR TAB — scrollable layout ---- */
   .tab-panel.active#tab-calendar {
     padding: 0;
@@ -458,6 +462,9 @@
   padding: 8px 20px 0;
   padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
   flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 500;
 }
 
 .nav-item {
@@ -833,6 +840,68 @@
      ═══════════════════════════════════════════ */
   /* ---- CAR CARD V2 (ccv2) ---- */
   .ccv2-card { margin-bottom:12px; background:#f7f6f2; border:0.5px solid #e5e4df; border-radius:20px; overflow:hidden; }
+  .ccv2-card.state-available { background:#f7f6f2; border-color:#e5e4df; }
+  .ccv2-card.state-occupied { background:#fffaf0; border-color:#fde68a; }
+  .ccv2-card.state-soon { background:#f0faf4; border-color:#bbf7d0; }
+  .dash-hero { position:relative; min-height:154px; }
+  .dash-hero-media {
+    height:154px; display:flex; align-items:center; justify-content:center;
+    font-size:68px; background:linear-gradient(160deg,#dbeafe 0%,#bfdbfe 50%,#93c5fd 100%);
+  }
+  .dash-hero-media img { width:100%; height:100%; object-fit:cover; }
+  .dash-hero-overlay {
+    position:absolute; inset:0;
+    background:linear-gradient(to bottom, rgba(0,0,0,0) 35%, rgba(0,0,0,0.55) 100%);
+  }
+  .dash-hero-content {
+    position:absolute; left:12px; right:12px; bottom:10px; z-index:2;
+    display:flex; justify-content:space-between; align-items:flex-end; gap:10px;
+  }
+  .dash-hero-content .ccv2-name,
+  .dash-hero-content .ccv2-model { color:#fff; }
+  .dash-hero-content .ccv2-model { color:rgba(255,255,255,0.78); }
+  .dash-context-strip {
+    padding:10px 14px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:0.5px solid #e5e4df; gap:10px;
+  }
+  .dash-context-text { font-size:13px; color:var(--text); }
+  .dash-context-link { font-size:11px; font-weight:500; color:var(--accent); white-space:nowrap; }
+  .dash-kpi-strip { display:flex; border-bottom:0.5px solid #e5e4df; }
+  .dash-kpi-item { flex:1; padding:10px 12px; }
+  .dash-kpi-item + .dash-kpi-item { border-left:0.5px solid #e5e4df; }
+  .ccv2-btn-manage-link {
+    margin-top:8px; width:100%; border:none; background:transparent; cursor:pointer;
+    color:var(--text-muted); font-size:12px; font-weight:500; text-align:center;
+    text-decoration:none; font-family:'DM Sans', sans-serif;
+  }
+  .dash-trip-banner {
+    margin-bottom:8px; border-radius:16px; padding:12px 14px; display:flex; align-items:center; gap:10px;
+    background:linear-gradient(135deg,#1f4b37 0%,#2d6a4f 100%);
+  }
+  .dash-trip-icon {
+    width:34px; height:34px; border-radius:10px; flex-shrink:0; font-size:18px;
+    display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.16);
+  }
+  .dash-trip-kicker { font-size:10px; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:0.3px; }
+  .dash-trip-title { font-size:14px; font-weight:500; color:#fff; }
+  .dash-trip-sub { font-size:11px; color:rgba(255,255,255,0.7); margin-top:2px; }
+  .dash-week-strip { display:flex; gap:4px; margin-bottom:10px; }
+  .dash-week-day {
+    flex:1; min-width:0; border-radius:10px; border:0.5px solid #e5e4df; background:#fff;
+    padding:6px 2px; display:flex; flex-direction:column; align-items:center; gap:4px;
+  }
+  .dash-week-day.today { border-color:var(--accent-border); background:var(--accent-light); }
+  .dash-week-day.mine { border-color:var(--success-border); background:#f0faf4; }
+  .dash-week-lbl { font-size:8px; color:#9b9b9b; text-transform:uppercase; letter-spacing:0.3px; font-weight:500; }
+  .dash-week-num { font-size:11px; color:#6b6b6b; font-weight:500; }
+  .dash-week-avatar {
+    width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:7px; font-weight:600; border:0.5px solid #e5e4df; background:#f7f6f2; color:#6b6b6b;
+  }
+  .dash-week-avatar.ag { background:#fde0e8; color:#9d3455; border-color:#f9c0d0; }
+  .dash-week-avatar.mc { background:#d0e8fd; color:#1a4a7a; border-color:#b3d4f5; }
+  .dash-week-avatar.ga { background:#efe6db; color:#6f5a45; border-color:#e5d8c7; }
+  .dash-week-free { width:4px; height:4px; border-radius:50%; background:#d9eee3; }
   .ccv2-top { display:flex; justify-content:space-between; align-items:flex-start; padding:16px 16px 0; }
   .ccv2-name { font-size:17px; font-weight:500; color:var(--text); line-height:1.2; }
   .ccv2-model { font-size:12px; color:#6b6b6b; margin-top:2px; }
@@ -855,6 +924,8 @@
   .ccv2-fuel-fill { height:100%; border-radius:3px; }
   .ccv2-reserve-wrap { padding:10px 14px 0; }
   .ccv2-btn-reserve { width:100%; padding:14px; background:var(--text); color:#fff; border:none; border-radius:14px; font-size:15px; font-weight:500; font-family:'DM Sans',sans-serif; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .ccv2-card.state-occupied .ccv2-btn-reserve { background:#92400e; }
+  .ccv2-card.state-soon .ccv2-btn-reserve { background:var(--success); }
   .ccv2-btn-reserve:active { opacity:0.8; }
   .ccv2-next-slot { padding:6px 14px 14px; text-align:center; font-size:11px; color:#9b9b9b; }
   .ccv2-section-label { font-size:11px; font-weight:500; color:#6b6b6b; padding:10px 0 6px; text-transform:uppercase; letter-spacing:0.4px; }
@@ -866,9 +937,11 @@
   .ccv2-booking-name { font-size:13px; font-weight:500; color:var(--text); }
   .ccv2-booking-dest { font-size:11px; color:#6b6b6b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .ccv2-booking-date { font-size:11px; color:#9b9b9b; white-space:nowrap; }
+  .ccv2-booking-date.soon { color:var(--success); font-weight:600; }
   /* Resource pills */
   .resource-pill-dot { width:6px; height:6px; border-radius:50%; background:#e5e4df; flex-shrink:0; }
   .resource-tab .resource-pill-dot.available { background:var(--success); }
+  .resource-tab .resource-pill-dot.occupied { background:var(--warning); }
 
   /* ═══════════════════════════════════════════
      PROFILE TAB (pf-*)
@@ -1330,7 +1403,7 @@
   /* ---- RESPONSIVE ---- */
   @media (max-width: 480px) {
     header { padding: 16px 18px; }
-    main { padding: 0 14px 20px; }
+    main { padding: 0 14px calc(20px + env(safe-area-inset-bottom) + 76px); }
     .resource-tabs { margin-left: -14px; margin-right: -14px; padding-left: 14px; padding-right: 14px; }
     :root { --header-h: 77px; }  /* mobile: padding 16+16 + content 44 + border 1 */
     .cal-day { font-size: 13px; border-radius: 10px; height: 48px; padding-top: 7px; padding-bottom: 18px; }

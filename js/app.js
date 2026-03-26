@@ -131,11 +131,21 @@ document.addEventListener('click', function (e) {
 // TAB SWITCHING
 // ==========================================
 function switchTab(tab) {
-  const normalizedTab = tab === 'resource' ? 'dashboard' : tab;
+  const normalizedTab = (tab === 'resource')
+    ? 'dashboard'
+    : (tab === 'planning' ? 'calendar' : (tab === 'profile' ? 'history' : tab));
   activeTab = normalizedTab;
   ['dashboard', 'calendar', 'history'].forEach(name => {
-    document.getElementById(`tab-${name}`)?.classList.toggle('active', name === normalizedTab);
-    document.getElementById(`nav-${name}`)?.classList.toggle('active', name === normalizedTab);
+    const isActive = name === normalizedTab;
+    const panel = document.getElementById(`tab-${name}`);
+    if (panel) panel.classList.toggle('active', isActive);
+    const legacyNavBtn = document.getElementById(`nav-${name}`);
+    if (legacyNavBtn) legacyNavBtn.classList.toggle('active', isActive);
+  });
+  document.querySelectorAll('.bottom-nav .nav-item[data-tab]').forEach((item) => {
+    const t = item.getAttribute('data-tab');
+    const mapped = t === 'planning' ? 'calendar' : (t === 'profile' ? 'history' : t);
+    item.classList.toggle('active', mapped === normalizedTab);
   });
   // Hide header banner and resource tabs on profile tab
   const appHeader = document.getElementById('app-header');

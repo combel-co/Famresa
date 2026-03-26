@@ -263,8 +263,10 @@ function renderResourceTabs() {
 
   const pills = resources.map(res => {
     const isActive = res.id === selectedResource;
-    const isAvailable = !bookings[todayStr] || (bookings[todayStr] && bookings[todayStr].resourceId !== res.id);
-    const dotCls = `resource-pill-dot${isAvailable ? ' available' : ''}`;
+    const dayBooking = bookings[todayStr];
+    const bookingResId = dayBooking ? (dayBooking.ressource_id || dayBooking.resourceId || selectedResource) : null;
+    const isAvailable = !dayBooking || dayBooking.returnedAt || bookingResId !== res.id;
+    const dotCls = `resource-pill-dot${isAvailable ? ' available' : ' occupied'}`;
     const cls = `resource-tab${isActive ? ' active' : ''}`;
     return `<div class="${cls}" onclick="selectResource('${res.id}')">
       <div class="${dotCls}"></div>
@@ -477,12 +479,18 @@ async function showCarInfo() {
   const res = resources.find(r => r.id === selectedResource);
   if (!res) return;
   if (res.type === 'house') { showHouseInfo(); return; }
+  window._resourcePhotoDraft = res.photoUrl || null;
   const plaque = res.plaque || '';
   const assurance = res.assurance || '';
   const observations = res.observations || '';
+  const photoPreview = res.photoUrl
+    ? `<img src="${res.photoUrl}" alt="" style="width:100%;height:100%;object-fit:cover">`
+    : (res.emoji || '🚗');
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
-      <div style="font-size:52px;line-height:1;margin-bottom:8px;filter:drop-shadow(0 4px 10px rgba(37,99,235,0.15))">${res.emoji || '🚗'}</div>
+      <div id="resource-photo-preview" style="width:92px;height:92px;border-radius:16px;overflow:hidden;background:#f3f4f6;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:44px">${photoPreview}</div>
+      <label style="font-size:12px;color:var(--accent);cursor:pointer;text-decoration:underline" onclick="document.getElementById('resource-photo-input').click()">Modifier la photo</label>
+      <input type="file" id="resource-photo-input" accept="image/*" style="display:none" onchange="handleResourcePhoto(this)">
       <h2 style="margin:0 0 4px">${res.name}</h2>
       ${plaque ? `<div style="display:inline-block;font-size:12px;font-weight:700;color:var(--accent);background:rgba(99,102,241,0.10);border:1px solid rgba(99,102,241,0.18);border-radius:6px;padding:3px 10px;letter-spacing:0.5px;margin-bottom:20px">${plaque}</div>` : '<div style="margin-bottom:20px"></div>'}
       <div class="input-group">
@@ -507,10 +515,14 @@ async function saveCarInfo() {
   const plaque = (document.getElementById('car-plaque')?.value || '').trim().toUpperCase();
   const assurance = (document.getElementById('car-assurance')?.value || '').trim();
   const observations = (document.getElementById('car-observations')?.value || '').trim();
+  const photoUrl = window._resourcePhotoDraft || null;
   try {
-    await ressourcesRef().doc(selectedResource).update({ plaque, assurance, observations });
+    const updates = { plaque, assurance, observations };
+    if (photoUrl) updates.photoUrl = photoUrl;
+    await ressourcesRef().doc(selectedResource).update(updates);
     const res = resources.find(r => r.id === selectedResource);
-    if (res) Object.assign(res, { plaque, assurance, observations });
+    if (res) Object.assign(res, updates);
+    window._resourcePhotoDraft = null;
     closeSheet();
     showToast('Infos enregistrées ✓');
   } catch(e) { showToast('Erreur — réessayez'); }
@@ -523,8 +535,15 @@ async function saveCarInfo() {
 function showHouseInfo() {
   const res = resources.find(r => r.id === selectedResource);
   if (!res) return;
+  window._resourcePhotoDraft = res.photoUrl || null;
+  const photoPreview = res.photoUrl
+    ? `<img src="${res.photoUrl}" alt="" style="width:100%;height:100%;object-fit:cover">`
+    : (res.emoji || '🏠');
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
+      <div id="resource-photo-preview" style="width:92px;height:92px;border-radius:16px;overflow:hidden;background:#f3f4f6;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:44px">${photoPreview}</div>
+      <label style="font-size:12px;color:var(--accent);cursor:pointer;text-decoration:underline" onclick="document.getElementById('resource-photo-input').click()">Modifier la photo</label>
+      <input type="file" id="resource-photo-input" accept="image/*" style="display:none" onchange="handleResourcePhoto(this)">
       <h2>Info maison</h2>
       <div style="color:var(--text-light);font-size:13px;margin-bottom:20px">${res.emoji || '🏠'} ${res.name}</div>
       <div class="input-group">
@@ -544,13 +563,26 @@ function showHouseInfo() {
 async function saveHouseInfo() {
   const address = (document.getElementById('house-address')?.value || '').trim();
   const observations = (document.getElementById('house-observations')?.value || '').trim();
+  const photoUrl = window._resourcePhotoDraft || null;
   try {
-    await ressourcesRef().doc(selectedResource).update({ address, observations });
+    const updates = { address, observations };
+    if (photoUrl) updates.photoUrl = photoUrl;
+    await ressourcesRef().doc(selectedResource).update(updates);
     const res = resources.find(r => r.id === selectedResource);
-    if (res) Object.assign(res, { address, observations });
+    if (res) Object.assign(res, updates);
+    window._resourcePhotoDraft = null;
     closeSheet();
     showToast('Infos maison enregistrées ✓');
   } catch(e) { showToast('Erreur — réessayez'); }
+}
+
+function handleResourcePhoto(input) {
+  if (!input?.files?.[0]) return;
+  resizePhotoFile(input.files[0], (dataUrl) => {
+    window._resourcePhotoDraft = dataUrl;
+    const previewWrap = document.getElementById('resource-photo-preview');
+    if (previewWrap) previewWrap.innerHTML = `<img src="${dataUrl}" alt="" style="width:100%;height:100%;object-fit:cover">`;
+  });
 }
 
 // ==========================================

@@ -604,6 +604,15 @@ function showEarlyReturnSheet(bookingId) {
         <label>Notes (optionnel)</label>
         <input type="text" id="early-return-notes" placeholder="Ex: pneu avant droit à vérifier" autocomplete="off">
       </div>
+      <div class="input-group" style="margin-bottom:14px">
+        <label>Proprete au retour</label>
+        <select id="early-return-cleanliness">
+          <option value="">Non renseigne</option>
+          <option value="clean">Propre</option>
+          <option value="average">Moyenne</option>
+          <option value="dirty">Sale</option>
+        </select>
+      </div>
       <div style="margin-bottom:14px;padding-top:14px;border-top:1px solid var(--border)">
         <label style="font-size:13px;font-weight:600;display:block;margin-bottom:10px">Niveau d'essence rendu</label>
         <div class="fuel-selector">${renderFuelButtons()}</div>
@@ -622,6 +631,7 @@ async function confirmEarlyReturn(bookingId, resourceId) {
   const needsCleaning = document.getElementById('early-return-cleaning')?.checked || false;
   const needsRepair = document.getElementById('early-return-repair')?.checked || false;
   const notes = (document.getElementById('early-return-notes')?.value || '').trim();
+  const cleanliness = document.getElementById('early-return-cleanliness')?.value || '';
   const fuelLevel = selectedFuelLevel;
 
   if (!returnHour) {
@@ -635,7 +645,9 @@ async function confirmEarlyReturn(bookingId, resourceId) {
       needsCleaning,
       needsRepair,
       notes,
-      fuelLevel
+      fuelLevel,
+      cleanliness,
+      reportedBy: currentUser?.name || null
     });
     selectedFuelLevel = null;
 
@@ -643,6 +655,13 @@ async function confirmEarlyReturn(bookingId, resourceId) {
     if (fuelLevel !== null && fuelLevel !== undefined) {
       const res = resources.find(r => r.id === resourceId);
       if (res) res.fuelLevel = fuelLevel;
+    }
+    const res = resources.find(r => r.id === resourceId);
+    if (res) {
+      if (cleanliness) res.carCleanliness = cleanliness;
+      if (notes) res.carReturnNote = notes;
+      res.reportedBy = currentUser?.name || null;
+      res.reportedAt = new Date().toISOString();
     }
 
     closeSheet();
