@@ -5,14 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>FamResa — Réservation familiale</title>
 <meta name="description" content="FamResa — Réservation de ressources familiales, simple et rapide.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="FamResa">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#3d4a2e">
 <!-- Preconnect to external origins (parallel DNS+TLS handshakes) -->
 <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,7 +31,14 @@
 <!-- ── SPLASH SCREEN (visible immediately, hidden by JS) ── -->
 <div id="splash-screen" style="position:fixed;inset:0;z-index:999;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;transition:opacity 0.3s ease">
   <div style="display:flex;flex-direction:column;align-items:center;gap:16px;margin-bottom:48px">
-    <div style="width:64px;height:64px;border-radius:18px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:28px">🏠</div>
+    <div style="width:64px;height:64px;border-radius:18px;background:#3d4a2e;display:flex;align-items:center;justify-content:center">
+      <svg width="34" height="34" viewBox="0 0 32 36" fill="none" aria-hidden="true">
+        <path d="M16 2 L30 18 L2 18 Z" fill="#d4e8a0"/>
+        <rect x="5" y="17" width="22" height="17" rx="2.5" fill="#d4e8a0"/>
+        <rect x="14.5" y="17" width="3" height="15" rx="1.5" fill="#3d4a2e"/>
+        <circle cx="23" cy="28" r="3.5" fill="#f0d060"/>
+      </svg>
+    </div>
     <div style="font-size:26px;font-weight:500;letter-spacing:-0.5px;color:#1a1a1a;font-family:Georgia,serif">FamResa</div>
     <div style="font-size:13px;color:#aaa;margin-top:-10px">Réservez en famille</div>
   </div>
@@ -324,14 +332,14 @@
 <div class="toast" id="toast"></div>
 
 <!-- ===== BOOKING MODAL (full-screen Airbnb) ===== -->
-<div class="booking-modal" id="booking-modal">
+<div class="booking-modal" id="booking-modal" role="dialog" aria-modal="true" aria-label="Réservation">
   <div class="bm-header">
     <button class="bm-close" onclick="closeBookingModal()">✕</button>
   </div>
   <div class="bm-body" id="bm-body">
 
     <!-- STEP 1 — Dates (premier pas) -->
-    <div class="bm-step active" id="bm-step-dates">
+    <div class="bm-step active" id="bm-step-dates" role="group" aria-label="Étape dates">
       <!-- Mini -->
       <div class="bm-card-mini" onclick="goToStep('dates')">
         <div>
@@ -356,7 +364,7 @@
     </div>
 
     <!-- STEP 2 — Horaires (voiture uniquement) -->
-    <div class="bm-step upcoming" id="bm-step-hours">
+    <div class="bm-step upcoming" id="bm-step-hours" role="group" aria-label="Étape heures">
       <!-- Mini -->
       <div class="bm-card-mini" onclick="goToStep('hours')">
         <div>
@@ -382,7 +390,7 @@
     </div>
 
     <!-- STEP 3 — Pour qui ? (admin uniquement) -->
-    <div class="bm-step" id="bm-step-booker" style="display:none">
+    <div class="bm-step" id="bm-step-booker" style="display:none" role="group" aria-label="Étape pour qui">
       <!-- Mini (collapsed) -->
       <div class="bm-card-mini" onclick="goToStep('booker')">
         <div>
@@ -408,7 +416,7 @@
     </div>
 
     <!-- STEP 4 — Destination / Motif (dernier pas) -->
-    <div class="bm-step upcoming" id="bm-step-destination">
+    <div class="bm-step upcoming" id="bm-step-destination" role="group" aria-label="Étape destination ou motif">
       <!-- Mini (collapsed) -->
       <div class="bm-card-mini" onclick="goToStep('destination')">
         <div>
@@ -441,8 +449,15 @@
 
   </div>
   <div class="bm-footer">
-    <button class="bm-reset-btn" onclick="resetBookingModal()">Réinitialiser</button>
-    <button class="bm-next-btn" id="bm-next-btn" onclick="bmNextStep()">Suivant</button>
+    <div class="bm-footer-meta">
+      <div class="bm-progress-text" id="bm-progress-text" aria-live="polite">Étape 1 sur 3</div>
+      <div class="bm-inline-feedback" id="bm-inline-feedback" aria-live="polite"></div>
+      <div class="bm-footer-recap" id="bm-footer-recap" aria-live="polite"></div>
+    </div>
+    <div class="bm-footer-actions">
+      <button class="bm-reset-btn" onclick="resetBookingModal()">Réinitialiser</button>
+      <button class="bm-next-btn" id="bm-next-btn" onclick="bmNextStep()">Suivant</button>
+    </div>
   </div>
 </div>
 
