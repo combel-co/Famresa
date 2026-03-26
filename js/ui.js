@@ -70,17 +70,36 @@ function setupPinInputs(inputs, onComplete, options) {
 
   function _focusNext(fromIdx) {
     for (let j = fromIdx + 1; j < list.length; j++) {
-      if (!_getRealValue(list[j])) { list[j].focus(); return; }
+      if (!_getRealValue(list[j])) {
+        _focusInput(list[j]);
+        return;
+      }
     }
     // Otherwise, keep focus on last
-    list[list.length - 1]?.focus();
+    _focusInput(list[list.length - 1]);
   }
 
   function _focusPrev(fromIdx) {
     for (let j = fromIdx - 1; j >= 0; j--) {
-      list[j].focus();
+      _focusInput(list[j]);
       return;
     }
+  }
+
+  function _focusInput(input) {
+    if (!input) return;
+    // iOS Safari is sometimes flaky when moving focus inside the same input event.
+    // Queue a micro-delay and a frame to make the transition reliable.
+    const applyFocus = () => {
+      try {
+        input.focus();
+        if (typeof input.select === 'function') input.select();
+      } catch (_) {}
+    };
+    setTimeout(() => {
+      applyFocus();
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(applyFocus);
+    }, 0);
   }
 
   list.forEach((input, i) => {
