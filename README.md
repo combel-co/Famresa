@@ -49,7 +49,7 @@ const firebaseConfig = {
 **Option A — GitHub Pages (gratuit) :**
 1. Pusher ce repo sur GitHub
 2. Settings > Pages > Source: main branch > `/root`
-3. L'app est live sur `https://votreuser.github.io/Resa-voiture/`
+3. L'app est live sur `https://votreuser.github.io/Famresa/`
 
 **Option B — Firebase Hosting (gratuit) :**
 ```bash

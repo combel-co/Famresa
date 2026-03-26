@@ -3,10 +3,16 @@
 <head>
   <meta charset="utf-8">
   <title>FamResa</title>
-  <meta http-equiv="refresh" content="0;URL='/Resa-voiture/'">
+  <meta http-equiv="refresh" content="0;URL='./'">
   <script>
     // GitHub Pages SPA redirect: any unknown path → app root
-    window.location.replace('/Resa-voiture/');
+    (function () {
+      // For GitHub Pages project sites:
+      // /<repo>/anything -> redirect to /<repo>/
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      const base = parts.length > 0 ? `/${parts[0]}/` : '/';
+      window.location.replace(base);
+    })();
   </script>
 </head>
 <body></body>

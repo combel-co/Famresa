@@ -15,7 +15,7 @@ const pwaService = {
     }
 
     try {
-      const registration = await navigator.serviceWorker.register('/Resa-voiture/sw.js');
+      const registration = await navigator.serviceWorker.register('./sw.js');
       console.log('SW registered, scope:', registration.scope);
       return registration;
     } catch (err) {

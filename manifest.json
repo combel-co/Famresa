@@ -1,10 +1,10 @@
 {
-  "id": "/Resa-voiture/",
+  "id": "./",
   "name": "FamResa — Réservation familiale",
   "short_name": "FamResa",
   "description": "Réservation de ressources familiales — simple, rapide, gratuit.",
-  "start_url": "/Resa-voiture/",
-  "scope": "/Resa-voiture/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
