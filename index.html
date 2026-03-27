@@ -18,15 +18,18 @@
 (function () {
   try {
     var params = new URLSearchParams(window.location.search);
-    var large = params.get('large');
-    if (large === '1') {
+    var q = params.get('large');
+    var root = document.documentElement;
+    if (q === '1') {
       localStorage.setItem('famresa_ui_scale', 'large');
-      document.documentElement.classList.add('ui-large');
-    } else if (large === '0') {
-      localStorage.removeItem('famresa_ui_scale');
-      document.documentElement.classList.remove('ui-large');
-    } else if (localStorage.getItem('famresa_ui_scale') === 'large') {
-      document.documentElement.classList.add('ui-large');
+      root.classList.add('ui-large');
+    } else if (q === '0') {
+      localStorage.setItem('famresa_ui_scale', 'normal');
+      root.classList.remove('ui-large');
+    } else if (localStorage.getItem('famresa_ui_scale') === 'normal') {
+      root.classList.remove('ui-large');
+    } else {
+      root.classList.add('ui-large');
     }
   } catch (e) {}
 })();
@@ -38,7 +41,7 @@
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <!-- Non-blocking font loading (swap prevents FOIT) -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/style.css?v=7">
+<link rel="stylesheet" href="css/style.css?v=9">
 <!-- Firebase SDK (defer = non-blocking parse, keeps order) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
@@ -335,6 +338,14 @@
         <div class="pf-row-icon">🔒</div>
         <div class="pf-row-label">Code personnel</div>
         <div class="pf-row-chevron">›</div>
+      </div>
+      <div class="pf-settings-row pf-settings-row--text-size">
+        <div class="pf-row-icon" aria-hidden="true">🔤</div>
+        <div class="pf-row-label">Taille du texte</div>
+        <div class="pf-text-size-seg" role="group" aria-label="Taille du texte">
+          <button type="button" class="pf-text-size-btn pf-text-size-btn--sm" id="pf-text-size-small" aria-pressed="false" onclick="event.stopPropagation(); setTextSizePreference(false)">a</button>
+          <button type="button" class="pf-text-size-btn pf-text-size-btn--lg" id="pf-text-size-large" aria-pressed="true" onclick="event.stopPropagation(); setTextSizePreference(true)">A</button>
+        </div>
       </div>
     </div>
 
@@ -829,7 +840,7 @@
 <script src="src/infra/firebase/firebase.mapper.js?v=5" defer></script>
 <script src="js/firebase.js?v=8" defer></script>
 <script src="js/app.js?v=6" defer></script>
-<script src="js/ui.js?v=5" defer></script>
+<script src="js/ui.js?v=6" defer></script>
 <script src="js/xp.js?v=4" defer></script>
 <script src="js/celebration.js?v=5" defer></script>
 <script src="js/auth.js?v=17" defer></script>
@@ -848,7 +859,7 @@
 <script src="js/calendar.js?v=5" defer></script>
 <script src="js/history.js?v=4" defer></script>
 <script src="src/modules/profile/profile.service.js?v=1" defer></script>
-<script src="js/profile.js?v=5" defer></script>
+<script src="js/profile.js?v=6" defer></script>
 <script src="js/resources.js?v=8" defer></script>
 <script src="js/dashboard.js?v=6" defer></script>
 <script src="js/stay.js?v=4" defer></script>

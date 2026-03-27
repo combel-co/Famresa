@@ -21,6 +21,8 @@ function renderProfileTab() {
 
   // Async: pending access requests for admins
   _renderAdminPendingSection();
+
+  if (typeof syncPfTextSizeToggle === 'function') syncPfTextSizeToggle();
 }
 
 function _renderResourcesByFamily() {
