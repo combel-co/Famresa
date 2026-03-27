@@ -728,7 +728,7 @@ async function runMigrationIfNeeded() {
 // ==========================================
 // Legacy — redirects to the Profile tab
 function showProfile() {
-  switchTab('history');
+  switchTab('profile');
 }
 
 // Edit profile sheet (photo, name, email)
