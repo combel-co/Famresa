@@ -825,16 +825,16 @@ function showEditProfileSheet() {
       <h2>Modifier le profil</h2>
       <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:20px">
         <div class="profile-avatar">${av}</div>
-        <label style="font-size: calc(12px * var(--ui-text-scale));color:var(--accent);cursor:pointer;text-decoration:underline" onclick="document.getElementById('profile-photo-input').click()">Modifier la photo</label>
-        <input type="file" id="profile-photo-input" accept="image/*" style="display:none" onchange="changeProfilePhoto(this)">
+        <label for="profile-photo-input" style="font-size: calc(12px * var(--ui-text-scale));color:var(--accent);cursor:pointer;text-decoration:underline">Modifier la photo</label>
+        <input type="file" id="profile-photo-input" name="profile-photo-input" accept="image/*" style="display:none" onchange="changeProfilePhoto(this)">
       </div>
       <div class="input-group">
-        <label>Prénom</label>
-        <input type="text" id="edit-profile-name" value="${currentUser.name || ''}" autocomplete="off">
+        <label for="edit-profile-name">Prénom</label>
+        <input type="text" id="edit-profile-name" name="edit-profile-name" value="${currentUser.name || ''}" autocomplete="off">
       </div>
       <div class="input-group">
-        <label>Email</label>
-        <input type="email" id="edit-profile-email" value="${currentUser.email || ''}" autocomplete="off">
+        <label for="edit-profile-email">Email</label>
+        <input type="email" id="edit-profile-email" name="edit-profile-email" value="${currentUser.email || ''}" autocomplete="off">
       </div>
       <div class="lock-error" id="edit-profile-error"></div>
       <button class="btn btn-primary" style="margin-top:8px" onclick="saveProfileEdits()">Enregistrer</button>
@@ -888,13 +888,15 @@ function showChangePin() {
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
       <h2>Nouveau code</h2>
-      <p style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));margin-bottom:20px">Choisissez un nouveau code à 4 chiffres</p>
-      <div class="pin-input" id="change-pin-input">
-        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-      </div>
+      <fieldset class="pin-fieldset" style="margin-top:4px">
+        <legend class="pin-fieldset-legend" style="margin-bottom:20px;padding:0;color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));font-weight:400">Choisissez un nouveau code à 4 chiffres</legend>
+        <div class="pin-input" id="change-pin-input">
+          <input type="tel" id="change-pin-0" name="change-pin-0" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" id="change-pin-1" name="change-pin-1" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" id="change-pin-2" name="change-pin-2" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" id="change-pin-3" name="change-pin-3" maxlength="1" inputmode="numeric" autocomplete="off">
+        </div>
+      </fieldset>
       <div class="lock-error" id="change-pin-error"></div>
       <button class="btn btn-primary" onclick="saveNewPin()">Enregistrer</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>

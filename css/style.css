@@ -615,6 +615,27 @@ html.ui-large {
   .pin-input input:focus { border-color: var(--text); background: white; }
   .pin-input input.error { border-color: var(--danger); animation: shake 0.4s ease; }
 
+  .pin-fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+  }
+  .pin-fieldset-legend {
+    display: block;
+    width: 100%;
+    font-size: calc(13px * var(--ui-text-scale));
+    font-weight: 600;
+    padding: 0;
+    margin: 0 0 8px 0;
+  }
+  .pin-fieldset-legend--compact {
+    font-size: calc(11px * var(--ui-text-scale));
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #6b7280;
+  }
+
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
     20%, 60% { transform: translateX(-6px); }
@@ -1601,6 +1622,7 @@ html.ui-large {
     box-shadow: 0 0 0 2px rgba(82,183,136,0.18);
   }
   .bm-time-label {
+    display: block;
     font-size: calc(10px * var(--ui-text-scale));
     font-weight: 600;
     text-transform: uppercase;
@@ -1771,6 +1793,7 @@ html.ui-large {
   .resource-tabs {
     display: flex; flex-wrap: nowrap; gap: 6px;
     padding: 8px 0;
+    margin-bottom: var(--gap-md);
     position: sticky;
     top: 0;
     z-index: 120;

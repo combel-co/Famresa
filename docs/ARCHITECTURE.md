@@ -302,3 +302,15 @@ Ce fichier doit être mis à jour :
 - à chaque refactor majeur
 - à chaque ajout de module
 - à chaque changement de structure
+
+---
+
+## 17. CSP, Lighthouse et scripts tiers (Firebase)
+
+**Avertissement « Content Security Policy bloque eval »** : l’application charge le SDK **Firebase compat** depuis `gstatic.com` (`firebase-app-compat.js`, `firebase-firestore-compat.js` dans `index.html`). Les bundles compat peuvent utiliser des mécanismes que les outils d’audit associent à `eval` / exécution dynamique, même si le code métier du dépôt n’appelle pas `eval()`. Pour confirmer la source : DevTools → onglet **Issues** ou la stack indiquée par Lighthouse, et vérifier le fichier (souvent un script hébergé tiers).
+
+**Pistes si le problème doit disparaître** : migration vers le SDK **modulaire** Firebase v9+ (bundler : esbuild, Vite, etc.) pour réduire ce type d’avertissement ; **éviter** d’ajouter `unsafe-eval` au CSP sans décision de sécurité explicite.
+
+**Avertissement « unload / polyfills.js »** : il n’y a pas de fichier `polyfills.js` dans ce dépôt ; le nom correspond souvent à un **chunk minifié** dans une dépendance CDN (Firebase ou autre). Les écouteurs `unload` sont dépréciés côté navigateur ; la correction durable passe par une **version plus récente** du SDK ou du fournisseur concerné, pas par un correctif local dans le HTML applicatif.
+
+**Vérification** : `rg` sur le dépôt pour `eval\(` / `new Function` / `unload` — si rien n’apparaît dans `js/` ou `src/`, traiter comme **tiers**.

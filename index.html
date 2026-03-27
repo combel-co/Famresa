@@ -483,12 +483,12 @@
         <div class="bm-section-title">À quelle heure ?</div>
         <div class="bm-time-row">
           <div class="bm-time-block">
-            <div class="bm-time-label">Prise</div>
-            <input class="bm-time-input" type="time" id="bm-start-hour" value="09:00" onchange="updateBookingRecap()">
+            <label class="bm-time-label" for="bm-start-hour">Prise</label>
+            <input class="bm-time-input" type="time" id="bm-start-hour" name="bm-start-hour" value="09:00" onchange="updateBookingRecap()">
           </div>
           <div class="bm-time-block">
-            <div class="bm-time-label">Retour</div>
-            <input class="bm-time-input" type="time" id="bm-end-hour" value="20:00" onchange="updateBookingRecap()">
+            <label class="bm-time-label" for="bm-end-hour">Retour</label>
+            <input class="bm-time-input" type="time" id="bm-end-hour" name="bm-end-hour" value="20:00" onchange="updateBookingRecap()">
           </div>
         </div>
       </div>
@@ -514,7 +514,8 @@
         <div id="bm-booker-member-list" class="bm-booker-member-list"></div>
         <div id="bm-booker-external" style="display:none">
           <div class="input-group" style="margin-top:8px">
-            <input type="text" id="bm-external-name" placeholder="Nom du locataire" autocomplete="off" oninput="onExternalNameInput(this.value)">
+            <label for="bm-external-name">Nom du locataire</label>
+            <input type="text" id="bm-external-name" name="bm-external-name" placeholder="Nom du locataire" autocomplete="off" oninput="onExternalNameInput(this.value)">
           </div>
         </div>
       </div>
@@ -616,18 +617,18 @@
     <div style="background:#f6f6f6;border:1px solid #ececec;border-radius:16px;padding:16px 14px 14px;margin-bottom:12px">
       <div class="ob-fields" style="gap:14px">
         <div class="input-group" style="margin-bottom:0">
-          <label style="font-size: calc(11px * var(--ui-text-scale));letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Email</label>
-          <input type="email" id="login-email" placeholder="marie@hotmail.com" autocomplete="email">
+          <label for="login-email" style="font-size: calc(11px * var(--ui-text-scale));letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Email</label>
+          <input type="email" id="login-email" name="login-email" placeholder="marie@hotmail.com" autocomplete="email">
         </div>
-        <div>
-          <label style="font-size: calc(11px * var(--ui-text-scale));letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Code secret (4 chiffres)</label>
+        <fieldset class="pin-fieldset">
+          <legend class="pin-fieldset-legend pin-fieldset-legend--compact">Code secret (4 chiffres)</legend>
           <div class="pin-input" id="login-pin" style="justify-content:center">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="login-pin-0" name="login-pin-0" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="login-pin-1" name="login-pin-1" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="login-pin-2" name="login-pin-2" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="login-pin-3" name="login-pin-3" maxlength="1" inputmode="numeric" autocomplete="off">
           </div>
-        </div>
+        </fieldset>
       </div>
     </div>
     <div class="lock-error" id="login-error"></div>
@@ -649,31 +650,31 @@
     <div style="background:#f6f6f6;border:1px solid #ececec;border-radius:16px;padding:16px 14px 14px;margin-bottom:14px">
       <div class="ob-fields" style="gap:14px">
         <div class="input-group" style="margin-bottom:0">
-          <label style="font-size: calc(11px * var(--ui-text-scale));letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Prénom</label>
-          <input type="text" id="su-name" placeholder="Marie" autocomplete="given-name">
+          <label for="su-name" style="font-size: calc(11px * var(--ui-text-scale));letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Prénom</label>
+          <input type="text" id="su-name" name="su-name" placeholder="Marie" autocomplete="given-name">
         </div>
         <div class="input-group" style="margin-bottom:0">
-          <label style="font-size: calc(11px * var(--ui-text-scale));letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Email</label>
-          <input type="email" id="su-email" placeholder="marie@hotmail.com" autocomplete="email">
+          <label for="su-email" style="font-size: calc(11px * var(--ui-text-scale));letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Email</label>
+          <input type="email" id="su-email" name="su-email" placeholder="marie@hotmail.com" autocomplete="email">
         </div>
-        <div>
-          <label style="font-size: calc(11px * var(--ui-text-scale));letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Code (4 chiffres)</label>
+        <fieldset class="pin-fieldset">
+          <legend class="pin-fieldset-legend pin-fieldset-legend--compact">Code (4 chiffres)</legend>
           <div class="pin-input" id="su-user-pin" style="justify-content:center">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="su-user-pin-0" name="su-user-pin-0" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="su-user-pin-1" name="su-user-pin-1" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="su-user-pin-2" name="su-user-pin-2" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="su-user-pin-3" name="su-user-pin-3" maxlength="1" inputmode="numeric" autocomplete="off">
           </div>
-        </div>
-        <div>
-          <label style="font-size: calc(11px * var(--ui-text-scale));letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Confirmer le code</label>
+        </fieldset>
+        <fieldset class="pin-fieldset">
+          <legend class="pin-fieldset-legend pin-fieldset-legend--compact">Confirmer le code</legend>
           <div class="pin-input" id="su-user-pin-confirm" style="justify-content:center">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="su-user-pin-confirm-0" name="su-user-pin-confirm-0" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="su-user-pin-confirm-1" name="su-user-pin-confirm-1" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="su-user-pin-confirm-2" name="su-user-pin-confirm-2" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="su-user-pin-confirm-3" name="su-user-pin-confirm-3" maxlength="1" inputmode="numeric" autocomplete="off">
           </div>
-        </div>
+        </fieldset>
       </div>
     </div>
     <div class="lock-error" id="su-profile-error"></div>
@@ -706,24 +707,24 @@
     <h2 style="margin-bottom:6px">Code familial</h2>
     <p style="color:var(--text-light);margin-bottom:24px;font-size: calc(14px * var(--ui-text-scale))">Ce code protège l'accès à l'application.<br>Partagez-le avec tous les membres.</p>
     <div class="ob-fields">
-      <div>
-        <label style="font-size: calc(13px * var(--ui-text-scale));font-weight:600;display:block;margin-bottom:8px">Choisissez un code à 4 chiffres</label>
+      <fieldset class="pin-fieldset">
+        <legend class="pin-fieldset-legend">Choisissez un code à 4 chiffres</legend>
         <div class="pin-input" id="ob-pin-create" style="justify-content:center">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" id="ob-pin-create-0" name="ob-pin-create-0" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" id="ob-pin-create-1" name="ob-pin-create-1" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" id="ob-pin-create-2" name="ob-pin-create-2" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" id="ob-pin-create-3" name="ob-pin-create-3" maxlength="1" inputmode="numeric" autocomplete="off">
         </div>
-      </div>
-      <div>
-        <label style="font-size: calc(13px * var(--ui-text-scale));font-weight:600;display:block;margin-bottom:8px">Confirmez le code</label>
+      </fieldset>
+      <fieldset class="pin-fieldset">
+        <legend class="pin-fieldset-legend">Confirmez le code</legend>
         <div class="pin-input" id="ob-pin-confirm" style="justify-content:center">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" id="ob-pin-confirm-0" name="ob-pin-confirm-0" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" id="ob-pin-confirm-1" name="ob-pin-confirm-1" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" id="ob-pin-confirm-2" name="ob-pin-confirm-2" maxlength="1" inputmode="numeric" autocomplete="off">
+          <input type="tel" id="ob-pin-confirm-3" name="ob-pin-confirm-3" maxlength="1" inputmode="numeric" autocomplete="off">
         </div>
-      </div>
+      </fieldset>
     </div>
     <div class="lock-error" id="ob-pin-error"></div>
     <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="obStep2Advance()">Continuer →</button>
@@ -785,21 +786,21 @@
     <p style="color:var(--text-light);margin-bottom:20px;font-size: calc(14px * var(--ui-text-scale))">Personnalisez votre voiture familiale.</p>
     <div class="ob-fields">
       <div class="input-group" style="margin-bottom:0">
-        <label>Nom de la voiture</label>
-        <input type="text" id="ob-car-name" placeholder="Ex: Renault Scenic" value="Voiture familiale">
+        <label for="ob-car-name">Nom de la voiture</label>
+        <input type="text" id="ob-car-name" name="ob-car-name" placeholder="Ex: Renault Scenic" value="Voiture familiale">
       </div>
-      <div>
-        <label style="font-size: calc(13px * var(--ui-text-scale));font-weight:600;display:block;margin-bottom:8px">Emoji</label>
-        <div style="display:flex;gap:10px;justify-content:center">
-          <button onclick="selectCarEmoji(this,'🚗')" class="ob-emoji-btn active">🚗</button>
-          <button onclick="selectCarEmoji(this,'🚙')" class="ob-emoji-btn">🚙</button>
-          <button onclick="selectCarEmoji(this,'🚕')" class="ob-emoji-btn">🚕</button>
-          <button onclick="selectCarEmoji(this,'🏎️')" class="ob-emoji-btn">🏎️</button>
+      <fieldset class="pin-fieldset ob-emoji-fieldset">
+        <legend class="pin-fieldset-legend">Emoji</legend>
+        <div class="ob-emoji-row" style="display:flex;gap:10px;justify-content:center">
+          <button type="button" onclick="selectCarEmoji(this,'🚗')" class="ob-emoji-btn active">🚗</button>
+          <button type="button" onclick="selectCarEmoji(this,'🚙')" class="ob-emoji-btn">🚙</button>
+          <button type="button" onclick="selectCarEmoji(this,'🚕')" class="ob-emoji-btn">🚕</button>
+          <button type="button" onclick="selectCarEmoji(this,'🏎️')" class="ob-emoji-btn">🏎️</button>
         </div>
-      </div>
+      </fieldset>
       <div class="input-group" style="margin-bottom:0">
-        <label>Plaque d'immatriculation <span style="color:var(--text-light);font-weight:400">(optionnel)</span></label>
-        <input type="text" id="ob-car-plaque" placeholder="Ex: AB-123-CD" style="text-transform:uppercase">
+        <label for="ob-car-plaque">Plaque d'immatriculation <span style="color:var(--text-light);font-weight:400">(optionnel)</span></label>
+        <input type="text" id="ob-car-plaque" name="ob-car-plaque" placeholder="Ex: AB-123-CD" style="text-transform:uppercase">
       </div>
     </div>
     <div class="lock-error" id="ob-step4-error"></div>
