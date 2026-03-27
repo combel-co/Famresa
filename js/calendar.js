@@ -194,12 +194,16 @@ function onDayClick(dateStr, isPast) {
   } else {
     const activeResource = resources.find(r => r.id === selectedResource);
     const fuelRow = (!res || res.type === 'car') ? `<div class="fuel-info-row"><span>Essence disponible</span>${getFuelBar(activeResource?.fuelLevel)}</div>` : '';
+    const clean = activeResource?.carCleanliness || '';
+    const cleanLabel = clean === 'clean' ? 'Propre' : clean === 'average' ? 'Moyenne' : clean === 'dirty' ? 'Sale' : 'Non renseigné';
+    const cleanRow = (!res || res.type === 'car') ? `<div class="fuel-info-row"><span>État du véhicule</span><span>${cleanLabel}</span></div>` : '';
     html = `
-      <div class="sheet-date">${prettyDate}</div>
-      <div style="font-size:14px;color:var(--text-light);margin-bottom:14px">Planning en lecture seule dans cet onglet.</div>
       ${fuelRow}
-      <button class="btn btn-primary" onclick="goToDashboardBooking()">Réserver depuis le Dashboard</button>
-      <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Fermer</button>`;
+      ${cleanRow}
+      <div class="cal-sheet-actions">
+        <button type="button" class="ccv2-btn-reserve cal-sheet-reserve" onclick="goToDashboardBooking()">Réserver</button>
+        <button type="button" class="btn cal-sheet-close" onclick="closeSheet()">Fermer</button>
+      </div>`;
   }
 
   document.getElementById('sheet-content').innerHTML = html;

@@ -47,11 +47,11 @@ function _renderResourcesByFamily() {
     const resCards = group.resources.map(res => {
       const isAvailable = !bookings[todayStr] || bookings[todayStr].resourceId !== res.id;
       const availBadge = isAvailable
-        ? `<div class="pf-resource-badge"><div class="pf-bdot"></div>Disponible</div>`
-        : `<div class="pf-resource-badge" style="background:#fff7ed;color:#9a3412;border-color:#fed7aa"><div class="pf-bdot" style="background:#ea580c"></div>Occupé</div>`;
+        ? `<div class="pf-resource-badge">Disponible</div>`
+        : `<div class="pf-resource-badge" style="background:#fff7ed;color:#9a3412;border-color:#fed7aa">Occupé</div>`;
       const sub = res.type === 'house'
         ? (res.address || 'Maison')
-        : (res.plaque || 'Voiture');
+        : (group.familyName || 'Famille');
       const role = window._myResourceRoles?.[res.id];
       const roleStyle = role ? (roleColors[role] || roleColors.member) : null;
       const rolePill = roleStyle

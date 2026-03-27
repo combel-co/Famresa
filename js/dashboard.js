@@ -108,13 +108,28 @@ function renderTripBanner(resourceId) {
   }
 
   const nights = Math.max(1, Math.round((new Date(endDate + 'T00:00:00') - new Date(startDateStr + 'T00:00:00')) / 86400000));
+  const startH = targetBooking.startHour || '09:00';
+  const endH = targetBooking.endHour || '20:00';
+  let tripSubLine;
+  if (isHouse) {
+    tripSubLine = `${formatRelativeDate(startDateStr)} → ${formatRelativeDate(endDate)} · ${nights} nuit${nights > 1 ? 's' : ''}`;
+  } else {
+    const d0 = new Date(startDateStr + 'T00:00:00');
+    const dayLong = d0.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const dayPart = dayLong.charAt(0).toUpperCase() + dayLong.slice(1);
+    if (startDateStr === endDate) {
+      tripSubLine = `${dayPart} · ${startH} - ${endH}`;
+    } else {
+      tripSubLine = `${formatRelativeDate(startDateStr)} → ${formatRelativeDate(endDate)} · ${startH} - ${endH}`;
+    }
+  }
   if (kickerEl) kickerEl.textContent = isInProgress ? inProgressLabel : approachingLabel;
   if (titleEl) {
     titleEl.textContent = isInProgress
       ? `${res?.name || 'Ressource'} · en cours`
       : `${res?.name || 'Ressource'} · dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
   }
-  if (subEl) subEl.textContent = `${formatRelativeDate(startDateStr)} → ${formatRelativeDate(endDate)} · ${nights} nuit${nights > 1 ? 's' : ''}`;
+  if (subEl) subEl.textContent = tripSubLine;
   if (iconEl) iconEl.textContent = res?.emoji || (res?.type === 'house' ? '🏠' : '🚗');
   banner.style.display = '';
   return true;
@@ -338,6 +353,48 @@ function renderHouseRawInfo(resource, decisionState) {
   `;
 }
 
+function _fuelTypeLabel(ft) {
+  if (ft === 'diesel') return 'Diesel';
+  if (ft === 'electrique') return 'Électrique';
+  if (ft === 'essence') return 'Essence';
+  return '—';
+}
+
+function renderCarRawInfo(resource) {
+  const wrap = document.getElementById('car-raw-list');
+  if (!wrap) return;
+  const seats = Number(resource?.seatCount ?? resource?.seats ?? 0);
+  const seatsLabel = seats > 0 ? String(seats) : '—';
+  const fuel = _fuelTypeLabel(resource?.fuelType || '');
+  const mileage =
+    resource?.mileageKm != null && String(resource.mileageKm).trim() !== ''
+      ? `${resource.mileageKm} km`
+      : '—';
+  const bt =
+    resource?.carBluetooth === true ? 'Oui' : resource?.carBluetooth === false ? 'Non' : '—';
+
+  wrap.innerHTML = `
+    <div class="house-raw-grid">
+      <div class="house-raw-cell">
+        <div class="house-raw-label">Places</div>
+        <div class="house-raw-value">${seatsLabel}</div>
+      </div>
+      <div class="house-raw-cell">
+        <div class="house-raw-label">Énergie</div>
+        <div class="house-raw-value">${fuel}</div>
+      </div>
+      <div class="house-raw-cell">
+        <div class="house-raw-label">Kilométrage</div>
+        <div class="house-raw-value">${mileage}</div>
+      </div>
+      <div class="house-raw-cell">
+        <div class="house-raw-label">Bluetooth</div>
+        <div class="house-raw-value">${bt}</div>
+      </div>
+    </div>
+  `;
+}
+
 function renderBedIcons(totalBeds, occupiedBeds) {
   const total = Math.max(0, Number(totalBeds || 0));
   const occupied = Math.max(0, Math.min(total, Number(occupiedBeds || 0)));
@@ -533,7 +590,7 @@ function renderExperiencePanels() {
     if (decisionState.availabilityStatus === 'occupied') {
       if (summaryLine) {
         summaryLine.innerHTML = `
-          <span class="ccv2-badge reserved house-summary-status-badge"><span class="ccv2-dot"></span>Occupée</span>
+          <span class="ccv2-badge reserved house-summary-status-badge">Occupée</span>
           <span class="house-summary-inline-text">${decisionState.occupantName} · ${decisionState.peopleCount} personne${decisionState.peopleCount > 1 ? 's' : ''} · Départ le ${untilLabel}</span>
         `;
       }
@@ -548,6 +605,10 @@ function renderExperiencePanels() {
 
     renderWeekStrip(selectedResource, decisionState);
     renderHouseRawInfo(res || {}, decisionState);
+  }
+
+  if (!isHouse) {
+    renderCarRawInfo(res || {});
   }
 
   // ── Action primaire ──

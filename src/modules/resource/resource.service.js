@@ -97,8 +97,10 @@ const resourceService = {
     const pendingEntries = accessEntries.filter((entry) => entry.status === 'pending');
     const currentAccess = acceptedEntries.find((entry) => entry.profileId === currentUserId) || null;
     const isAdmin = currentAccess?.role === 'admin';
+    const role = currentAccess?.role || 'member';
+    const canInvite = isAdmin || role === 'member';
 
-    const inviteCode = isAdmin
+    const inviteCode = canInvite
       ? await resourceRepository.ensureInviteCode(resourceId, _resourceInviteCode())
       : (resource.inviteCode || null);
 
@@ -174,7 +176,7 @@ const resourceService = {
         pendingCount: pendingMembers.length,
       },
       invite: {
-        enabled: isAdmin,
+        enabled: canInvite,
         inviteCode,
         shareUrl,
         displayUrl,
@@ -183,7 +185,7 @@ const resourceService = {
       acceptedMembers,
       permissions: {
         isAdmin,
-        canInvite: isAdmin,
+        canInvite,
         canEdit: isAdmin,
         canDelete: isAdmin,
       },

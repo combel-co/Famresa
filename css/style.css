@@ -778,6 +778,9 @@
 
   /* ---- FUEL MINI BAR (booking sheet + dashboard) ---- */
   .fuel-info-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); margin-bottom:14px; font-size:14px; color:var(--text-secondary); }
+  .cal-sheet-actions { display:flex; flex-direction:column; gap:10px; margin-top:4px; width:100%; }
+  .cal-sheet-reserve { margin-top:0 !important; }
+  .cal-sheet-close { width:100%; background:#f5f5f5; color:var(--text); border:none; padding:14px; border-radius:14px; font-size:15px; font-weight:500; font-family:'DM Sans',sans-serif; cursor:pointer; }
   .fuel-mini-bar { display:flex; align-items:center; gap:6px; }
   .fuel-mini-track { width:48px; height:8px; background:var(--border-light); border-radius:999px; overflow:hidden; }
   .fuel-mini-fill { height:100%; border-radius:999px; }
@@ -1131,7 +1134,7 @@
   .ccv2-fuel-track { flex:1; height:6px; background:#e5e4df; border-radius:3px; overflow:hidden; }
   .ccv2-fuel-fill { height:100%; border-radius:3px; }
   .ccv2-reserve-wrap { padding:10px 14px var(--gap-lg); }
-  .ccv2-btn-reserve { width:100%; padding:14px; background:var(--text); color:#fff; border:none; border-radius:14px; font-size:15px; font-weight:500; font-family:'DM Sans',sans-serif; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .ccv2-btn-reserve { width:100%; padding:14px; background:var(--success); color:#fff; border:none; border-radius:14px; font-size:15px; font-weight:500; font-family:'DM Sans',sans-serif; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .ccv2-card.state-occupied .ccv2-btn-reserve { background:#92400e; }
   .ccv2-card.state-soon .ccv2-btn-reserve { background:var(--success); }
   .ccv2-btn-reserve:active { opacity:0.8; }
@@ -1725,7 +1728,6 @@
   .resource-tab.active {
     background: var(--text); border-color: var(--text); color: #fff;
   }
-  .resource-tab.active .resource-pill-dot { background: #4ade80; }
   .resource-tab:hover:not(.active) { background: #eeeee9; }
 
   /* ═══════════════════════════════════════════
@@ -1912,6 +1914,20 @@
   }
   .rm-share-link-url { font-size: 11px; color: var(--text-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .rm-share-link-copy { font-size: 11px; font-weight: 500; color: var(--accent); cursor: pointer; white-space: nowrap; }
+
+  .rm-invite-card-compact { padding: 12px 14px; }
+  .rm-invite-compact-row { display: flex; align-items: center; gap: 10px; }
+  .rm-invite-url-text {
+    flex: 1; min-width: 0; font-size: 11px; color: var(--text-muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .rm-invite-share-icn {
+    flex-shrink: 0; width: 44px; height: 44px;
+    border-radius: 12px; border: 0.5px solid var(--border);
+    background: var(--bg-subtle); font-size: 20px; line-height: 1;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-family: inherit; padding: 0;
+  }
 
   .rm-pending-group {
     background: #fffbeb;

@@ -280,17 +280,10 @@ function renderResourceTabs() {
   const container = document.getElementById('resource-tabs');
   if (!container) return;
 
-  const todayStr = new Date().toISOString().slice(0, 10);
-
   const pills = resources.map(res => {
     const isActive = res.id === selectedResource;
-    const dayBooking = bookings[todayStr];
-    const bookingResId = dayBooking ? (dayBooking.ressource_id || dayBooking.resourceId || selectedResource) : null;
-    const isAvailable = !dayBooking || dayBooking.returnedAt || bookingResId !== res.id;
-    const dotCls = `resource-pill-dot${isAvailable ? ' available' : ' occupied'}`;
     const cls = `resource-tab${isActive ? ' active' : ''}`;
     return `<div class="${cls}" onclick="selectResource('${res.id}')">
-      <div class="${dotCls}"></div>
       <span>${res.name}</span>
     </div>`;
   });
@@ -607,6 +600,11 @@ async function showCarInfo() {
   const plaque = res.plaque || '';
   const assurance = res.assurance || '';
   const observations = res.observations || '';
+  const seatCount = res.seatCount ?? res.seats ?? '';
+  const fuelType = res.fuelType || '';
+  const mileageKm = res.mileageKm != null ? String(res.mileageKm) : '';
+  const btVal =
+    res.carBluetooth === true ? 'yes' : res.carBluetooth === false ? 'no' : '';
   const photoPreview = res.photoUrl
     ? `<img src="${res.photoUrl}" alt="" style="width:100%;height:100%;object-fit:cover">`
     : (res.emoji || '🚗');
@@ -639,9 +637,19 @@ async function saveCarInfo() {
   const plaque = (document.getElementById('car-plaque')?.value || '').trim().toUpperCase();
   const assurance = (document.getElementById('car-assurance')?.value || '').trim();
   const observations = (document.getElementById('car-observations')?.value || '').trim();
+  const seatRaw = document.getElementById('car-seat-count')?.value;
+  const seatParsed = parseInt(String(seatRaw || '').trim(), 10);
+  const fuelType = (document.getElementById('car-fuel-type')?.value || '').trim();
+  const mileageRaw = (document.getElementById('car-mileage')?.value || '').trim();
+  const btRaw = document.getElementById('car-bluetooth')?.value || '';
   const photoUrl = window._resourcePhotoDraft || null;
   try {
     const updates = { plaque, assurance, observations };
+    if (Number.isFinite(seatParsed) && seatParsed > 0) updates.seatCount = seatParsed;
+    if (fuelType) updates.fuelType = fuelType;
+    if (mileageRaw) updates.mileageKm = mileageRaw;
+    if (btRaw === 'yes') updates.carBluetooth = true;
+    else if (btRaw === 'no') updates.carBluetooth = false;
     if (photoUrl) updates.photoUrl = photoUrl;
     await ressourcesRef().doc(selectedResource).update(updates);
     const res = resources.find(r => r.id === selectedResource);
@@ -649,6 +657,7 @@ async function saveCarInfo() {
     window._resourcePhotoDraft = null;
     closeSheet();
     showToast('Infos enregistrées ✓');
+    if (typeof renderExperiencePanels === 'function') renderExperiencePanels();
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 
@@ -878,7 +887,7 @@ function _rmLoadingMarkup(resourceId) {
   const title = preview?.name || 'Ressource';
   const subtitle = preview?.type === 'house'
     ? (getResourceAddressDisplay(preview, 'Chargement…'))
-    : (preview?.plaque || 'Chargement…');
+    : 'Chargement…';
 
   return `
     <div class="rm-page-header">
@@ -921,16 +930,11 @@ function _rmRenderPage(viewModel) {
   const inviteHtml = viewModel.permissions.canInvite
     ? `
       <div class="rm-section-lbl">Inviter quelqu'un</div>
-      <div class="rm-invite-card">
-        <div class="rm-invite-title">Ajouter un membre à cette ressource</div>
-        <div class="rm-invite-row">
-          <input class="rm-invite-input" type="email" id="rm-invite-email-${_rmEscapeHtml(resource.id)}" placeholder="prenom@email.com">
-          <button class="rm-copy-link-btn" onclick='_rmSendInviteEmail(${JSON.stringify(resource.id)})'>Envoyer</button>
+      <div class="rm-invite-card rm-invite-card-compact">
+        <div class="rm-invite-compact-row">
+          <span class="rm-invite-url-text">${_rmEscapeHtml(viewModel.invite.displayUrl || '')}</span>
+          <button type="button" class="rm-invite-share-icn" onclick='_rmShareResourceInvite(${JSON.stringify(resource.id)})' aria-label="Partager le lien">📤</button>
         </div>
-        <button class="rm-share-link-row" type="button" onclick='_rmCopyInviteLink(${JSON.stringify(resource.id)})'>
-          <div class="rm-share-link-url">${_rmEscapeHtml(viewModel.invite.displayUrl || '')}</div>
-          <div class="rm-share-link-copy">Copier le lien</div>
-        </button>
       </div>`
     : '';
 
@@ -1031,6 +1035,9 @@ async function showResourceManagePage(resourceId) {
   const content = document.getElementById('resource-manage-content');
   if (!overlay || !content || !resourceId || !currentUser?.id || !currentUser?.familyId) return;
 
+  const resForFam = resources.find((r) => r.id === resourceId);
+  const familyIdForResource = resForFam?.famille_id || resForFam?.familleId || currentUser.familyId;
+
   overlay.classList.remove('hidden');
   content.innerHTML = _rmLoadingMarkup(resourceId);
   _resourceManageState = { resourceId, viewModel: null };
@@ -1039,7 +1046,7 @@ async function showResourceManagePage(resourceId) {
     const viewModel = await resourceService.getManagePageViewModel({
       resourceId,
       currentUserId: currentUser.id,
-      familyId: currentUser.familyId,
+      familyId: familyIdForResource,
       origin: location.origin,
       pathname: location.pathname
     });
@@ -1068,6 +1075,46 @@ async function _rmReject(accessId, resourceId) {
     showToast('Demande refusée');
     await showResourceManagePage(resourceId);
   } catch(e) { showToast('Erreur — réessayez'); }
+}
+
+async function _rmShareResourceInvite(resourceId) {
+  let currentInvite = _rmCurrentInvite(resourceId);
+  try {
+    if (!currentInvite?.shareUrl) {
+      currentInvite = await resourceService.ensureManageInviteInfo({
+        resourceId,
+        origin: location.origin,
+        pathname: location.pathname
+      });
+    }
+    const url = currentInvite?.shareUrl;
+    if (!url) {
+      showToast('Lien indisponible');
+      return;
+    }
+    if (navigator.share) {
+      await navigator.share({
+        title: 'FamResa — invitation ressource',
+        text: 'Rejoins cette ressource sur FamResa.',
+        url
+      });
+      return;
+    }
+  } catch (e) {
+    if (e?.name === 'AbortError') return;
+  }
+  try {
+    const inv = _rmCurrentInvite(resourceId)
+      || await resourceService.ensureManageInviteInfo({
+        resourceId,
+        origin: location.origin,
+        pathname: location.pathname
+      });
+    await navigator.clipboard?.writeText(inv.shareUrl);
+    showToast('Lien copié !');
+  } catch (e2) {
+    showToast('Impossible de partager pour le moment');
+  }
 }
 
 async function _rmCopyInviteLink(resourceId) {
