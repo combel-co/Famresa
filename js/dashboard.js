@@ -232,38 +232,26 @@ function _openMapProvider(provider, resource) {
   if (!encoded) return false;
 
   const mapUrls = {
-    apple: {
-      app: `maps://?q=${encoded}`,
-      web: `https://maps.apple.com/?q=${encoded}`
-    },
-    google: {
-      app: `comgooglemaps://?q=${encoded}`,
-      web: `https://www.google.com/maps/search/?api=1&query=${encoded}`
-    },
-    waze: {
-      app: `waze://?q=${encoded}&navigate=yes`,
-      web: `https://waze.com/ul?q=${encoded}&navigate=yes`
-    }
+    apple: `maps://?q=${encoded}`,
+    google: `comgooglemaps://?q=${encoded}`,
+    waze: `waze://?q=${encoded}&navigate=yes`
   };
-  const selected = mapUrls[provider];
-  if (!selected) return false;
-
-  const ua = (navigator.userAgent || '').toLowerCase();
-  const isIOS = /iphone|ipad|ipod/.test(ua);
-  const prefersWeb = (provider === 'apple' && !isIOS);
-  const targetUrl = prefersWeb ? selected.web : selected.app;
+  const targetUrl = mapUrls[provider];
+  if (!targetUrl) return false;
 
   try {
-    window.location.href = targetUrl;
-    setTimeout(() => {
-      if (document.visibilityState === 'visible') window.open(selected.web, '_blank', 'noopener');
-    }, 700);
     closeSheet();
+    window.location.href = targetUrl;
+    // No automatic web fallback: keeps browser page out of FamResa webview.
+    setTimeout(() => {
+      if (document.visibilityState === 'visible') {
+        showToast('Impossible d’ouvrir l’app. Copie l’adresse ou vérifie son installation.');
+      }
+    }, 900);
     return true;
   } catch (_) {
-    window.open(selected.web, '_blank', 'noopener');
-    closeSheet();
-    return true;
+    showToast('Impossible d’ouvrir l’app de navigation');
+    return false;
   }
 }
 
