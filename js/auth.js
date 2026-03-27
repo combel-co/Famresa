@@ -5,6 +5,8 @@ const AUTH_BUILD = 'auth-v14-20260324';
 const LOGIN_DEFAULT_TITLE = 'Connexion';
 const LOGIN_DEFAULT_SUBTITLE = 'Entrez votre email et votre code secret.';
 let _pendingInviteResourceMeta = null;
+/** Ressource concernée quand l’écran « demande en attente » est affiché (saisie mot de passe invitation). */
+let _pendingJoinResourceId = null;
 
 function _isInvitePreAuthFlow() {
   return !!_pendingResourceJoinCode;
@@ -135,22 +137,78 @@ function backFromLogin() {
   _renderSplashGuestMode();
 }
 
-function showInvitePendingScreen(resourceName) {
+function showInvitePendingScreen(resourceName, resourceId) {
   const screen = document.getElementById('invite-pending-screen');
   const copy = document.getElementById('invite-pending-copy');
   if (!screen || !copy) return;
   const name = resourceName || 'cette ressource';
-  copy.textContent = `Votre demande d'acces a ${name} est en attente. Un admin de la ressource doit la valider.`;
+  _pendingJoinResourceId = resourceId || null;
+  copy.textContent = `Votre demande d'accès à ${name} est en attente. Un administrateur de la ressource doit la valider.`;
   screen.classList.remove('hidden');
 }
 
 function closeInvitePendingScreen() {
   document.getElementById('invite-pending-screen')?.classList.add('hidden');
+  _pendingJoinResourceId = null;
 }
 
 function openSecurityFromInvitePending() {
-  closeInvitePendingScreen();
-  showChangePin();
+  const errEl = document.getElementById('join-invite-pin-error');
+  if (errEl) errEl.textContent = '';
+  clearPinInputs('#join-invite-pin input');
+  if (!_pendingJoinResourceId) {
+    showToast('Impossible d\'ouvrir le mot de passe — rechargez la page.');
+    return;
+  }
+  document.getElementById('join-invite-password-overlay')?.classList.remove('hidden');
+  const pins = document.querySelectorAll('#join-invite-pin input');
+  setupPinInputs(pins, submitJoinInvitePassword);
+  setTimeout(() => pins[0]?.focus(), 100);
+}
+
+function closeJoinInvitePasswordOverlay() {
+  document.getElementById('join-invite-password-overlay')?.classList.add('hidden');
+  document.getElementById('join-invite-pin-error') && (document.getElementById('join-invite-pin-error').textContent = '');
+  clearPinInputs('#join-invite-pin input');
+}
+
+async function submitJoinInvitePassword() {
+  const errEl = document.getElementById('join-invite-pin-error');
+  if (errEl) errEl.textContent = '';
+  const pin = getPinFromInputs('#join-invite-pin input');
+  if (pin.length < 4) {
+    if (errEl) errEl.textContent = 'Entrez 4 chiffres';
+    return;
+  }
+  if (!currentUser?.id || !_pendingJoinResourceId) {
+    if (errEl) errEl.textContent = 'Session invalide — rechargez la page.';
+    return;
+  }
+  try {
+    await accessService.acceptPendingWithJoinPin({
+      resourceId: _pendingJoinResourceId,
+      profileId: currentUser.id,
+      pin,
+    });
+    closeJoinInvitePasswordOverlay();
+    closeInvitePendingScreen();
+    _pendingJoinResourceId = null;
+    if (typeof loadResources === 'function') await loadResources();
+    showToast('Accès accepté ✓');
+  } catch (e) {
+    const msg = e?.message || '';
+    if (errEl) {
+      errEl.textContent = msg === 'NO_JOIN_PIN'
+        ? 'Aucun mot de passe n\'a été défini pour cette ressource.'
+        : msg === 'PIN_MISMATCH'
+          ? 'Code incorrect'
+          : msg === 'NO_PENDING'
+            ? 'Aucune demande en attente'
+            : msg === 'ALREADY_ACCEPTED'
+              ? 'Vous avez déjà accès à cette ressource'
+              : 'Erreur — réessayez';
+    }
+  }
 }
 
 async function _consumePendingResourceJoin({ silent = true } = {}) {
@@ -182,7 +240,7 @@ async function _runEntryRouting() {
   const joinResult = await _consumePendingResourceJoin({ silent: true });
   await loadResources();
   enterApp('dashboard');
-  if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName);
+  if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId);
 }
 
 // ---- LOGIN ----
@@ -513,7 +571,7 @@ async function loginUser() {
     stage = 'enter_app'; diag.stage = stage;
     enterApp('dashboard');
     showToast(`Bonjour ${currentUser.name} !`);
-    if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName);
+    if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId);
   } catch(e) {
     hideSkeleton();
     diag.stage = stage;
@@ -588,7 +646,7 @@ function handleSignupPhoto(input) {
     suTempPhoto = dataUrl;
     const preview = document.getElementById('su-photo-preview');
     if (preview) { preview.innerHTML = `<img src="${dataUrl}" alt="">`; preview.classList.add('has-photo'); }
-  });
+  }, window.PHOTO_PRESET_AVATAR);
 }
 
 async function signupProfileAdvance() {
@@ -624,7 +682,7 @@ async function signupProfileAdvance() {
     const joinResult = await _consumePendingResourceJoin({ silent: true });
     await loadResources();
     enterApp('dashboard');
-    if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName);
+    if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId);
     celebrate('🎉', `Bienvenue ${name} !`, '+50 XP', 'Ton espace est prêt !');
   } catch(e) { hideSkeleton(); console.error(e); errEl.textContent = 'Erreur — réessayez'; }
 }
@@ -886,7 +944,7 @@ function changeProfilePhoto(input) {
       showEditProfileSheet();
       showToast('Photo mise à jour ✓');
     } catch(e) { showToast('Erreur — réessayez'); }
-  });
+  }, window.PHOTO_PRESET_AVATAR);
 }
 
 function showChangePin() {

@@ -50,4 +50,35 @@ const accessService = {
     await _assertResourceAdmin({ accessId, approverProfileId });
     await accessRepository.updateStatus(accessId, 'rejected');
   },
+
+  /**
+   * Accepte l’accès d’un invité en attente si le PIN ressource (joinPin) correspond.
+   * Ne requiert pas d’être admin (auto-déblocage).
+   */
+  async acceptPendingWithJoinPin({ resourceId, profileId, pin }) {
+    if (!resourceId || !profileId) throw new Error('INVALID');
+    const resource = await resourceRepository.getById(resourceId);
+    if (!resource) throw new Error('RESOURCE_NOT_FOUND');
+    const stored = String(resource.joinPin || '').replace(/\D/g, '');
+    const normalized = String(pin || '').replace(/\D/g, '').slice(0, 4);
+    if (!stored || stored.length !== 4) throw new Error('NO_JOIN_PIN');
+    if (normalized !== stored) throw new Error('PIN_MISMATCH');
+
+    const entries = await accessRepository.listByResourceId(resourceId);
+    const pending = entries.find((entry) => {
+      const pid = entry.profileId ?? entry.profil_id;
+      const st = entry.status ?? entry.statut;
+      return pid === profileId && st === 'pending';
+    });
+    if (!pending) {
+      const accepted = entries.find((entry) => {
+        const pid = entry.profileId ?? entry.profil_id;
+        const st = entry.status ?? entry.statut;
+        return pid === profileId && st === 'accepted';
+      });
+      if (accepted) throw new Error('ALREADY_ACCEPTED');
+      throw new Error('NO_PENDING');
+    }
+    await accessRepository.updateStatus(pending.id, 'accepted');
+  },
 };

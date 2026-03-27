@@ -41,7 +41,7 @@
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <!-- Non-blocking font loading (swap prevents FOIT) -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/style.css?v=17">
+<link rel="stylesheet" href="css/style.css?v=18">
 <!-- Firebase SDK (defer = non-blocking parse, keeps order) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
@@ -585,11 +585,32 @@
     <div class="ob-emoji">⏳</div>
     <h2 style="margin-bottom:6px">Demande en attente</h2>
     <p id="invite-pending-copy" style="color:var(--text-light);margin-bottom:20px;font-size: calc(14px * var(--ui-text-scale));line-height:1.5">
-      Votre demande d'acces a ete envoyee. Un admin de la ressource doit la valider.
+      Votre demande d'accès a été envoyée. Un administrateur de la ressource doit la valider.
     </p>
-    <p style="font-weight:600;font-size: calc(14px * var(--ui-text-scale));margin-bottom:10px;color:var(--text)">Passer l'étape de sécurisation avec un code secret</p>
-    <button type="button" class="btn" style="background:#f5f5f5;color:var(--text);width:100%;margin-bottom:16px" onclick="openSecurityFromInvitePending()">Saisir mon code secret</button>
+    <p style="font-weight:600;font-size: calc(14px * var(--ui-text-scale));margin-bottom:10px;color:var(--text)">Mot de passe d'invitation</p>
+    <button type="button" class="btn" style="background:#f5f5f5;color:var(--text);width:100%;margin-bottom:16px" onclick="openSecurityFromInvitePending()">Saisir le mot de passe</button>
     <button class="btn btn-primary" style="width:100%" onclick="closeInvitePendingScreen()">Continuer</button>
+  </div>
+</div>
+
+<div id="join-invite-password-overlay" class="ob-overlay hidden">
+  <div class="ob-card">
+    <button type="button" class="ob-back" onclick="closeJoinInvitePasswordOverlay()">←</button>
+    <h2 style="margin-bottom:6px">Mot de passe</h2>
+    <p style="color:var(--text-light);margin-bottom:16px;font-size: calc(14px * var(--ui-text-scale));line-height:1.5">
+      Entrez le code à 4 chiffres défini par l'administrateur de la ressource pour rejoindre sans attendre la validation manuelle.
+    </p>
+    <fieldset class="pin-fieldset">
+      <legend class="pin-fieldset-legend pin-fieldset-legend--compact">Code à 4 chiffres</legend>
+      <div class="pin-input" id="join-invite-pin" style="justify-content:center">
+        <input type="tel" id="join-invite-pin-0" name="join-invite-pin-0" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" id="join-invite-pin-1" name="join-invite-pin-1" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" id="join-invite-pin-2" name="join-invite-pin-2" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input type="tel" id="join-invite-pin-3" name="join-invite-pin-3" maxlength="1" inputmode="numeric" autocomplete="off">
+      </div>
+    </fieldset>
+    <div class="lock-error" id="join-invite-pin-error"></div>
+    <button type="button" class="btn btn-primary" style="width:100%;margin-top:14px" onclick="submitJoinInvitePassword()">Valider</button>
   </div>
 </div>
 
@@ -846,19 +867,19 @@
 <script src="src/modules/reservation/reservation.repository.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.service.js?v=4" defer></script>
 <script src="src/modules/access/access.repository.js?v=4" defer></script>
-<script src="src/modules/access/access.service.js?v=4" defer></script>
+<script src="src/modules/access/access.service.js?v=5" defer></script>
 <script src="src/modules/family/family.repository.js?v=4" defer></script>
 <script src="src/modules/family/family.service.js?v=4" defer></script>
 <script src="src/modules/user/user.repository.js?v=4" defer></script>
 <script src="src/modules/user/user.service.js?v=4" defer></script>
-<script src="src/modules/resource/resource.repository.js?v=5" defer></script>
-<script src="src/modules/resource/resource.service.js?v=5" defer></script>
+<script src="src/modules/resource/resource.repository.js?v=6" defer></script>
+<script src="src/modules/resource/resource.service.js?v=6" defer></script>
 <script src="js/booking.js?v=5" defer></script>
 <script src="js/calendar.js?v=5" defer></script>
 <script src="js/history.js?v=4" defer></script>
 <script src="src/modules/profile/profile.service.js?v=1" defer></script>
 <script src="js/profile.js?v=6" defer></script>
-<script src="js/resources.js?v=10" defer></script>
+<script src="js/resources.js?v=11" defer></script>
 <script src="js/dashboard.js?v=15" defer></script>
 <script src="js/stay.js?v=4" defer></script>
 <script src="js/checklist.js?v=4" defer></script>

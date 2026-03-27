@@ -22,6 +22,12 @@ function _normalizeResourceInviteCode(raw) {
   return s;
 }
 
+function _normalizeJoinPin(raw) {
+  const s = String(raw || '').replace(/\D/g, '').slice(0, 4);
+  if (s.length !== 4) return null;
+  return s;
+}
+
 function _resourceDate(dateLike) {
   if (!dateLike) return null;
   if (typeof dateLike.toDate === 'function') return dateLike.toDate();
@@ -187,6 +193,7 @@ const resourceService = {
       invite: {
         enabled: canInvite,
         inviteCode,
+        joinPinSet: !!(resource.joinPin && String(resource.joinPin).replace(/\D/g, '').length === 4),
         shareUrl,
         displayUrl,
       },
@@ -237,6 +244,34 @@ const resourceService = {
     }
     if (normalized === (vm.invite.inviteCode || '')) return normalized;
     await resourceRepository.setInviteCode(resourceId, normalized);
+    return normalized;
+  },
+
+  async updateJoinPinForResource({ resourceId, rawPin, currentUserId, familyId }) {
+    const origin = typeof location !== 'undefined' ? location.origin : '';
+    const pathname = typeof location !== 'undefined' ? location.pathname : '/';
+    const vm = await this.getManagePageViewModel({
+      resourceId,
+      currentUserId,
+      familyId,
+      origin,
+      pathname,
+    });
+    if (!vm.permissions.canInvite) {
+      const err = new Error('FORBIDDEN');
+      throw err;
+    }
+    const raw = String(rawPin ?? '').trim();
+    if (raw === '') {
+      await resourceRepository.setJoinPin(resourceId, null);
+      return '';
+    }
+    const normalized = _normalizeJoinPin(raw);
+    if (!normalized) {
+      const err = new Error('INVALID_PIN');
+      throw err;
+    }
+    await resourceRepository.setJoinPin(resourceId, normalized);
     return normalized;
   },
 

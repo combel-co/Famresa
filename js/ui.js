@@ -232,18 +232,36 @@ function getPinFromInputs(selectorOrInputs) {
     .join('');
 }
 
-function resizePhotoFile(file, callback) {
+/** Avatar / profil (Firestore, petit champ). */
+window.PHOTO_PRESET_AVATAR = { maxSize: 448, quality: 0.84 };
+/** Photo ressource (bandeau dashboard plein largeur). */
+window.PHOTO_PRESET_RESOURCE = { maxSize: 1024, quality: 0.86 };
+
+function resizePhotoFile(file, callback, options) {
   if (!file) return;
+  const opts = Object.assign({}, window.PHOTO_PRESET_AVATAR, options || {});
   const reader = new FileReader();
   reader.onload = (e) => {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const size = 120; canvas.width = size; canvas.height = size;
+      const side = Math.min(img.width, img.height);
+      const out = Math.min(opts.maxSize, side);
+      canvas.width = out;
+      canvas.height = out;
       const ctx = canvas.getContext('2d');
-      const min = Math.min(img.width, img.height);
-      ctx.drawImage(img, (img.width - min)/2, (img.height - min)/2, min, min, 0, 0, size, size);
-      callback(canvas.toDataURL('image/jpeg', 0.6));
+      ctx.drawImage(
+        img,
+        (img.width - side) / 2,
+        (img.height - side) / 2,
+        side,
+        side,
+        0,
+        0,
+        out,
+        out
+      );
+      callback(canvas.toDataURL('image/jpeg', opts.quality));
     };
     img.src = e.target.result;
   };
@@ -255,7 +273,7 @@ function handlePhoto(input) {
     tempPhoto = dataUrl;
     const preview = document.getElementById('photo-preview');
     if (preview) { preview.innerHTML = `<img src="${dataUrl}" alt="">`; preview.classList.add('has-photo'); }
-  });
+  }, window.PHOTO_PRESET_AVATAR);
 }
 
 function updateUserPill() {

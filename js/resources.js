@@ -814,7 +814,7 @@ function handleResourcePhoto(input) {
     window._resourcePhotoDraft = dataUrl;
     const previewWrap = document.getElementById('resource-photo-preview');
     if (previewWrap) previewWrap.innerHTML = `<img src="${dataUrl}" alt="" style="width:100%;height:100%;object-fit:cover">`;
-  });
+  }, window.PHOTO_PRESET_RESOURCE);
 }
 
 // ==========================================
@@ -1000,27 +1000,38 @@ function _rmRenderPage(viewModel) {
   const resource = viewModel.resource;
   const stats = viewModel.stats;
 
-  const inviteHtml = viewModel.permissions.canInvite
+  const inviteBlockHtml = viewModel.permissions.canInvite && viewModel.invite?.inviteCode
     ? `
-      <div class="rm-section-lbl">Inviter quelqu'un</div>
-      <div class="rm-invite-card rm-invite-card-compact">
+      <div class="rm-section-lbl">Invitation</div>
+      <div class="rm-invite-card rm-invite-card-unified">
+        <div class="rm-invite-unified-title">Inviter quelqu'un</div>
         <div class="rm-invite-compact-row">
           <span class="rm-invite-url-text">${_rmEscapeHtml(viewModel.invite.displayUrl || '')}</span>
           <button type="button" class="rm-invite-share-icn" onclick='_rmShareResourceInvite(${JSON.stringify(resource.id)})' aria-label="Partager le lien">📤</button>
         </div>
-      </div>`
-    : '';
-
-  const inviteCodeEditHtml = viewModel.permissions.canInvite && viewModel.invite?.inviteCode
-    ? `
-      <div class="rm-invite-code-block">
-        <div class="rm-section-lbl">Code d'invitation</div>
-        <div class="rm-invite-code-row">
-          <span class="rm-invite-code-prefix">Code :</span>
-          <input type="text" id="rm-invite-code-input" class="rm-invite-code-input" value="${_rmEscapeHtml(viewModel.invite.inviteCode)}" maxlength="8" autocomplete="off" spellcheck="false" aria-label="Code d'invitation">
-          <button type="button" class="btn btn-primary rm-invite-code-save" onclick='_rmSaveInviteCode(${JSON.stringify(resource.id)})'>Enregistrer</button>
+        <div class="rm-invite-field-block">
+          <div class="rm-invite-field-lbl">Code d'activation</div>
+          <div class="rm-invite-code-row">
+            <span class="rm-invite-code-prefix">Code :</span>
+            <input type="text" id="rm-invite-code-input" class="rm-invite-code-input" value="${_rmEscapeHtml(viewModel.invite.inviteCode)}" maxlength="8" autocomplete="off" spellcheck="false" aria-label="Code d'activation">
+            <button type="button" class="btn btn-primary rm-invite-code-save" onclick='_rmSaveInviteCode(${JSON.stringify(resource.id)})'>Enregistrer</button>
+          </div>
+          <div class="lock-error" id="rm-invite-code-error" role="alert"></div>
         </div>
-        <div class="lock-error" id="rm-invite-code-error" role="alert"></div>
+        <div class="rm-invite-field-block">
+          <div class="rm-invite-field-lbl">Mot de passe pour rejoindre</div>
+          <p class="rm-invite-field-hint">${viewModel.invite.joinPinSet ? 'Un mot de passe à 4 chiffres est défini. Saisissez un nouveau code pour le remplacer, ou laissez vide et enregistrez pour le supprimer.' : 'Optionnel — les invités pourront saisir ce code pour être acceptés sans attendre une validation manuelle.'}</p>
+          <div class="rm-join-pin-row">
+            <div class="pin-input rm-join-pin-input" id="rm-join-pin-input">
+              <input type="tel" id="rm-join-pin-0" maxlength="1" inputmode="numeric" autocomplete="off">
+              <input type="tel" id="rm-join-pin-1" maxlength="1" inputmode="numeric" autocomplete="off">
+              <input type="tel" id="rm-join-pin-2" maxlength="1" inputmode="numeric" autocomplete="off">
+              <input type="tel" id="rm-join-pin-3" maxlength="1" inputmode="numeric" autocomplete="off">
+            </div>
+            <button type="button" class="btn btn-primary rm-invite-code-save" onclick='_rmSaveJoinPin(${JSON.stringify(resource.id)})'>Enregistrer</button>
+          </div>
+          <div class="lock-error" id="rm-join-pin-error" role="alert"></div>
+        </div>
       </div>`
     : '';
 
@@ -1096,8 +1107,7 @@ function _rmRenderPage(viewModel) {
         </div>
         <div class="rm-resource-role-badge ${_rmEscapeHtml(resource.roleClass)}">${_rmEscapeHtml(resource.roleLabel)}</div>
       </div>
-      ${inviteHtml}
-      ${inviteCodeEditHtml}
+      ${inviteBlockHtml}
       ${pendingHtml}
       <div class="rm-section-lbl">Membres actifs</div>
       <div class="rm-members-group">${membersHtml}</div>
@@ -1143,9 +1153,45 @@ async function showResourceManagePage(resourceId) {
     const localResource = resources.find((item) => item.id === resourceId);
     if (localResource && viewModel.invite?.inviteCode) localResource.inviteCode = viewModel.invite.inviteCode;
     content.innerHTML = _rmRenderPage(viewModel);
+    _rmSetupJoinPinInputs();
   } catch (e) {
     console.error('Resource manage page error:', e);
     content.innerHTML = _rmErrorMarkup();
+  }
+}
+
+function _rmSetupJoinPinInputs() {
+  const pins = document.querySelectorAll('#rm-join-pin-input input');
+  if (!pins.length) return;
+  setupPinInputs(pins);
+}
+
+async function _rmSaveJoinPin(resourceId) {
+  const errEl = document.getElementById('rm-join-pin-error');
+  if (errEl) errEl.textContent = '';
+  const pin = getPinFromInputs('#rm-join-pin-input input');
+  const resForFam = resources.find((r) => r.id === resourceId);
+  const familyIdForResource = resForFam?.famille_id || resForFam?.familleId || currentUser.familyId;
+  if (!familyIdForResource) {
+    if (errEl) errEl.textContent = 'Famille introuvable';
+    return;
+  }
+  try {
+    await resourceService.updateJoinPinForResource({
+      resourceId,
+      rawPin: pin,
+      currentUserId: currentUser.id,
+      familyId: familyIdForResource,
+    });
+    showToast(pin ? 'Mot de passe mis à jour ✓' : 'Mot de passe supprimé ✓');
+    await showResourceManagePage(resourceId);
+  } catch (e) {
+    const msg = e?.message || '';
+    if (errEl) {
+      errEl.textContent = msg === 'FORBIDDEN' ? 'Action non autorisée'
+        : msg === 'INVALID_PIN' ? 'Entrez 4 chiffres ou laissez vide pour supprimer'
+        : 'Erreur — réessayez';
+    }
   }
 }
 
