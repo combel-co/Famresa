@@ -58,8 +58,8 @@ function formatStructuredAddress(addressObj) {
   const city = _normalizeAddressPart(a.city);
   const postalCode = _normalizeAddressPart(a.postalCode);
   const country = _normalizeAddressPart(a.country);
-  const cityLine = _normalizeAddressPart([postalCode, city].filter(Boolean).join(' '));
-  return [street, cityLine, country].filter(Boolean).join(', ');
+  // Affichage : rue, ville, code postal, pays
+  return [street, city, postalCode, country].filter(Boolean).join(', ');
 }
 
 function getResourceAddressDisplay(resource, fallback = 'Adresse non renseignée') {

@@ -75,9 +75,13 @@ function _resourceMetaLine(resource) {
 }
 
 function _resourceSubLine(resource) {
-  return resource.type === 'house'
-    ? (resource.address || resource.adresse || 'Non renseigné')
-    : (resource.plaque || 'Non renseigné');
+  if (resource.type !== 'house') {
+    return resource.plaque || 'Non renseigné';
+  }
+  if (typeof getResourceAddressDisplay === 'function') {
+    return getResourceAddressDisplay(resource, 'Non renseigné');
+  }
+  return resource.address || resource.adresse || 'Non renseigné';
 }
 
 function _resourceSortAccepted(a, b, currentUserId) {

@@ -52,7 +52,7 @@ function _renderResourcesByFamily() {
         ? `<div class="pf-resource-badge">Disponible</div>`
         : `<div class="pf-resource-badge" style="background:#fff7ed;color:#9a3412;border-color:#fed7aa">Occupé</div>`;
       const sub = res.type === 'house'
-        ? (res.address || 'Maison')
+        ? getResourceAddressDisplay(res, 'Maison')
         : ((res.carLocation || res.lieu || '').trim() || 'Lieu non renseigné');
       const role = window._myResourceRoles?.[res.id];
       const roleStyle = role ? (roleColors[role] || roleColors.member) : null;
