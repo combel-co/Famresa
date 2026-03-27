@@ -15,6 +15,39 @@ function showToast(msg) {
   setTimeout(() => el.classList.remove('show'), 2500);
 }
 
+/** Petit (a) vs grand (A) — localStorage famresa_ui_scale: 'normal' | 'large', défaut appliqué: grand */
+function setTextSizePreference(isLarge) {
+  try {
+    var root = document.documentElement;
+    if (isLarge) {
+      root.classList.add('ui-large');
+      localStorage.setItem('famresa_ui_scale', 'large');
+    } else {
+      root.classList.remove('ui-large');
+      localStorage.setItem('famresa_ui_scale', 'normal');
+    }
+    syncPfTextSizeToggle();
+    var h = document.getElementById('app-header');
+    if (h && h.offsetHeight > 0) {
+      root.style.setProperty('--header-h', h.offsetHeight + 'px');
+    }
+  } catch (e) {}
+}
+
+function syncPfTextSizeToggle() {
+  var large = document.documentElement.classList.contains('ui-large');
+  var bSmall = document.getElementById('pf-text-size-small');
+  var bLarge = document.getElementById('pf-text-size-large');
+  if (bSmall) bSmall.setAttribute('aria-pressed', large ? 'false' : 'true');
+  if (bLarge) bLarge.setAttribute('aria-pressed', large ? 'true' : 'false');
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', function () {
+    syncPfTextSizeToggle();
+  });
+}
+
 // Reusable PIN input setup (auto-advance, backspace, auto-submit)
 function setupPinInputs(inputs, onComplete, options) {
   const opts = options || {};
