@@ -7,6 +7,7 @@ function showWelcomeScreen() {
   hideSplash();
   hideSkeleton();
   document.body.classList.add('auth-mode');
+  document.documentElement.style.setProperty('--sheet-bottom-offset', '0px');
   document.getElementById('app-header').style.display = 'none';
   document.getElementById('app-main').style.display = 'none';
   const bottomNav = document.querySelector('.bottom-nav');
@@ -19,6 +20,7 @@ function showWelcomeScreen() {
 // ---- LOGIN ----
 function connectUser() {
   document.body.classList.add('auth-mode');
+  document.documentElement.style.setProperty('--sheet-bottom-offset', '0px');
   document.getElementById('welcome-screen').style.display = 'none';
   const bottomNav = document.querySelector('.bottom-nav');
   if (bottomNav) bottomNav.style.display = 'none';
@@ -376,6 +378,7 @@ let _isSubmittingFamily = false;
 
 function startSignup() {
   document.body.classList.add('auth-mode');
+  document.documentElement.style.setProperty('--sheet-bottom-offset', '0px');
   document.getElementById('welcome-screen').style.display = 'none';
   const bottomNav = document.querySelector('.bottom-nav');
   if (bottomNav) bottomNav.style.display = 'none';

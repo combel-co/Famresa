@@ -352,6 +352,17 @@ function hideSkeleton() {
   document.getElementById('skeleton-screen').style.display = 'none';
 }
 
+function _syncSheetBottomOffset() {
+  const nav = document.querySelector('.bottom-nav');
+  const isNavVisible = !!nav && nav.style.display !== 'none';
+  const offset = isNavVisible ? `${Math.ceil(nav.getBoundingClientRect().height)}px` : '0px';
+  document.documentElement.style.setProperty('--sheet-bottom-offset', offset);
+}
+
+window.addEventListener('resize', () => {
+  requestAnimationFrame(_syncSheetBottomOffset);
+}, { passive: true });
+
 function enterApp(targetTab) {
   hideSplash();
   hideSkeleton();
@@ -362,6 +373,7 @@ function enterApp(targetTab) {
   header.style.visibility = 'visible';
   document.getElementById('app-main').style.display = 'block';
   if (bottomNav) bottomNav.style.display = 'flex';
+  requestAnimationFrame(_syncSheetBottomOffset);
   // Sync CSS variable to actual rendered header height (fixes sticky gap on all screen sizes)
   requestAnimationFrame(_syncHeaderHeight);
   updateUserPill();
