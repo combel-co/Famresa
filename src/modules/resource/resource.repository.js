@@ -45,6 +45,20 @@ const resourceRepository = {
     return inviteCode;
   },
 
+  /** PIN invitation ressource (4 chiffres). Passer null ou '' pour supprimer le champ. */
+  async setJoinPin(resourceId, pin) {
+    const docRef = ressourcesRef().doc(resourceId);
+    const doc = await docRef.get();
+    if (!doc.exists) return null;
+    const trimmed = pin === null || pin === undefined ? '' : String(pin).trim();
+    if (!trimmed) {
+      await docRef.update({ joinPin: firebase.firestore.FieldValue.delete() });
+      return '';
+    }
+    await docRef.update({ joinPin: trimmed });
+    return trimmed;
+  },
+
   async deleteById(resourceId) {
     await ressourcesRef().doc(resourceId).delete();
   },

@@ -2158,6 +2158,44 @@ html.ui-large {
     font-size: calc(13px * var(--ui-text-scale)) !important;
   }
 
+  .rm-invite-card-unified {
+    padding: 14px 14px 16px;
+  }
+  .rm-invite-unified-title {
+    font-size: calc(15px * var(--ui-text-scale));
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .rm-invite-field-block {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 0.5px solid var(--border-light);
+  }
+  .rm-invite-field-lbl {
+    font-size: calc(12px * var(--ui-text-scale));
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .rm-invite-field-hint {
+    font-size: calc(12px * var(--ui-text-scale));
+    color: var(--text-muted);
+    line-height: 1.45;
+    margin: 0 0 10px;
+  }
+  .rm-join-pin-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .rm-join-pin-row .rm-join-pin-input {
+    flex: 1;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+
   .rm-pending-group {
     background: #fffbeb;
     border: 0.5px solid #fde68a;
