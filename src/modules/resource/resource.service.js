@@ -13,6 +13,15 @@ function _resourceInviteCode() {
   return code;
 }
 
+function _normalizeResourceInviteCode(raw) {
+  const s = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
+  if (s.length !== 8) return null;
+  for (let i = 0; i < s.length; i += 1) {
+    if (!RESOURCE_INVITE_CODE_CHARS.includes(s[i])) return null;
+  }
+  return s;
+}
+
 function _resourceDate(dateLike) {
   if (!dateLike) return null;
   if (typeof dateLike.toDate === 'function') return dateLike.toDate();
@@ -205,6 +214,30 @@ const resourceService = {
       shareUrl,
       displayUrl: shareUrl.replace(/^https?:\/\//, ''),
     };
+  },
+
+  async updateInviteCodeForResource({ resourceId, rawCode, currentUserId, familyId }) {
+    const origin = typeof location !== 'undefined' ? location.origin : '';
+    const pathname = typeof location !== 'undefined' ? location.pathname : '/';
+    const vm = await this.getManagePageViewModel({
+      resourceId,
+      currentUserId,
+      familyId,
+      origin,
+      pathname,
+    });
+    if (!vm.permissions.canInvite) {
+      const err = new Error('FORBIDDEN');
+      throw err;
+    }
+    const normalized = _normalizeResourceInviteCode(rawCode);
+    if (!normalized) {
+      const err = new Error('INVALID');
+      throw err;
+    }
+    if (normalized === (vm.invite.inviteCode || '')) return normalized;
+    await resourceRepository.setInviteCode(resourceId, normalized);
+    return normalized;
   },
 
   async approveManageAccess({ accessId, approverProfileId }) {

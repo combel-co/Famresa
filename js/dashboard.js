@@ -208,9 +208,16 @@ function renderWeekStrip(resourceId, decisionState) {
 
   if (meta) {
     if (ds.availabilityStatus === 'occupied') {
-      meta.textContent = `Libre à partir du ${formatRelativeDate(ds.state.freeFrom)}`;
+      const d = formatRelativeDate(ds.state.freeFrom);
+      meta.innerHTML = `Libre à partir du <span class="house-week-meta-date">${_escapeHtml(d)}</span>`;
     } else {
-      meta.textContent = 'Maison libre cette semaine';
+      const fu = ds.state?.freeUntil;
+      if (fu) {
+        const d = formatRelativeDate(fu);
+        meta.innerHTML = `Libre à partir du <span class="house-week-meta-date">${_escapeHtml(d)}</span>`;
+      } else {
+        meta.textContent = 'Maison libre cette semaine';
+      }
     }
   }
 }
@@ -466,7 +473,15 @@ function renderUpcomingBookings() {
   }).join('');
 }
 
+/** Bandeau photo plein largeur uniquement (pas de variante vignette). */
+function applyDashHeroLayoutPreference() {
+  const dashHeroEl = document.getElementById('dash-resource-hero');
+  if (dashHeroEl) dashHeroEl.classList.remove('dash-hero--split');
+}
+
 function renderExperiencePanels() {
+  applyDashHeroLayoutPreference();
+
   const monthEntries = getMonthBookingEntries();
   const res = resources.find(r => r.id === selectedResource);
   const isHouse = res && res.type === 'house';
@@ -481,7 +496,9 @@ function renderExperiencePanels() {
   const cardSubtitle = document.getElementById('resource-card-subtitle');
   if (cardEmoji) cardEmoji.textContent = res?.emoji || (isHouse ? '🏠' : '🚗');
   if (cardPhoto) {
-    if (res?.photoUrl) cardPhoto.innerHTML = `<img src="${res.photoUrl}" alt="">`;
+    if (res?.photoUrl) {
+      cardPhoto.innerHTML = `<img class="dash-hero-photo-img" src="${res.photoUrl}" alt="" fetchpriority="high" decoding="async">`;
+    }
     else if (isHouse) cardPhoto.innerHTML = '';
     else cardPhoto.innerHTML = `<span id="resource-card-emoji">${res?.emoji || '🚗'}</span>`;
   }
@@ -501,14 +518,12 @@ function renderExperiencePanels() {
   const statusText = document.getElementById('car-status-text');
   const mainCard = document.getElementById('resource-main-card');
   const tripBanner = document.getElementById('trip-banner');
-  const houseQuickSummary = document.getElementById('house-quick-summary');
-  const houseWeekView = document.getElementById('house-week-view');
+  const houseWeekSection = document.getElementById('house-week-section');
   const houseRawInfo = document.getElementById('house-raw-info');
   const houseInfoCard = document.getElementById('house-info-card');
   const carInfoCard = document.getElementById('car-info-card');
   const carInfoGrid = document.getElementById('car-info-grid');
-  if (houseQuickSummary) houseQuickSummary.style.display = isHouse ? '' : 'none';
-  if (houseWeekView) houseWeekView.style.display = isHouse ? '' : 'none';
+  if (houseWeekSection) houseWeekSection.style.display = isHouse ? '' : 'none';
   if (houseRawInfo) houseRawInfo.style.display = isHouse ? '' : 'none';
   if (houseInfoCard) houseInfoCard.style.display = isHouse ? '' : 'none';
   if (carInfoCard) carInfoCard.style.display = !isHouse ? '' : 'none';
@@ -585,28 +600,22 @@ function renderExperiencePanels() {
     }
   }
 
-  // ── Bloc maison: quick summary, semaine, infos brutes, CTA unique ──
-  const summaryLine = document.getElementById('house-summary-line');
-  const summaryDetails = document.getElementById('house-summary-details');
+  // ── Bloc maison: titre « Cette semaine », statut, strip, meta ──
+  const weekStatus = document.getElementById('house-week-status');
 
   if (isHouse) {
-    const untilLabel = decisionState.availabilityStatus === 'occupied'
-      ? formatRelativeDate(decisionState.endDate)
-      : formatRelativeDate(state.freeUntil);
     if (decisionState.availabilityStatus === 'occupied') {
-      if (summaryLine) {
-        summaryLine.innerHTML = `
-          <span class="ccv2-badge reserved house-summary-status-badge">Occupée</span>
-          <span class="house-summary-inline-text">${decisionState.occupantName} · ${decisionState.peopleCount} personne${decisionState.peopleCount > 1 ? 's' : ''} · Départ le ${untilLabel}</span>
-        `;
+      const n = decisionState.peopleCount;
+      if (weekStatus) {
+        const nameEsc = _escapeHtml(decisionState.occupantName);
+        weekStatus.innerHTML = `<span class="house-week-status-badge">Occupée</span><span class="house-week-status-detail"> · ${nameEsc} · ${n} personne${n > 1 ? 's' : ''}</span>`;
+        weekStatus.classList.remove('house-week-status--available');
+        weekStatus.classList.add('house-week-status--occupied');
       }
-      if (summaryDetails) summaryDetails.style.display = 'none';
-    } else {
-      if (summaryLine) summaryLine.textContent = 'Disponible';
-      if (summaryDetails) {
-        summaryDetails.style.display = '';
-        summaryDetails.textContent = `Libre à partir du ${untilLabel}`;
-      }
+    } else if (weekStatus) {
+      weekStatus.textContent = 'Disponible';
+      weekStatus.classList.remove('house-week-status--occupied');
+      weekStatus.classList.add('house-week-status--available');
     }
 
     renderWeekStrip(selectedResource, decisionState);
@@ -745,3 +754,5 @@ function renderHistoryList() {
     }).join('');
   }
 }
+
+window.applyDashHeroLayoutPreference = applyDashHeroLayoutPreference;

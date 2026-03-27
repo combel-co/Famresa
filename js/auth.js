@@ -148,6 +148,11 @@ function closeInvitePendingScreen() {
   document.getElementById('invite-pending-screen')?.classList.add('hidden');
 }
 
+function openSecurityFromInvitePending() {
+  closeInvitePendingScreen();
+  showChangePin();
+}
+
 async function _consumePendingResourceJoin({ silent = true } = {}) {
   if (!_pendingResourceJoinCode) return null;
   const code = _pendingResourceJoinCode;
@@ -502,12 +507,12 @@ async function loginUser() {
     showSkeleton();
     stage = 'run_v2_migration'; diag.stage = stage;
     await runV2MigrationIfNeeded();
+    const joinResult = await _consumePendingResourceJoin({ silent: true });
     stage = 'load_resources'; diag.stage = stage;
     await loadResources();
     stage = 'enter_app'; diag.stage = stage;
     enterApp('dashboard');
     showToast(`Bonjour ${currentUser.name} !`);
-    const joinResult = await _consumePendingResourceJoin({ silent: true });
     if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName);
   } catch(e) {
     hideSkeleton();
@@ -616,8 +621,8 @@ async function signupProfileAdvance() {
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
     document.getElementById('signup-overlay').classList.add('hidden');
     showSkeleton();
-    await loadResources();
     const joinResult = await _consumePendingResourceJoin({ silent: true });
+    await loadResources();
     enterApp('dashboard');
     if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName);
     celebrate('🎉', `Bienvenue ${name} !`, '+50 XP', 'Ton espace est prêt !');
@@ -885,6 +890,7 @@ function changeProfilePhoto(input) {
 }
 
 function showChangePin() {
+  document.getElementById('overlay')?.classList.add('open');
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
       <h2>Nouveau code</h2>

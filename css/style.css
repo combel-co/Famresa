@@ -928,23 +928,78 @@ html.ui-large {
   .ccv2-card.state-available { background:#f7f6f2; border-color:#e5e4df; }
   .ccv2-card.state-occupied { background:#fffaf0; border-color:#fde68a; }
   .ccv2-card.state-soon { background:#f0faf4; border-color:#bbf7d0; }
-  .dash-hero { position:relative; min-height:154px; }
-  .dash-hero-media {
-    height:154px; display:flex; align-items:center; justify-content:center;
-    font-size: calc(68px * var(--ui-text-scale)); background:linear-gradient(160deg,#dbeafe 0%,#bfdbfe 50%,#93c5fd 100%);
+  /* Hero ressource — Alternative A (défaut) : bandeau photo + titre sur fond carte */
+  .dash-hero {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
-  .dash-hero-media img { width:100%; height:100%; object-fit:cover; }
-  .dash-hero-overlay {
-    position:absolute; inset:0;
-    background:linear-gradient(to bottom, rgba(0,0,0,0) 35%, rgba(0,0,0,0.55) 100%);
+  .dash-hero-media {
+    height: clamp(220px, 58vw, 360px);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(68px * var(--ui-text-scale));
+    background: linear-gradient(160deg, #dbeafe 0%, #bfdbfe 50%, #93c5fd 100%);
+    border-radius: 20px 20px 0 0;
+    overflow: hidden;
+  }
+  .dash-hero-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+    display: block;
+    filter: none;
+    image-rendering: auto;
   }
   .dash-hero-content {
-    position:absolute; left:12px; right:12px; bottom:10px; z-index:2;
-    display:flex; justify-content:space-between; align-items:flex-end; gap:10px;
+    position: relative;
+    z-index: 1;
+    padding: 12px 14px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
   }
-  .dash-hero-content .ccv2-name,
-  .dash-hero-content .ccv2-model { color:#fff; }
-  .dash-hero-content .ccv2-model { color:rgba(255,255,255,0.78); }
+  .dash-hero-text-block { min-width: 0; }
+
+  /* Alternative B : vignette + texte — ajouter la classe dash-hero--split sur .dash-hero */
+  .dash-hero.dash-hero--split {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px 14px;
+  }
+  .dash-hero--split .dash-hero-media {
+    width: 108px;
+    height: 108px;
+    border-radius: 18px;
+    border: 0.5px solid #e5e4df;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  }
+  .dash-hero--split .dash-hero-content {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    align-self: center;
+  }
+  @media (max-width: 420px) {
+    .dash-hero.dash-hero--split {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .dash-hero--split .dash-hero-media {
+      width: 100%;
+      height: 152px;
+      border-radius: 16px;
+    }
+    .dash-hero--split .dash-hero-content {
+      align-self: stretch;
+    }
+  }
   .dash-context-strip {
     padding:10px 14px; display:flex; align-items:center; justify-content:space-between;
     border-bottom:0.5px solid #e5e4df; gap:10px;
@@ -987,42 +1042,63 @@ html.ui-large {
   .dash-week-avatar.mc { background:#d0e8fd; color:#1a4a7a; border-color:#b3d4f5; }
   .dash-week-avatar.ga { background:#efe6db; color:#6f5a45; border-color:#e5d8c7; }
   .dash-week-free { width:4px; height:4px; border-radius:50%; background:#d9eee3; }
-  .house-quick-summary {
+  .house-week-section {
+    --house-week-occupied-bg: #fff7ed;
+    --house-week-occupied-border: #fed7aa;
+    --house-week-occupied-text: #9a3412;
+    --house-week-free-border: #52525b;
+    --house-week-free-bg: #fafafa;
     padding: 10px 14px;
     border-bottom: 0.5px solid #e5e4df;
     background: #fff;
   }
-  .house-summary-line {
+  .house-week-status {
     font-size: calc(14px * var(--ui-text-scale));
     font-weight: 600;
-    color: var(--text);
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .house-summary-status-badge {
-    display: inline-flex;
-    font-size: calc(12px * var(--ui-text-scale));
-    font-weight: 600;
-    padding: 4px 10px;
-  }
-  .house-summary-inline-text {
-    font-size: calc(13px * var(--ui-text-scale));
-    font-weight: 500;
+    line-height: 1.35;
+    margin-bottom: 10px;
     color: #2d2a24;
   }
-  .house-summary-details { font-size: calc(13px * var(--ui-text-scale)); color:#4b4a44; line-height:1.35; }
-  .house-week-view {
-    padding: 10px 14px;
-    border-bottom: 0.5px solid #e5e4df;
-    background: #fff;
+  .house-week-status--occupied {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+  .house-week-status-badge {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 0.5px solid var(--house-week-occupied-border);
+    background: var(--house-week-occupied-bg);
+    color: var(--house-week-occupied-text);
+    font-size: calc(12px * var(--ui-text-scale));
+    font-weight: 600;
+  }
+  .house-week-status-detail {
+    font-size: calc(14px * var(--ui-text-scale));
+    font-weight: 500;
+    color: #2d2a24;
+    min-width: 0;
+  }
+  .house-week-status--available {
+    padding: 0;
+    border: none;
+    background: transparent;
   }
   .house-week-strip { margin-bottom: 6px; }
   .house-week-meta {
     font-size: calc(12px * var(--ui-text-scale));
     color: #6b6b6b;
+  }
+  .house-week-meta-date {
+    color: #27272a;
+    font-weight: 600;
   }
   .house-section-title {
     font-size: calc(11px * var(--ui-text-scale));
@@ -1032,13 +1108,13 @@ html.ui-large {
     letter-spacing: 0.45px;
     margin-bottom: 8px;
   }
-  .dash-week-day.occupied {
-    border-color: #fed7aa;
-    background: #fff7ed;
+  .house-week-section .dash-week-day.occupied {
+    border-color: var(--house-week-occupied-border);
+    background: var(--house-week-occupied-bg);
   }
-  .dash-week-day.free {
-    border-color: #d8efe3;
-    background: #f3fbf7;
+  .house-week-section .dash-week-day.free {
+    border-color: var(--house-week-free-border);
+    background: var(--house-week-free-bg);
   }
   .dash-week-state {
     font-size: calc(9px * var(--ui-text-scale));
@@ -2019,6 +2095,47 @@ html.ui-large {
     background: var(--bg-subtle); font-size: calc(20px * var(--ui-text-scale)); line-height: 1;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
     font-family: inherit; padding: 0;
+  }
+
+  .rm-invite-code-block {
+    background: var(--bg);
+    border: 0.5px solid var(--border-light);
+    border-radius: 16px;
+    padding: 12px 14px 14px;
+    margin-bottom: 10px;
+  }
+  .rm-invite-code-lbl { padding-top: 0; }
+  .rm-invite-code-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+  .rm-invite-code-prefix {
+    font-size: calc(13px * var(--ui-text-scale));
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+  .rm-invite-code-input {
+    flex: 1;
+    min-width: 120px;
+    padding: 10px 12px;
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    font-size: calc(14px * var(--ui-text-scale));
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--bg-subtle);
+    color: var(--text);
+    font-family: ui-monospace, monospace;
+  }
+  .rm-invite-code-save {
+    flex-shrink: 0;
+    padding: 10px 14px !important;
+    font-size: calc(13px * var(--ui-text-scale)) !important;
   }
 
   .rm-pending-group {

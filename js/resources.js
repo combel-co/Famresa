@@ -79,6 +79,16 @@ async function loadResources() {
       return;
     }
 
+    const hasPendingResourceAccess = myAccessEntries.some(
+      (e) => (e.statut ?? e.status) === 'pending'
+    );
+    if (hasPendingResourceAccess) {
+      resources = [];
+      window._myResourceRoles = {};
+      renderMinimalDashboardWhilePending();
+      return;
+    }
+
     // Fallback when no accepted access: keep family-based behavior for first setup / pending users
     if (!familyId) {
       resources = [];
@@ -197,6 +207,22 @@ async function loadResources() {
     document.getElementById('cal-grid').innerHTML =
       '<div class="loading" style="flex-direction:column;gap:8px;color:var(--danger)">⚠️ Connexion impossible<br><small style="color:var(--text-light)">Vérifiez votre connexion ou Firebase.</small></div>';
   }
+}
+
+// Empty dashboard while access request is pending (no welcome / create resource card)
+function renderMinimalDashboardWhilePending() {
+  const tabsEl = document.getElementById('resource-tabs');
+  if (tabsEl) tabsEl.innerHTML = '';
+
+  const mainCard = document.getElementById('resource-main-card');
+  if (mainCard) {
+    mainCard.innerHTML = '<div style="min-height:120px" aria-hidden="true"></div>';
+  }
+
+  const upcomingLabel = document.getElementById('upcoming-label');
+  if (upcomingLabel) upcomingLabel.style.display = 'none';
+  const upcomingBookings = document.getElementById('upcoming-bookings');
+  if (upcomingBookings) upcomingBookings.innerHTML = '';
 }
 
 // Show waiting state when user has no accessible resources
@@ -665,6 +691,7 @@ async function showCarInfo() {
 
 async function saveCarInfo() {
   const plaque = (document.getElementById('car-plaque')?.value || '').trim().toUpperCase();
+  const carLocation = (document.getElementById('car-location')?.value || '').trim();
   const assurance = (document.getElementById('car-assurance')?.value || '').trim();
   const observations = (document.getElementById('car-observations')?.value || '').trim();
   const seatRaw = document.getElementById('car-seat-count')?.value;
@@ -674,18 +701,26 @@ async function saveCarInfo() {
   const btRaw = document.getElementById('car-bluetooth')?.value || '';
   const photoUrl = window._resourcePhotoDraft || null;
   try {
-    const updates = { plaque, assurance, observations };
-    if (carLocation) {
-      updates.carLocation = carLocation;
-      updates.lieu = carLocation;
-    }
+    const updates = {
+      plaque,
+      assurance,
+      observations,
+      carLocation,
+      lieu: carLocation
+    };
     if (Number.isFinite(seatParsed) && seatParsed > 0) updates.seatCount = seatParsed;
     if (fuelType) updates.fuelType = fuelType;
-    if (mileageRaw) updates.mileageKm = mileageRaw;
+    if (mileageRaw) {
+      const digits = String(mileageRaw).replace(/\D/g, '');
+      const n = parseInt(digits, 10);
+      updates.mileageKm = digits && Number.isFinite(n) ? n : mileageRaw;
+    }
     if (btRaw === 'yes') updates.carBluetooth = true;
     else if (btRaw === 'no') updates.carBluetooth = false;
     if (photoUrl) updates.photoUrl = photoUrl;
+
     await ressourcesRef().doc(selectedResource).update(updates);
+
     const res = resources.find(r => r.id === selectedResource);
     if (res) Object.assign(res, updates);
     window._resourcePhotoDraft = null;
@@ -693,7 +728,10 @@ async function saveCarInfo() {
     showToast('Infos enregistrées ✓');
     if (typeof renderExperiencePanels === 'function') renderExperiencePanels();
     if (typeof renderProfileTab === 'function') renderProfileTab();
-  } catch(e) { showToast('Erreur — réessayez'); }
+  } catch (e) {
+    console.error('saveCarInfo', e);
+    showToast('Erreur — réessayez');
+  }
 }
 
 
@@ -973,6 +1011,19 @@ function _rmRenderPage(viewModel) {
       </div>`
     : '';
 
+  const inviteCodeEditHtml = viewModel.permissions.canInvite && viewModel.invite?.inviteCode
+    ? `
+      <div class="rm-invite-code-block">
+        <div class="rm-section-lbl">Code d'invitation</div>
+        <div class="rm-invite-code-row">
+          <span class="rm-invite-code-prefix">Code :</span>
+          <input type="text" id="rm-invite-code-input" class="rm-invite-code-input" value="${_rmEscapeHtml(viewModel.invite.inviteCode)}" maxlength="8" autocomplete="off" spellcheck="false" aria-label="Code d'invitation">
+          <button type="button" class="btn btn-primary rm-invite-code-save" onclick='_rmSaveInviteCode(${JSON.stringify(resource.id)})'>Enregistrer</button>
+        </div>
+        <div class="lock-error" id="rm-invite-code-error" role="alert"></div>
+      </div>`
+    : '';
+
   const pendingHtml = viewModel.permissions.isAdmin && viewModel.pendingMembers.length
     ? `
       <div class="rm-section-lbl">Demandes en attente</div>
@@ -1046,6 +1097,7 @@ function _rmRenderPage(viewModel) {
         <div class="rm-resource-role-badge ${_rmEscapeHtml(resource.roleClass)}">${_rmEscapeHtml(resource.roleLabel)}</div>
       </div>
       ${inviteHtml}
+      ${inviteCodeEditHtml}
       ${pendingHtml}
       <div class="rm-section-lbl">Membres actifs</div>
       <div class="rm-members-group">${membersHtml}</div>
@@ -1068,10 +1120,11 @@ function hideResourceManagePage() {
 async function showResourceManagePage(resourceId) {
   const overlay = document.getElementById('resource-manage-overlay');
   const content = document.getElementById('resource-manage-content');
-  if (!overlay || !content || !resourceId || !currentUser?.id || !currentUser?.familyId) return;
+  if (!overlay || !content || !resourceId || !currentUser?.id) return;
 
   const resForFam = resources.find((r) => r.id === resourceId);
   const familyIdForResource = resForFam?.famille_id || resForFam?.familleId || currentUser.familyId;
+  if (!familyIdForResource) return;
 
   overlay.classList.remove('hidden');
   content.innerHTML = _rmLoadingMarkup(resourceId);
@@ -1093,6 +1146,37 @@ async function showResourceManagePage(resourceId) {
   } catch (e) {
     console.error('Resource manage page error:', e);
     content.innerHTML = _rmErrorMarkup();
+  }
+}
+
+async function _rmSaveInviteCode(resourceId) {
+  const input = document.getElementById('rm-invite-code-input');
+  const errEl = document.getElementById('rm-invite-code-error');
+  if (!input || !errEl) return;
+  errEl.textContent = '';
+  const resForFam = resources.find((r) => r.id === resourceId);
+  const familyIdForResource = resForFam?.famille_id || resForFam?.familleId || currentUser.familyId;
+  if (!familyIdForResource) {
+    errEl.textContent = 'Famille introuvable';
+    return;
+  }
+  try {
+    const code = await resourceService.updateInviteCodeForResource({
+      resourceId,
+      rawCode: input.value,
+      currentUserId: currentUser.id,
+      familyId: familyIdForResource,
+    });
+    const localResource = resources.find((item) => item.id === resourceId);
+    if (localResource) localResource.inviteCode = code;
+    showToast('Code mis à jour ✓');
+    await showResourceManagePage(resourceId);
+  } catch (e) {
+    const msg = e?.message || '';
+    errEl.textContent = msg === 'DUPLICATE' ? 'Ce code est déjà utilisé'
+      : msg === 'INVALID' ? 'Code invalide : 8 caractères (A-Z, 2-9)'
+      : msg === 'FORBIDDEN' ? 'Action non autorisée'
+      : 'Erreur — réessayez';
   }
 }
 

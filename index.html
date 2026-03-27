@@ -41,7 +41,7 @@
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <!-- Non-blocking font loading (swap prevents FOIT) -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/style.css?v=9">
+<link rel="stylesheet" href="css/style.css?v=15">
 <!-- Firebase SDK (defer = non-blocking parse, keeps order) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
@@ -210,26 +210,21 @@
 
     <!-- Carte ressource dashboard -->
     <div class="ccv2-card" id="resource-main-card">
-      <div class="dash-hero house-hero">
+      <div class="dash-hero house-hero" id="dash-resource-hero">
         <div class="dash-hero-media" id="resource-card-photo">
           <span id="resource-card-emoji">🚗</span>
         </div>
-        <div class="dash-hero-overlay"></div>
         <div class="dash-hero-content">
-          <div>
+          <div class="dash-hero-text-block">
             <div class="ccv2-name" id="resource-card-title">Voiture</div>
             <div class="ccv2-model" id="resource-card-subtitle">—</div>
           </div>
         </div>
       </div>
 
-      <div class="house-quick-summary" id="house-quick-summary">
-        <div class="house-summary-line" id="house-summary-line">Disponible</div>
-        <div class="house-summary-details" id="house-summary-details">Aucune réservation en cours</div>
-      </div>
-
-      <div class="house-week-view" id="house-week-view">
+      <div class="house-week-section" id="house-week-section">
         <div class="house-section-title">Cette semaine</div>
+        <div class="house-week-status house-week-status--available" id="house-week-status">Disponible</div>
         <div class="dash-week-strip house-week-strip" id="dash-week-strip"></div>
         <div class="house-week-meta" id="house-week-meta">Semaine libre</div>
       </div>
@@ -592,7 +587,9 @@
     <p id="invite-pending-copy" style="color:var(--text-light);margin-bottom:20px;font-size: calc(14px * var(--ui-text-scale));line-height:1.5">
       Votre demande d'acces a ete envoyee. Un admin de la ressource doit la valider.
     </p>
-    <button class="btn btn-primary" onclick="closeInvitePendingScreen()">Continuer</button>
+    <p style="font-weight:600;font-size: calc(14px * var(--ui-text-scale));margin-bottom:10px;color:var(--text)">Passer l'étape de sécurisation avec un code secret</p>
+    <button type="button" class="btn" style="background:#f5f5f5;color:var(--text);width:100%;margin-bottom:16px" onclick="openSecurityFromInvitePending()">Saisir mon code secret</button>
+    <button class="btn btn-primary" style="width:100%" onclick="closeInvitePendingScreen()">Continuer</button>
   </div>
 </div>
 
@@ -844,7 +841,7 @@
 <script src="js/ui.js?v=6" defer></script>
 <script src="js/xp.js?v=4" defer></script>
 <script src="js/celebration.js?v=5" defer></script>
-<script src="js/auth.js?v=17" defer></script>
+<script src="js/auth.js?v=18" defer></script>
 <script src="js/fuel.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.repository.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.service.js?v=4" defer></script>
@@ -854,15 +851,15 @@
 <script src="src/modules/family/family.service.js?v=4" defer></script>
 <script src="src/modules/user/user.repository.js?v=4" defer></script>
 <script src="src/modules/user/user.service.js?v=4" defer></script>
-<script src="src/modules/resource/resource.repository.js?v=4" defer></script>
-<script src="src/modules/resource/resource.service.js?v=4" defer></script>
+<script src="src/modules/resource/resource.repository.js?v=5" defer></script>
+<script src="src/modules/resource/resource.service.js?v=5" defer></script>
 <script src="js/booking.js?v=5" defer></script>
 <script src="js/calendar.js?v=5" defer></script>
 <script src="js/history.js?v=4" defer></script>
 <script src="src/modules/profile/profile.service.js?v=1" defer></script>
 <script src="js/profile.js?v=6" defer></script>
-<script src="js/resources.js?v=8" defer></script>
-<script src="js/dashboard.js?v=6" defer></script>
+<script src="js/resources.js?v=10" defer></script>
+<script src="js/dashboard.js?v=13" defer></script>
 <script src="js/stay.js?v=4" defer></script>
 <script src="js/checklist.js?v=4" defer></script>
 <script src="js/events.js?v=4" defer></script>
