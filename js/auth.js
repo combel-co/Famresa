@@ -172,11 +172,6 @@ async function _runEntryRouting() {
     return;
   }
 
-  if (!currentUser.familyId) {
-    runMigrationIfNeeded();
-    return;
-  }
-
   showSkeleton();
   await runV2MigrationIfNeeded();
   const joinResult = await _consumePendingResourceJoin({ silent: true });
@@ -503,21 +498,16 @@ async function loginUser() {
     currentUser = { id: doc.id, name, email: data.email, photo, familyId, createdAt };
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
     document.getElementById('login-overlay').classList.add('hidden');
-    if (!familyId) {
-      stage = 'run_v1_migration'; diag.stage = stage;
-      await runMigrationIfNeeded();
-    } else {
-      showSkeleton();
-      stage = 'run_v2_migration'; diag.stage = stage;
-      await runV2MigrationIfNeeded();
-      stage = 'load_resources'; diag.stage = stage;
-      await loadResources();
-      stage = 'enter_app'; diag.stage = stage;
-      enterApp('dashboard');
-      showToast(`Bonjour ${currentUser.name} !`);
-      const joinResult = await _consumePendingResourceJoin({ silent: true });
-      if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName);
-    }
+    showSkeleton();
+    stage = 'run_v2_migration'; diag.stage = stage;
+    await runV2MigrationIfNeeded();
+    stage = 'load_resources'; diag.stage = stage;
+    await loadResources();
+    stage = 'enter_app'; diag.stage = stage;
+    enterApp('dashboard');
+    showToast(`Bonjour ${currentUser.name} !`);
+    const joinResult = await _consumePendingResourceJoin({ silent: true });
+    if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName);
   } catch(e) {
     hideSkeleton();
     diag.stage = stage;
@@ -542,8 +532,7 @@ async function loginUser() {
 
 // ---- SIGNUP ----
 let suTempPhoto = null;
-let suInviteUrl = '';
-let _isSubmittingFamily = false;
+let suPendingFamilyId = null;
 
 function startSignup() {
   _resetSplashInviteMode();
@@ -554,14 +543,9 @@ function startSignup() {
   const bottomNav = document.querySelector('.bottom-nav');
   if (bottomNav) bottomNav.style.display = 'none';
   suTempPhoto = null;
-  suInviteUrl = '';
-  suPendingFamilyId = _isInvitePreAuthFlow() ? (_pendingInviteResourceMeta?.familyId || null) : null;
+  suPendingFamilyId = null;
   document.getElementById('signup-overlay').classList.remove('hidden');
-  if (_isInvitePreAuthFlow()) {
-    showSignupStep(3);
-  } else {
-    signupChooseCreate();
-  }
+  showSignupStep(3);
 }
 
 function showSignupStep(id) {
@@ -583,96 +567,14 @@ function showSignupStep(id) {
 }
 
 function signupBackFromSimpleForm() {
+  document.getElementById('signup-overlay')?.classList.add('hidden');
   if (_isInvitePreAuthFlow()) {
-    document.getElementById('signup-overlay').classList.add('hidden');
     showSplash({ resetTimer: true });
     _renderSplashInviteMode();
     return;
   }
-  signupChooseCreate();
-}
-
-function backFromSignupSetup() {
-  document.getElementById('signup-overlay')?.classList.add('hidden');
   showSplash({ resetTimer: true });
   _renderSplashGuestMode();
-}
-
-function signupChooseJoin() {
-  document.querySelectorAll('.su-step').forEach(s => s.classList.add('hidden'));
-  document.getElementById('su-step-2a').classList.remove('hidden');
-  document.getElementById('su-invite-url').value = '';
-  document.getElementById('su-join-error').textContent = '';
-  setTimeout(() => document.getElementById('su-invite-url')?.focus(), 300);
-}
-
-function signupChooseCreate() {
-  document.querySelectorAll('.su-step').forEach(s => s.classList.add('hidden'));
-  document.getElementById('su-step-2b').classList.remove('hidden');
-  document.getElementById('su-family-name').value = '';
-  clearPinInputs('#su-family-pin input, #su-family-pin-confirm input');
-  document.getElementById('su-create-error').textContent = '';
-  const createPins = document.querySelectorAll('#su-family-pin input');
-  const confirmPins = document.querySelectorAll('#su-family-pin-confirm input');
-  setupPinInputs(createPins, () => confirmPins[0].focus());
-  setupPinInputs(confirmPins, signupCreateAdvance);
-  setTimeout(() => document.getElementById('su-family-name')?.focus(), 300);
-}
-
-async function signupJoinAdvance() {
-  const url = (document.getElementById('su-invite-url')?.value || '').trim();
-  const errEl = document.getElementById('su-join-error');
-  if (!url) { errEl.textContent = 'Entrez le code d\'invitation'; return; }
-  let code = '';
-  try {
-    const u = new URL(url);
-    code = u.searchParams.get('join') || '';
-  } catch(e) {
-    // Not a URL — treat as raw invite code
-    code = url.replace(/\s/g, '').toUpperCase();
-  }
-  if (!code) { errEl.textContent = 'Code invalide'; return; }
-  errEl.textContent = '';
-  try {
-    // Try new collection first, fallback to legacy
-    let snap = await famillesRef().where('inviteCode', '==', code).limit(1).get();
-    if (snap.empty) snap = await db.collection('families').where('inviteCode', '==', code).limit(1).get();
-    if (snap.empty) { errEl.textContent = 'Code invalide ou expiré'; return; }
-    suPendingFamilyId = snap.docs[0].id;
-    showSignupStep(3);
-  } catch(e) { errEl.textContent = 'Erreur — réessayez'; }
-}
-
-async function signupCreateAdvance() {
-  if (_isSubmittingFamily) return;
-  const familyName = (document.getElementById('su-family-name')?.value || '').trim();
-  const pin = getPinFromInputs('#su-family-pin input');
-  const confirm = getPinFromInputs('#su-family-pin-confirm input');
-  const errEl = document.getElementById('su-create-error');
-  if (!familyName) { errEl.textContent = 'Entrez un nom pour votre espace'; return; }
-  if (pin.length < 4) { errEl.textContent = 'Entrez le code admin (4 chiffres)'; return; }
-  if (pin !== confirm) { errEl.textContent = 'Les codes ne correspondent pas'; return; }
-  errEl.textContent = '';
-  _isSubmittingFamily = true;
-  const inviteCode = generateInviteCode();
-  suInviteUrl = inviteCode;
-  try {
-    const familyDocRef = await famillesRef().add({
-      nom: familyName, pin, inviteCode,
-      created_by: null, // set after user profile is created
-      createdAt: ts()
-    });
-    suPendingFamilyId = familyDocRef.id;
-    document.querySelectorAll('.su-step').forEach(s => s.classList.add('hidden'));
-    document.getElementById('su-step-2b-link').classList.remove('hidden');
-    document.getElementById('su-invite-display').textContent = `Code d'invitation : ${inviteCode}`;
-  } catch(e) { errEl.textContent = 'Erreur — réessayez'; } finally { _isSubmittingFamily = false; }
-}
-
-function copyInviteLink() {
-  const appUrl = `${location.origin}${location.pathname}`;
-  const message = `Rejoins l'espace sur Resa-voiture !\n${appUrl}\nCode d'invitation : ${suInviteUrl}`;
-  navigator.clipboard?.writeText(message).then(() => showToast('Code copié !')).catch(() => showToast('Code : ' + suInviteUrl));
 }
 
 function handleSignupPhoto(input) {
@@ -702,37 +604,14 @@ async function signupProfileAdvance() {
     ]);
     if (!newSnap.empty || !oldSnap.empty) { errEl.textContent = 'Cet email est déjà utilisé'; return; }
 
-    // Create PROFIL
+    // Create PROFIL (no family/admin code at signup stage)
     const ref = await profilsRef().add({
       nom: name, email, code_pin: pin,
       photo: suTempPhoto || null,
-      familyId: suPendingFamilyId,
+      familyId: null,
       createdAt: ts()
     });
-
-    // Create FAMILLE_MEMBRE
-    await familleMembresRef().add({
-      famille_id: suPendingFamilyId,
-      profil_id: ref.id,
-      role: 'member', // overridden to admin below if they created the family
-      nom: name, email, photo: suTempPhoto || null,
-      createdAt: ts()
-    });
-
-    // Mark as admin if they created the family
-    const familyDoc = await familleRef(suPendingFamilyId).get();
-    const isCreator = familyDoc.exists && familyDoc.data().created_by === null;
-    if (isCreator) {
-      await familleRef(suPendingFamilyId).update({ created_by: ref.id });
-      // Update the membre doc role to admin
-      const memSnap = await familleMembresRef()
-        .where('famille_id', '==', suPendingFamilyId)
-        .where('profil_id', '==', ref.id)
-        .get();
-      if (!memSnap.empty) await memSnap.docs[0].ref.update({ role: 'admin' });
-    }
-
-    currentUser = { id: ref.id, name, email, photo: suTempPhoto || null, familyId: suPendingFamilyId };
+    currentUser = { id: ref.id, name, email, photo: suTempPhoto || null, familyId: null };
     localStorage.setItem('famcar_user', JSON.stringify(currentUser));
     document.getElementById('signup-overlay').classList.add('hidden');
     showSkeleton();

@@ -8,7 +8,13 @@ window._myResourceRoles = {};
 // Load resources — reads from new 'ressources' collection with fallback to legacy
 async function loadResources() {
   try {
-    const familyId = currentUser.familyId;
+    let familyId = currentUser.familyId;
+    if (!familyId) {
+      resources = [];
+      window._myResourceRoles = {};
+      showResourceChoiceSheet();
+      return;
+    }
     let allowLegacyFallback = (typeof isLegacyFallbackAllowed === 'function')
       ? isLegacyFallbackAllowed()
       : true;
@@ -33,6 +39,40 @@ async function loadResources() {
         const snap = await db.collection('families').doc(familyId).collection('resources').get();
         snap.forEach(d => allResources.push({ id: d.id, ...d.data() }));
       } catch(_) {}
+    }
+
+    // Compatibility guard: if the selected family has no resources, but the user still has
+    // accepted access entries in another family (e.g. after a resource migration), switch
+    // to that family so existing members keep seeing the same resource.
+    if (allResources.length === 0) {
+      try {
+        const allAccess = await getMyResourceAccessEntries(currentUser.id, null);
+        const accepted = allAccess.filter((entry) => (entry.statut ?? entry.status) === 'accepted');
+        const candidateFamilyIds = [...new Set(accepted.map((entry) => entry.famille_id || entry.familyId).filter(Boolean))];
+        const fallbackFamilyId = candidateFamilyIds.find((fid) => fid !== familyId) || null;
+        if (fallbackFamilyId) {
+          familyId = fallbackFamilyId;
+          currentUser.familyId = fallbackFamilyId;
+          localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+          try { await loadFamilyName(); } catch (_) {}
+
+          try {
+            allResources = await getFamilleRessources(familyId);
+          } catch(_) { allResources = []; }
+          if (allowLegacyFallback && allResources.length === 0) {
+            try {
+              const snap = await db.collection('families').doc(familyId).collection('resources').get();
+              snap.forEach(d => allResources.push({ id: d.id, ...d.data() }));
+            } catch(_) {}
+          }
+          if (allowLegacyFallback && allResources.length === 0) {
+            try {
+              const snap = await db.collection('families').doc(familyId).collection('cars').get();
+              snap.forEach(d => allResources.push({ id: d.id, type: 'car', ...d.data() }));
+            } catch(_) {}
+          }
+        }
+      } catch (_) {}
     }
     if (allowLegacyFallback && allResources.length === 0) {
       try {
@@ -216,10 +256,10 @@ function showResourceChoiceSheet() {
     <div class="login-sheet">
       <h2>Première ressource</h2>
       <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">
-        Cree ta premiere ressource.
+        Crée ta première ressource. Une famille sera créée automatiquement.
       </p>
       <button class="btn btn-primary" style="width:100%;padding:14px;margin-bottom:12px" onclick="closeSheet();showAddResourceSheet()">
-        🆕 Créer une ressource
+        Créer une ressource
       </button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:14px;width:100%" onclick="closeSheet()">Plus tard</button>
     </div>`;
@@ -390,9 +430,87 @@ function subscribeBookings() {
 // ==========================================
 // ADD RESOURCE
 // ==========================================
-function showAddResourceSheet() {
-  let selectedType = 'car';
-  let selectedEmoji = '🚗';
+async function _loadUserFamiliesForResourceCreation() {
+  if (!currentUser?.id) return [];
+  const memberSnap = await familleMembresRef().where('profil_id', '==', currentUser.id).get();
+  if (memberSnap.empty) return [];
+
+  const familyIds = [...new Set(memberSnap.docs.map((doc) => doc.data()?.famille_id).filter(Boolean))];
+  const familyDocs = await Promise.all(familyIds.map(async (id) => {
+    try {
+      const snap = await familleRef(id).get();
+      if (!snap.exists) return null;
+      const data = snap.data() || {};
+      return { id, name: data.nom || data.name || 'Espace partagé' };
+    } catch (_) {
+      return null;
+    }
+  }));
+
+  return familyDocs.filter(Boolean);
+}
+
+function _toggleAddResourceFamilyFields() {
+  const selectEl = document.getElementById('add-res-family-select');
+  const newFamilyRow = document.getElementById('add-res-new-family-row');
+  if (!selectEl || !newFamilyRow) return;
+  newFamilyRow.style.display = selectEl.value === '__new__' ? 'block' : 'none';
+}
+
+function _slugifyDefaultFamilyName(resourceName) {
+  const base = String(resourceName || '').trim();
+  if (!base) return 'Mon espace';
+  return `Espace ${base}`;
+}
+
+async function _ensureFamilyForNewResource(resourceName) {
+  const selectedFamily = document.getElementById('add-res-family-select')?.value || '';
+  if (selectedFamily && selectedFamily !== '__new__') return selectedFamily;
+
+  const manualNewFamilyName = (document.getElementById('add-res-new-family-name')?.value || '').trim();
+  const familyName = manualNewFamilyName || _slugifyDefaultFamilyName(resourceName);
+  const familyRef = await famillesRef().add({
+    nom: familyName,
+    inviteCode: generateInviteCode(),
+    created_by: currentUser.id,
+    createdAt: ts()
+  });
+
+  await familleMembresRef().add({
+    famille_id: familyRef.id,
+    profil_id: currentUser.id,
+    role: 'admin',
+    nom: currentUser.name || '',
+    email: currentUser.email || '',
+    photo: currentUser.photo || null,
+    createdAt: ts()
+  });
+
+  currentUser.familyId = familyRef.id;
+  localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+  return familyRef.id;
+}
+
+async function showAddResourceSheet() {
+  const userFamilies = await _loadUserFamiliesForResourceCreation();
+  const hasFamilies = userFamilies.length > 0;
+  const familyBlock = hasFamilies
+    ? `
+      <div class="input-group">
+        <label>Famille</label>
+        <select id="add-res-family-select" onchange="_toggleAddResourceFamilyFields()">
+          ${userFamilies.map((family, index) => `<option value="${family.id}" ${index === 0 ? 'selected' : ''}>${family.name}</option>`).join('')}
+          <option value="__new__">Créer une nouvelle famille</option>
+        </select>
+      </div>
+      <div class="input-group" id="add-res-new-family-row" style="display:none">
+        <label>Nom de la nouvelle famille</label>
+        <input type="text" id="add-res-new-family-name" placeholder="Ex: Maison de campagne" autocomplete="off">
+      </div>`
+    : `<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:10px 12px;color:#0c4a6e;font-size:12px;line-height:1.45;margin-bottom:14px">
+        Première ressource: une nouvelle famille sera créée automatiquement.
+      </div>`;
+
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
       <h2>Ajouter une ressource</h2>
@@ -401,6 +519,7 @@ function showAddResourceSheet() {
         <button id="type-car-btn" class="btn btn-primary" style="flex:1;padding:12px" onclick="setResourceType('car', this)">🚗 Voiture</button>
         <button id="type-house-btn" class="btn btn-outline" style="flex:1;padding:12px" onclick="setResourceType('house', this)">🏠 Maison</button>
       </div>
+      ${familyBlock}
       <div class="input-group">
         <label>Nom</label>
         <input type="text" id="add-res-name" placeholder="Ex: Clio, Maison Bretagne..." autocomplete="off">
@@ -428,8 +547,9 @@ async function confirmAddResource() {
   if (!name) { if (errEl) errEl.textContent = 'Entrez un nom'; return; }
   try {
     const emoji = type === 'house' ? '🏠' : '🚗';
+    const familyId = await _ensureFamilyForNewResource(name);
     const ref = await ressourcesRef().add({
-      famille_id: currentUser.familyId,
+      famille_id: familyId,
       nom: name, name, type, emoji,
       createdAt: ts()
     });
@@ -448,7 +568,7 @@ async function confirmAddResource() {
     } else {
       await accesRessourceRef().add({
         ressource_id: ref.id, profil_id: currentUser.id,
-        famille_id: currentUser.familyId, role: 'admin',
+        famille_id: familyId, role: 'admin',
         statut: 'accepted', invited_at: ts(), accepted_at: ts(),
       });
     }
