@@ -6,11 +6,11 @@ const FUEL_LABELS = { 0: 'Vide', 25: '1/4', 50: '1/2', 75: '3/4', 100: 'Plein' }
 
 function getFuelBar(level) {
   if (level === null || level === undefined) {
-    return '<span style="color:var(--text-light);font-size:13px">Inconnu</span>';
+    return '<span style="color:var(--text-light);font-size: calc(13px * var(--ui-text-scale))">Inconnu</span>';
   }
   return `<div class="fuel-mini-bar">
     <div class="fuel-mini-track"><div class="fuel-mini-fill" style="width:${level}%;background:${FUEL_COLORS[level]}"></div></div>
-    <span style="font-size:13px;font-weight:600;color:var(--text)">${FUEL_LABELS[level] || level + '%'}</span>
+    <span style="font-size: calc(13px * var(--ui-text-scale));font-weight:600;color:var(--text)">${FUEL_LABELS[level] || level + '%'}</span>
   </div>`;
 }
 
@@ -33,13 +33,13 @@ function getFuelBarFull(level) {
 // Barre pour la grille info ccv2
 function getFuelBarGrid(level) {
   if (level === null || level === undefined) {
-    return '<span style="color:#9b9b9b;font-size:12px">Inconnu</span>';
+    return '<span style="color:#9b9b9b;font-size: calc(12px * var(--ui-text-scale))">Inconnu</span>';
   }
   const color = FUEL_COLORS[level] || '#84cc16';
   const label = FUEL_LABELS[level] || (level + '%');
   return `<div class="ccv2-fuel-bar">
     <div class="ccv2-fuel-track"><div class="ccv2-fuel-fill" style="width:${level}%;background:${color}"></div></div>
-    <span style="font-size:12px;font-weight:500;color:${color}">${label}</span>
+    <span style="font-size: calc(12px * var(--ui-text-scale));font-weight:500;color:${color}">${label}</span>
   </div>`;
 }
 
@@ -70,8 +70,8 @@ function showFuelSheet() {
   selectedFuelLevel = null;
   document.getElementById('sheet-content').innerHTML = `
     <div style="text-align:center;padding-bottom:4px">
-      <h3 style="font-size:22px;font-weight:700;margin-bottom:6px">Niveau d'essence rendu ?</h3>
-      <p style="font-size:14px;color:var(--text-light)">Aidez la famille à planifier le prochain plein</p>
+      <h3 style="font-size: calc(22px * var(--ui-text-scale));font-weight:700;margin-bottom:6px">Niveau d'essence rendu ?</h3>
+      <p style="font-size: calc(14px * var(--ui-text-scale));color:var(--text-light)">Aidez la famille à planifier le prochain plein</p>
     </div>
     <div class="fuel-selector">${renderFuelButtons()}</div>
     <button class="btn btn-primary" id="fuel-confirm-btn" onclick="confirmFuel()" disabled style="opacity:0.4">Confirmer</button>
@@ -106,18 +106,18 @@ function showTripReport(booking, prettyDate) {
   if (!hasFuel) {
     fuelSection = `
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-        <div style="font-size:14px;font-weight:600;margin-bottom:12px">Niveau d'essence rendu ?</div>
+        <div style="font-size: calc(14px * var(--ui-text-scale));font-weight:600;margin-bottom:12px">Niveau d'essence rendu ?</div>
         <div class="fuel-selector">${renderFuelButtons()}</div>
         <button class="btn btn-primary" id="fuel-confirm-btn" onclick="confirmFuelAfterTrip('${booking.id}')" disabled style="opacity:0.4;margin-top:8px">Enregistrer</button>
       </div>`;
   } else {
     const labels = { 0: 'Vide', 25: '1/4', 50: '1/2', 75: '3/4', 100: 'Plein' };
-    fuelSection = `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);color:var(--text-light);font-size:13px">Essence rendue : <strong>${labels[existingFuelLevel] || existingFuelLevel + '%'}</strong></div>`;
+    fuelSection = `<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);color:var(--text-light);font-size: calc(13px * var(--ui-text-scale))">Essence rendue : <strong>${labels[existingFuelLevel] || existingFuelLevel + '%'}</strong></div>`;
   }
 
   document.getElementById('sheet-content').innerHTML = `
     <div class="sheet-date">${prettyDate}</div>
-    <div style="font-size:14px;color:var(--text-light);margin-bottom:4px">${getBookingDestinationLabel(booking)} · ${estimateDistanceForBooking(booking)} km</div>
+    <div style="font-size: calc(14px * var(--ui-text-scale));color:var(--text-light);margin-bottom:4px">${getBookingDestinationLabel(booking)} · ${estimateDistanceForBooking(booking)} km</div>
     ${fuelSection}
     <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:16px" onclick="closeSheet()">Fermer</button>`;
   document.getElementById('overlay').classList.add('open');

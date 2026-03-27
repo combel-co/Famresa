@@ -37,7 +37,7 @@ function _renderResourcesByFamily() {
   };
 
   if (groups.length === 0 && resources.length === 0) {
-    container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-light);font-size:14px">
+    container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-light);font-size: calc(14px * var(--ui-text-scale))">
       ⏳ Aucune ressource accessible — en attente d'invitation
     </div>`;
     return;
@@ -55,9 +55,9 @@ function _renderResourcesByFamily() {
       const role = window._myResourceRoles?.[res.id];
       const roleStyle = role ? (roleColors[role] || roleColors.member) : null;
       const rolePill = roleStyle
-        ? `<div style="margin-top:6px;display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:${roleStyle.bg};color:${roleStyle.color}">${roleStyle.label}</div>`
+        ? `<div style="margin-top:6px;display:inline-block;font-size: calc(10px * var(--ui-text-scale));font-weight:700;padding:2px 8px;border-radius:20px;background:${roleStyle.bg};color:${roleStyle.color}">${roleStyle.label}</div>`
         : '';
-      const manageBtn = `<div style="margin-top:8px;font-size:11px;color:var(--accent);font-weight:600;cursor:pointer"
+      const manageBtn = `<div style="margin-top:8px;font-size: calc(11px * var(--ui-text-scale));color:var(--accent);font-weight:600;cursor:pointer"
               onclick="event.stopPropagation();showResourceManagePage('${res.id}')">Gérer l'accès ›</div>`;
 
       return `<div class="pf-resource-card" onclick="selectResource('${res.id}');showResourceManagePage('${res.id}')">
@@ -138,10 +138,10 @@ async function _renderAdminPendingSection() {
       ${pending.map(item => {
         const resName = resourceNames[item.resourceId] || item.resourceId;
         return `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px 16px;margin-bottom:10px">
-          <div style="font-weight:700;font-size:14px;margin-bottom:2px">${userNames[item.profil_id || item.profileId] || '—'}</div>
-          <div style="font-size:12px;color:var(--text-light);margin-bottom:12px">Demande d'accès · ${resName}</div>
+          <div style="font-weight:700;font-size: calc(14px * var(--ui-text-scale));margin-bottom:2px">${userNames[item.profil_id || item.profileId] || '—'}</div>
+          <div style="font-size: calc(12px * var(--ui-text-scale));color:var(--text-light);margin-bottom:12px">Demande d'accès · ${resName}</div>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-primary" style="flex:1;padding:8px;font-size:13px"
+            <button class="btn btn-primary" style="flex:1;padding:8px;font-size: calc(13px * var(--ui-text-scale))"
               onclick="selectResource('${item.resourceId}');showResourceManagePage('${item.resourceId}')">Voir →</button>
           </div>
         </div>`;
@@ -211,11 +211,11 @@ async function showErrorDashboard() {
       const email = item.email || '—';
       const msg = (item.errorMessage || '—').toString().slice(0, 180);
       return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;margin-bottom:10px">
-        <div style="font-size:12px;color:#6b7280">${when}</div>
-        <div style="font-weight:700;font-size:13px;margin-top:2px">${stage}${codeTxt}</div>
-        <div style="font-size:12px;margin-top:4px;color:#374151">Ref: ${ref}</div>
-        <div style="font-size:12px;color:#374151">Email: ${email}</div>
-        <div style="font-size:12px;color:#6b7280;margin-top:6px">${msg}</div>
+        <div style="font-size: calc(12px * var(--ui-text-scale));color:#6b7280">${when}</div>
+        <div style="font-weight:700;font-size: calc(13px * var(--ui-text-scale));margin-top:2px">${stage}${codeTxt}</div>
+        <div style="font-size: calc(12px * var(--ui-text-scale));margin-top:4px;color:#374151">Ref: ${ref}</div>
+        <div style="font-size: calc(12px * var(--ui-text-scale));color:#374151">Email: ${email}</div>
+        <div style="font-size: calc(12px * var(--ui-text-scale));color:#6b7280;margin-top:6px">${msg}</div>
       </div>`;
     }).join('');
   } catch (e) {

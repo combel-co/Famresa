@@ -208,13 +208,13 @@ function renderNoAccessState() {
   if (mainCard) {
     mainCard.innerHTML = `
       <div style="padding:40px 24px;text-align:center">
-        <div style="font-size:52px;margin-bottom:16px">⏳</div>
-        <div style="font-weight:700;font-size:20px;margin-bottom:8px">En attente d'accès</div>
-        <div style="color:var(--text-light);font-size:14px;line-height:1.6;margin-bottom:24px">
+        <div style="font-size: calc(52px * var(--ui-text-scale));margin-bottom:16px">⏳</div>
+        <div style="font-weight:700;font-size: calc(20px * var(--ui-text-scale));margin-bottom:8px">En attente d'accès</div>
+        <div style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));line-height:1.6;margin-bottom:24px">
           Ton compte est actif, mais tu n'as pas encore accès à une ressource.<br>
           Demande à un admin de t'envoyer un lien d'invitation spécifique.
         </div>
-        <div style="background:#f0f4ff;border:1px solid #c7d2fe;border-radius:12px;padding:16px;font-size:13px;color:#4338ca;line-height:1.5">
+        <div style="background:#f0f4ff;border:1px solid #c7d2fe;border-radius:12px;padding:16px;font-size: calc(13px * var(--ui-text-scale));color:#4338ca;line-height:1.5">
           🔗 L'admin doit aller dans Profil → ressource → <strong>Inviter</strong>
         </div>
       </div>`;
@@ -236,9 +236,9 @@ function showResourceChoiceSheet() {
   if (mainCard) {
     mainCard.innerHTML = `
       <div style="padding:40px 24px;text-align:center">
-        <div style="font-size:52px;margin-bottom:16px">🏁</div>
-        <div style="font-weight:700;font-size:20px;margin-bottom:8px">Bienvenue !</div>
-        <div style="color:var(--text-light);font-size:14px;line-height:1.6">
+        <div style="font-size: calc(52px * var(--ui-text-scale));margin-bottom:16px">🏁</div>
+        <div style="font-weight:700;font-size: calc(20px * var(--ui-text-scale));margin-bottom:8px">Bienvenue !</div>
+        <div style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));line-height:1.6">
           Pour commencer, cree une premiere ressource.
         </div>
       </div>`;
@@ -247,7 +247,7 @@ function showResourceChoiceSheet() {
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
       <h2>Première ressource</h2>
-      <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">
+      <p style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));margin-bottom:20px">
         Crée ta première ressource. Une famille sera créée automatiquement.
       </p>
       <button class="btn btn-primary" style="width:100%;padding:14px;margin-bottom:12px" onclick="closeSheet();showAddResourceSheet()">
@@ -515,14 +515,14 @@ async function showAddResourceSheet() {
         <label>Nom de la nouvelle famille</label>
         <input type="text" id="add-res-new-family-name" placeholder="Ex: Maison de campagne" autocomplete="off">
       </div>`
-    : `<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:10px 12px;color:#0c4a6e;font-size:12px;line-height:1.45;margin-bottom:14px">
+    : `<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:10px 12px;color:#0c4a6e;font-size: calc(12px * var(--ui-text-scale));line-height:1.45;margin-bottom:14px">
         Première ressource: une nouvelle famille sera créée automatiquement.
       </div>`;
 
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
       <h2>Ajouter une ressource</h2>
-      <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Voiture, maison ou autre bien partagé</p>
+      <p style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));margin-bottom:20px">Voiture, maison ou autre bien partagé</p>
       <div style="display:flex;gap:12px;margin-bottom:20px">
         <button id="type-car-btn" class="btn btn-primary" style="flex:1;padding:12px" onclick="setResourceType('car', this)">🚗 Voiture</button>
         <button id="type-house-btn" class="btn btn-outline" style="flex:1;padding:12px" onclick="setResourceType('house', this)">🏠 Maison</button>
@@ -611,11 +611,11 @@ async function showCarInfo() {
     : (res.emoji || '🚗');
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
-      <div id="resource-photo-preview" style="width:92px;height:92px;border-radius:16px;overflow:hidden;background:#f3f4f6;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:44px">${photoPreview}</div>
-      <label style="font-size:12px;color:var(--accent);cursor:pointer;text-decoration:underline" onclick="document.getElementById('resource-photo-input').click()">Modifier la photo</label>
+      <div id="resource-photo-preview" style="width:92px;height:92px;border-radius:16px;overflow:hidden;background:#f3f4f6;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size: calc(44px * var(--ui-text-scale))">${photoPreview}</div>
+      <label style="font-size: calc(12px * var(--ui-text-scale));color:var(--accent);cursor:pointer;text-decoration:underline" onclick="document.getElementById('resource-photo-input').click()">Modifier la photo</label>
       <input type="file" id="resource-photo-input" accept="image/*" style="display:none" onchange="handleResourcePhoto(this)">
       <h2 style="margin:0 0 4px">${res.name}</h2>
-      ${plaque ? `<div style="display:inline-block;font-size:12px;font-weight:700;color:var(--accent);background:rgba(99,102,241,0.10);border:1px solid rgba(99,102,241,0.18);border-radius:6px;padding:3px 10px;letter-spacing:0.5px;margin-bottom:20px">${plaque}</div>` : '<div style="margin-bottom:20px"></div>'}
+      ${plaque ? `<div style="display:inline-block;font-size: calc(12px * var(--ui-text-scale));font-weight:700;color:var(--accent);background:rgba(99,102,241,0.10);border:1px solid rgba(99,102,241,0.18);border-radius:6px;padding:3px 10px;letter-spacing:0.5px;margin-bottom:20px">${plaque}</div>` : '<div style="margin-bottom:20px"></div>'}
       <div class="input-group">
         <label>Plaque d'immatriculation</label>
         <input type="text" id="car-plaque" placeholder="Ex: AB-123-CD" value="${_rmEscapeHtml(plaque)}" style="text-transform:uppercase">
@@ -630,7 +630,7 @@ async function showCarInfo() {
       </div>
       <div class="input-group">
         <label>Énergie</label>
-        <select id="car-fuel-type" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px">
+        <select id="car-fuel-type" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size: calc(14px * var(--ui-text-scale))">
           <option value="" ${!fuelType ? 'selected' : ''}>—</option>
           <option value="essence" ${fuelType === 'essence' ? 'selected' : ''}>Essence</option>
           <option value="diesel" ${fuelType === 'diesel' ? 'selected' : ''}>Diesel</option>
@@ -643,7 +643,7 @@ async function showCarInfo() {
       </div>
       <div class="input-group">
         <label>Bluetooth</label>
-        <select id="car-bluetooth" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px">
+        <select id="car-bluetooth" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size: calc(14px * var(--ui-text-scale))">
           <option value="" ${!btVal ? 'selected' : ''}>—</option>
           <option value="yes" ${btVal === 'yes' ? 'selected' : ''}>Oui</option>
           <option value="no" ${btVal === 'no' ? 'selected' : ''}>Non</option>
@@ -655,7 +655,7 @@ async function showCarInfo() {
       </div>
       <div class="input-group">
         <label>Observations</label>
-        <textarea id="car-observations" placeholder="Carrosserie, entretien, notes..." rows="3" style="resize:none;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;width:100%">${_rmEscapeHtml(observations)}</textarea>
+        <textarea id="car-observations" placeholder="Carrosserie, entretien, notes..." rows="3" style="resize:none;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size: calc(14px * var(--ui-text-scale));width:100%">${_rmEscapeHtml(observations)}</textarea>
       </div>
       <button class="btn btn-primary" onclick="saveCarInfo()">Enregistrer</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>
@@ -710,11 +710,11 @@ function showHouseInfo() {
     : (res.emoji || '🏠');
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
-      <div id="resource-photo-preview" style="width:92px;height:92px;border-radius:16px;overflow:hidden;background:#f3f4f6;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:44px">${photoPreview}</div>
-      <label style="font-size:12px;color:var(--accent);cursor:pointer;text-decoration:underline" onclick="document.getElementById('resource-photo-input').click()">Modifier la photo</label>
+      <div id="resource-photo-preview" style="width:92px;height:92px;border-radius:16px;overflow:hidden;background:#f3f4f6;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size: calc(44px * var(--ui-text-scale))">${photoPreview}</div>
+      <label style="font-size: calc(12px * var(--ui-text-scale));color:var(--accent);cursor:pointer;text-decoration:underline" onclick="document.getElementById('resource-photo-input').click()">Modifier la photo</label>
       <input type="file" id="resource-photo-input" accept="image/*" style="display:none" onchange="handleResourcePhoto(this)">
       <h2>Info maison</h2>
-      <div style="color:var(--text-light);font-size:13px;margin-bottom:20px">${res.emoji || '🏠'} ${res.name}</div>
+      <div style="color:var(--text-light);font-size: calc(13px * var(--ui-text-scale));margin-bottom:20px">${res.emoji || '🏠'} ${res.name}</div>
       <div class="input-group">
         <label>Rue</label>
         <input type="text" id="house-address-street" placeholder="123 rue..." value="${structuredAddress.street || ''}">
@@ -735,7 +735,7 @@ function showHouseInfo() {
       </div>
       <div class="input-group">
         <label>Observations</label>
-        <textarea id="house-observations" placeholder="Notes importantes..." rows="3" style="resize:none;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;width:100%">${res.observations || ''}</textarea>
+        <textarea id="house-observations" placeholder="Notes importantes..." rows="3" style="resize:none;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size: calc(14px * var(--ui-text-scale));width:100%">${res.observations || ''}</textarea>
       </div>
       <button class="btn btn-primary" onclick="saveHouseInfo()">Enregistrer</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>
@@ -802,9 +802,9 @@ async function showResourceAccessSheet(resourceId) {
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
       <h2>Accès · ${res.emoji || ''} ${res.name}</h2>
-      <p style="color:var(--text-light);font-size:14px;margin-bottom:16px">Invitez des membres par lien spécifique à cette ressource.</p>
+      <p style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));margin-bottom:16px">Invitez des membres par lien spécifique à cette ressource.</p>
       <div id="resource-invite-section">
-        <div style="color:var(--text-light);font-size:13px;text-align:center;padding:12px">Chargement...</div>
+        <div style="color:var(--text-light);font-size: calc(13px * var(--ui-text-scale));text-align:center;padding:12px">Chargement...</div>
       </div>
       <div id="pending-requests-section" style="margin-top:20px"></div>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:16px" onclick="closeSheet()">Fermer</button>
@@ -817,8 +817,8 @@ async function showResourceAccessSheet(resourceId) {
     <div class="input-group">
       <label>Lien d'invitation</label>
       <div style="display:flex;gap:8px;align-items:stretch">
-        <input type="text" value="${link}" readonly style="font-size:11px;flex:1;background:#f8f9fa;color:var(--text-light)">
-        <button class="btn btn-primary" style="padding:10px 14px;white-space:nowrap;font-size:13px"
+        <input type="text" value="${link}" readonly style="font-size: calc(11px * var(--ui-text-scale));flex:1;background:#f8f9fa;color:var(--text-light)">
+        <button class="btn btn-primary" style="padding:10px 14px;white-space:nowrap;font-size: calc(13px * var(--ui-text-scale))"
           onclick="navigator.clipboard?.writeText('${link}').then(()=>showToast('Lien copié !'))">Copier</button>
       </div>
     </div>`;
@@ -844,31 +844,31 @@ async function showResourceAccessSheet(resourceId) {
       } catch(e) { userNames[item.profileId] = item.profileId; }
     }));
 
-    html += `<div style="font-weight:700;font-size:14px;margin-bottom:8px">⏳ Demandes en attente (${pending.length})</div>`;
+    html += `<div style="font-weight:700;font-size: calc(14px * var(--ui-text-scale));margin-bottom:8px">⏳ Demandes en attente (${pending.length})</div>`;
     html += pending.map(item => `
       <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;margin-bottom:8px">
         <div style="flex:1">
-          <div style="font-weight:600;font-size:13px">${userNames[item.profileId] || item.profileId}</div>
-          <div style="font-size:11px;color:var(--text-light)">Demande en attente</div>
+          <div style="font-weight:600;font-size: calc(13px * var(--ui-text-scale))">${userNames[item.profileId] || item.profileId}</div>
+          <div style="font-size: calc(11px * var(--ui-text-scale));color:var(--text-light)">Demande en attente</div>
         </div>
-        <button class="btn btn-primary" style="padding:6px 10px;font-size:12px"
+        <button class="btn btn-primary" style="padding:6px 10px;font-size: calc(12px * var(--ui-text-scale))"
           onclick="approveResourceAccess('${item.id}','${userNames[item.profileId] || ''}')">✓ Approuver</button>
-        <button class="btn btn-danger" style="padding:6px 10px;font-size:12px"
+        <button class="btn btn-danger" style="padding:6px 10px;font-size: calc(12px * var(--ui-text-scale))"
           onclick="rejectResourceAccess('${item.id}')">✕</button>
       </div>`).join('');
   }
 
   if (accepted.length) {
-    html += `<div style="font-weight:700;font-size:14px;margin-top:12px;margin-bottom:8px">✓ Membres avec accès</div>`;
+    html += `<div style="font-weight:700;font-size: calc(14px * var(--ui-text-scale));margin-top:12px;margin-bottom:8px">✓ Membres avec accès</div>`;
     html += accepted.map(item => `
       <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;margin-bottom:6px">
-        <div style="flex:1;font-size:13px;font-weight:500">${item.profileId}</div>
-        <div style="font-size:11px;color:#16a34a;font-weight:600">${item.role}</div>
+        <div style="flex:1;font-size: calc(13px * var(--ui-text-scale));font-weight:500">${item.profileId}</div>
+        <div style="font-size: calc(11px * var(--ui-text-scale));color:#16a34a;font-weight:600">${item.role}</div>
       </div>`).join('');
   }
 
   if (!pending.length && !accepted.length) {
-    html = '<div style="color:var(--text-light);font-size:13px">Aucun membre invité pour l\'instant.</div>';
+    html = '<div style="color:var(--text-light);font-size: calc(13px * var(--ui-text-scale))">Aucun membre invité pour l\'instant.</div>';
   }
 
   pendingEl.innerHTML = html;
@@ -1204,7 +1204,7 @@ async function _rmMemberMenu(accessId, memberName, resourceId) {
       <div class="sheet-handle"></div>
       <div class="login-sheet">
         <h2>${_rmEscapeHtml(memberName)}</h2>
-        <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Gérer les droits de ce membre</p>
+        <p style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));margin-bottom:20px">Gérer les droits de ce membre</p>
         <button class="btn btn-danger" onclick='_rmRemoveMember(${JSON.stringify(accessId)}, ${JSON.stringify(memberName)}, ${JSON.stringify(resourceId)});document.getElementById("rm-inline-sheet")?.remove()'>Retirer l'accès</button>
         <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick='document.getElementById("rm-inline-sheet")?.remove()'>Annuler</button>
       </div>
@@ -1238,7 +1238,7 @@ async function _rmDeleteResource(resourceId) {
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
       <h2>Supprimer ${_rmEscapeHtml(res.name)} ?</h2>
-      <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Cette action est irréversible. Les réservations existantes seront conservées.</p>
+      <p style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));margin-bottom:20px">Cette action est irréversible. Les réservations existantes seront conservées.</p>
       <button class="btn btn-danger" onclick='_rmConfirmDelete(${JSON.stringify(resourceId)});closeSheet()'>Oui, supprimer</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Annuler</button>
     </div>`;

@@ -38,8 +38,7 @@
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <!-- Non-blocking font loading (swap prevents FOIT) -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/style.css?v=6">
-<link rel="stylesheet" href="css/ui-scale-large.css?v=2">
+<link rel="stylesheet" href="css/style.css?v=7">
 <!-- Firebase SDK (defer = non-blocking parse, keeps order) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
@@ -57,14 +56,14 @@
         <circle cx="23" cy="28" r="3.5" fill="#f0d060"/>
       </svg>
     </div>
-    <div style="font-size:26px;font-weight:500;letter-spacing:-0.5px;color:#1a1a1a;font-family:Georgia,serif">FamResa</div>
-    <div style="font-size:13px;color:#aaa;margin-top:-10px">Réservez en famille</div>
+    <div style="font-size: calc(26px * var(--ui-text-scale));font-weight:500;letter-spacing:-0.5px;color:#1a1a1a;font-family:Georgia,serif">FamResa</div>
+    <div style="font-size: calc(13px * var(--ui-text-scale));color:#aaa;margin-top:-10px">Réservez en famille</div>
   </div>
   <div id="splash-loading" style="display:flex;flex-direction:column;align-items:center;gap:10px">
     <div style="width:80px;height:2px;background:#eee;border-radius:2px;overflow:hidden">
       <div id="splash-bar" style="height:100%;width:0%;background:#1a1a1a;border-radius:2px;animation:splashFill 1.8s cubic-bezier(0.4,0,0.2,1) forwards"></div>
     </div>
-    <div id="splash-status" style="font-size:11px;color:#bbb">Chargement…</div>
+    <div id="splash-status" style="font-size: calc(11px * var(--ui-text-scale));color:#bbb">Chargement…</div>
   </div>
   <div id="splash-guest-flow" style="display:none;width:100%;max-width:360px;padding:0 20px;box-sizing:border-box">
     <div style="display:flex;flex-direction:column;gap:10px">
@@ -73,13 +72,13 @@
     </div>
   </div>
   <div id="splash-invite-flow" style="display:none;width:100%;max-width:360px;padding:0 20px;box-sizing:border-box">
-    <div style="font-size:19px;line-height:1.35;font-weight:700;color:#1f2937;text-align:center;margin-bottom:14px">
+    <div style="font-size: calc(19px * var(--ui-text-scale));line-height:1.35;font-weight:700;color:#1f2937;text-align:center;margin-bottom:14px">
       Vous avez été invité à rejoindre
     </div>
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:14px 14px 12px;box-shadow:0 8px 30px rgba(0,0,0,.06);margin-bottom:20px">
-      <div id="splash-invite-resource-name" style="font-size:16px;font-weight:700;color:#111827;margin-bottom:6px">Ressource</div>
-      <div id="splash-invite-family-name" style="font-size:13px;color:#4b5563;margin-bottom:4px">Espace</div>
-      <div id="splash-invite-location" style="font-size:13px;color:#6b7280">Lieu non renseigné</div>
+      <div id="splash-invite-resource-name" style="font-size: calc(16px * var(--ui-text-scale));font-weight:700;color:#111827;margin-bottom:6px">Ressource</div>
+      <div id="splash-invite-family-name" style="font-size: calc(13px * var(--ui-text-scale));color:#4b5563;margin-bottom:4px">Espace</div>
+      <div id="splash-invite-location" style="font-size: calc(13px * var(--ui-text-scale));color:#6b7280">Lieu non renseigné</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:10px">
       <button class="btn btn-primary" onclick="connectUser()">Se connecter</button>
@@ -578,7 +577,7 @@
   <div class="ob-card">
     <div class="ob-emoji">⏳</div>
     <h2 style="margin-bottom:6px">Demande en attente</h2>
-    <p id="invite-pending-copy" style="color:var(--text-light);margin-bottom:20px;font-size:14px;line-height:1.5">
+    <p id="invite-pending-copy" style="color:var(--text-light);margin-bottom:20px;font-size: calc(14px * var(--ui-text-scale));line-height:1.5">
       Votre demande d'acces a ete envoyee. Un admin de la ressource doit la valider.
     </p>
     <button class="btn btn-primary" onclick="closeInvitePendingScreen()">Continuer</button>
@@ -596,21 +595,21 @@
         aria-label="Aide diagnostic"
         title="Diagnostic admin"
         onclick="openLoginDiagnosticSecure()"
-        style="width:22px;height:22px;border-radius:999px;border:1px solid #d1d5db;background:#fff;color:#6b7280;font-size:13px;line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:0"
+        style="width:22px;height:22px;border-radius:999px;border:1px solid #d1d5db;background:#fff;color:#6b7280;font-size: calc(13px * var(--ui-text-scale));line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:0"
       >i</button>
     </div>
-    <p id="login-subtitle" style="color:var(--text-light);margin-bottom:14px;font-size:14px;text-align:center">Entrez votre email et votre code secret.</p>
+    <p id="login-subtitle" style="color:var(--text-light);margin-bottom:14px;font-size: calc(14px * var(--ui-text-scale));text-align:center">Entrez votre email et votre code secret.</p>
     <div id="login-invite-context" style="display:none;background:#f0f4ff;border:1px solid #c7d2fe;border-radius:12px;padding:10px 12px;margin-bottom:14px">
-      <div id="login-invite-context-text" style="font-size:12px;line-height:1.45;color:#3730a3"></div>
+      <div id="login-invite-context-text" style="font-size: calc(12px * var(--ui-text-scale));line-height:1.45;color:#3730a3"></div>
     </div>
     <div style="background:#f6f6f6;border:1px solid #ececec;border-radius:16px;padding:16px 14px 14px;margin-bottom:12px">
       <div class="ob-fields" style="gap:14px">
         <div class="input-group" style="margin-bottom:0">
-          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Email</label>
+          <label style="font-size: calc(11px * var(--ui-text-scale));letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Email</label>
           <input type="email" id="login-email" placeholder="marie@hotmail.com" autocomplete="email">
         </div>
         <div>
-          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Code secret (4 chiffres)</label>
+          <label style="font-size: calc(11px * var(--ui-text-scale));letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Code secret (4 chiffres)</label>
           <div class="pin-input" id="login-pin" style="justify-content:center">
             <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
             <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
@@ -622,8 +621,8 @@
     </div>
     <div class="lock-error" id="login-error"></div>
     <div id="login-diagnostic" style="display:none;margin-top:8px;padding:10px;border:1px dashed #d1d5db;border-radius:10px;background:#f8fafc">
-      <div id="login-diagnostic-text" style="font-size:12px;color:#4b5563;line-height:1.4"></div>
-      <button class="btn btn-outline" style="margin-top:8px;padding:10px 12px;font-size:13px" onclick="copyLastLoginDiagnostic()">Copier le diagnostic</button>
+      <div id="login-diagnostic-text" style="font-size: calc(12px * var(--ui-text-scale));color:#4b5563;line-height:1.4"></div>
+      <button class="btn btn-outline" style="margin-top:8px;padding:10px 12px;font-size: calc(13px * var(--ui-text-scale))" onclick="copyLastLoginDiagnostic()">Copier le diagnostic</button>
     </div>
     <button class="btn btn-primary" style="margin-top:10px;background:#3d4a2e;border-color:#3d4a2e" onclick="loginUser()">Se connecter →</button>
   </div>
@@ -639,15 +638,15 @@
     <div style="background:#f6f6f6;border:1px solid #ececec;border-radius:16px;padding:16px 14px 14px;margin-bottom:14px">
       <div class="ob-fields" style="gap:14px">
         <div class="input-group" style="margin-bottom:0">
-          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Prénom</label>
+          <label style="font-size: calc(11px * var(--ui-text-scale));letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Prénom</label>
           <input type="text" id="su-name" placeholder="Marie" autocomplete="given-name">
         </div>
         <div class="input-group" style="margin-bottom:0">
-          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Email</label>
+          <label style="font-size: calc(11px * var(--ui-text-scale));letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Email</label>
           <input type="email" id="su-email" placeholder="marie@hotmail.com" autocomplete="email">
         </div>
         <div>
-          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Code (4 chiffres)</label>
+          <label style="font-size: calc(11px * var(--ui-text-scale));letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Code (4 chiffres)</label>
           <div class="pin-input" id="su-user-pin" style="justify-content:center">
             <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
             <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
@@ -656,7 +655,7 @@
           </div>
         </div>
         <div>
-          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Confirmer le code</label>
+          <label style="font-size: calc(11px * var(--ui-text-scale));letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Confirmer le code</label>
           <div class="pin-input" id="su-user-pin-confirm" style="justify-content:center">
             <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
             <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
@@ -678,8 +677,8 @@
   <!-- Step 1: Welcome -->
   <div class="ob-step ob-card" id="ob-step-1">
     <div class="ob-emoji">🏠</div>
-    <h1 style="font-size:32px;margin-bottom:8px">FamResa</h1>
-    <p style="color:var(--text-light);margin-bottom:40px;font-size:16px">Gérez vos ressources familiales<br>simplement, ensemble.</p>
+    <h1 style="font-size: calc(32px * var(--ui-text-scale));margin-bottom:8px">FamResa</h1>
+    <p style="color:var(--text-light);margin-bottom:40px;font-size: calc(16px * var(--ui-text-scale))">Gérez vos ressources familiales<br>simplement, ensemble.</p>
     <button class="btn btn-primary" style="width:100%" onclick="showOnboardingStep(2)">Commencer →</button>
   </div>
 
@@ -694,10 +693,10 @@
     </div>
     <div class="ob-emoji">🔒</div>
     <h2 style="margin-bottom:6px">Code familial</h2>
-    <p style="color:var(--text-light);margin-bottom:24px;font-size:14px">Ce code protège l'accès à l'application.<br>Partagez-le avec tous les membres.</p>
+    <p style="color:var(--text-light);margin-bottom:24px;font-size: calc(14px * var(--ui-text-scale))">Ce code protège l'accès à l'application.<br>Partagez-le avec tous les membres.</p>
     <div class="ob-fields">
       <div>
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Choisissez un code à 4 chiffres</label>
+        <label style="font-size: calc(13px * var(--ui-text-scale));font-weight:600;display:block;margin-bottom:8px">Choisissez un code à 4 chiffres</label>
         <div class="pin-input" id="ob-pin-create" style="justify-content:center">
           <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
           <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
@@ -706,7 +705,7 @@
         </div>
       </div>
       <div>
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Confirmez le code</label>
+        <label style="font-size: calc(13px * var(--ui-text-scale));font-weight:600;display:block;margin-bottom:8px">Confirmez le code</label>
         <div class="pin-input" id="ob-pin-confirm" style="justify-content:center">
           <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
           <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
@@ -730,7 +729,7 @@
     </div>
     <div class="ob-emoji">👤</div>
     <h2 style="margin-bottom:6px">Premier membre</h2>
-    <p style="color:var(--text-light);margin-bottom:20px;font-size:14px">Créez votre profil pour commencer.</p>
+    <p style="color:var(--text-light);margin-bottom:20px;font-size: calc(14px * var(--ui-text-scale))">Créez votre profil pour commencer.</p>
     <div class="ob-fields">
       <div class="input-group" style="margin-bottom:0">
         <label>Prénom</label>
@@ -741,14 +740,14 @@
         <input type="email" id="ob-email" placeholder="ton@email.com" autocomplete="email">
       </div>
       <div>
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Photo <span style="color:var(--text-light);font-weight:400">(optionnel)</span></label>
+        <label style="font-size: calc(13px * var(--ui-text-scale));font-weight:600;display:block;margin-bottom:8px">Photo <span style="color:var(--text-light);font-weight:400">(optionnel)</span></label>
         <div class="ob-photo-row">
-          <div class="photo-preview" id="photo-preview" onclick="document.getElementById('ob-photo-input').click()" style="width:72px;height:72px;font-size:24px;cursor:pointer">📷</div>
+          <div class="photo-preview" id="photo-preview" onclick="document.getElementById('ob-photo-input').click()" style="width:72px;height:72px;font-size: calc(24px * var(--ui-text-scale));cursor:pointer">📷</div>
           <input type="file" id="ob-photo-input" accept="image/*" style="display:none" onchange="handlePhoto(this)">
         </div>
       </div>
       <div>
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Votre code secret (4 chiffres)</label>
+        <label style="font-size: calc(13px * var(--ui-text-scale));font-weight:600;display:block;margin-bottom:8px">Votre code secret (4 chiffres)</label>
         <div class="pin-input" id="ob-user-pin" style="justify-content:center">
           <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
           <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
@@ -772,14 +771,14 @@
     </div>
     <div class="ob-emoji">🚗</div>
     <h2 style="margin-bottom:6px">Votre voiture</h2>
-    <p style="color:var(--text-light);margin-bottom:20px;font-size:14px">Personnalisez votre voiture familiale.</p>
+    <p style="color:var(--text-light);margin-bottom:20px;font-size: calc(14px * var(--ui-text-scale))">Personnalisez votre voiture familiale.</p>
     <div class="ob-fields">
       <div class="input-group" style="margin-bottom:0">
         <label>Nom de la voiture</label>
         <input type="text" id="ob-car-name" placeholder="Ex: Renault Scenic" value="Voiture familiale">
       </div>
       <div>
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Emoji</label>
+        <label style="font-size: calc(13px * var(--ui-text-scale));font-weight:600;display:block;margin-bottom:8px">Emoji</label>
         <div style="display:flex;gap:10px;justify-content:center">
           <button onclick="selectCarEmoji(this,'🚗')" class="ob-emoji-btn active">🚗</button>
           <button onclick="selectCarEmoji(this,'🚙')" class="ob-emoji-btn">🚙</button>
@@ -806,7 +805,7 @@
     </div>
     <div class="ob-emoji">🎉</div>
     <h2 style="margin-bottom:8px">Famille créée !</h2>
-    <p style="color:var(--text-light);margin-bottom:40px;font-size:16px">Vous êtes prêt·e à réserver<br>vos ressources familiales.</p>
+    <p style="color:var(--text-light);margin-bottom:40px;font-size: calc(16px * var(--ui-text-scale))">Vous êtes prêt·e à réserver<br>vos ressources familiales.</p>
     <button class="btn btn-primary" style="width:100%" onclick="finishOnboarding()">Découvrir FamResa →</button>
   </div>
 
@@ -814,15 +813,15 @@
 
 <!-- Update banner -->
 <div id="sw-update-banner" style="display:none;position:fixed;bottom:80px;left:12px;right:12px;z-index:9999;background:#1a1a1a;color:#fff;border-radius:14px;padding:14px 16px;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.25);">
-  <span style="font-size:14px;font-weight:500">Nouvelle version disponible</span>
-  <button onclick="swApplyUpdate()" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">Actualiser</button>
+  <span style="font-size: calc(14px * var(--ui-text-scale));font-weight:500">Nouvelle version disponible</span>
+  <button onclick="swApplyUpdate()" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size: calc(13px * var(--ui-text-scale));font-weight:600;cursor:pointer;white-space:nowrap">Actualiser</button>
 </div>
 
 <!-- Migration overlay -->
 <div id="migration-overlay" style="display:none;position:fixed;inset:0;background:var(--bg, white);z-index:600;flex-direction:column;align-items:center;justify-content:center;gap:20px">
   <div class="spinner" style="width:36px;height:36px;border-width:3px"></div>
-  <p style="font-size:16px;font-weight:500;color:var(--text, #1a1a1a)">Migration des données en cours…</p>
-  <p style="font-size:13px;color:var(--text-light, #888)">Cela ne prend que quelques secondes</p>
+  <p style="font-size: calc(16px * var(--ui-text-scale));font-weight:500;color:var(--text, #1a1a1a)">Migration des données en cours…</p>
+  <p style="font-size: calc(13px * var(--ui-text-scale));color:var(--text-light, #888)">Cela ne prend que quelques secondes</p>
 </div>
 
 <!-- JS modules (defer = non-blocking, preserves order) -->

@@ -43,11 +43,11 @@ async function showStaySheet(groupId, bookingHint) {
     const coDone = allChecks.docs.filter(d => d.data().type === 'checkout').length;
     checklistSummary = `<div style="display:flex;gap:12px;margin-bottom:16px">
       <div style="flex:1;background:var(--accent-light);border-radius:10px;padding:10px 12px;text-align:center">
-        <div style="font-size:11px;color:var(--text-light);margin-bottom:2px">Checkin</div>
+        <div style="font-size: calc(11px * var(--ui-text-scale));color:var(--text-light);margin-bottom:2px">Checkin</div>
         <div style="font-weight:700;color:var(--accent)">${ciDone} ✓</div>
       </div>
       <div style="flex:1;background:#f0fdf4;border-radius:10px;padding:10px 12px;text-align:center">
-        <div style="font-size:11px;color:var(--text-light);margin-bottom:2px">Checkout</div>
+        <div style="font-size: calc(11px * var(--ui-text-scale));color:var(--text-light);margin-bottom:2px">Checkout</div>
         <div style="font-weight:700;color:#16a34a">${coDone} ✓</div>
       </div>
     </div>`;
@@ -60,11 +60,11 @@ async function showStaySheet(groupId, bookingHint) {
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
       <h2>${res?.emoji || '🏠'} Séjour</h2>
-      <div style="color:var(--text-light);font-size:13px;margin-bottom:16px">${res?.name || 'Maison'}</div>
+      <div style="color:var(--text-light);font-size: calc(13px * var(--ui-text-scale));margin-bottom:16px">${res?.name || 'Maison'}</div>
       <div style="background:#f8f9fa;border-radius:12px;padding:14px;margin-bottom:16px">
-        <div style="font-weight:700;font-size:16px;margin-bottom:4px">${fmt(startDate)} → ${fmt(endDate)}</div>
-        <div style="color:var(--text-light);font-size:13px">${nights} nuit${nights > 1 ? 's' : ''} · ${userName}</div>
-        ${motif ? `<div style="color:var(--text-light);font-size:13px;margin-top:4px">${motif}</div>` : ''}
+        <div style="font-weight:700;font-size: calc(16px * var(--ui-text-scale));margin-bottom:4px">${fmt(startDate)} → ${fmt(endDate)}</div>
+        <div style="color:var(--text-light);font-size: calc(13px * var(--ui-text-scale))">${nights} nuit${nights > 1 ? 's' : ''} · ${userName}</div>
+        ${motif ? `<div style="color:var(--text-light);font-size: calc(13px * var(--ui-text-scale));margin-top:4px">${motif}</div>` : ''}
       </div>
       ${checklistSummary}
       <div style="display:flex;flex-direction:column;gap:10px">
@@ -95,7 +95,7 @@ function showHouseExitReportSheet(groupId) {
       </div>
       <div class="input-group">
         <label>Note (optionnel)</label>
-        <textarea id="house-exit-note" rows="3" placeholder="Ex: draps laves, ampoule salon HS" style="resize:none;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;width:100%"></textarea>
+        <textarea id="house-exit-note" rows="3" placeholder="Ex: draps laves, ampoule salon HS" style="resize:none;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size: calc(14px * var(--ui-text-scale));width:100%"></textarea>
       </div>
       <button class="btn btn-primary" onclick="submitHouseExitReport('${groupId}')">Valider</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="showStaySheet('${groupId}')">Retour</button>
@@ -129,7 +129,7 @@ function confirmCancelStay(groupId) {
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
       <h2>Annuler le séjour ?</h2>
-      <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Cette action supprimera toutes les réservations liées à ce séjour. Elle est irréversible.</p>
+      <p style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));margin-bottom:20px">Cette action supprimera toutes les réservations liées à ce séjour. Elle est irréversible.</p>
       <button class="btn btn-danger" onclick="cancelStay('${groupId}')">Confirmer l'annulation</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Retour</button>
     </div>`;

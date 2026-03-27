@@ -15,14 +15,14 @@ async function showEventsSheet(groupId) {
     <div class="login-sheet">
       <h2>📝 Journal du séjour</h2>
       <div id="events-list" style="min-height:60px;margin-bottom:16px">
-        <div style="color:var(--text-light);font-size:14px">Chargement...</div>
+        <div style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale))">Chargement...</div>
       </div>
       <div style="border-top:1px solid var(--border);padding-top:16px">
-        <div style="font-weight:600;font-size:14px;margin-bottom:10px">Ajouter une entrée</div>
+        <div style="font-weight:600;font-size: calc(14px * var(--ui-text-scale));margin-bottom:10px">Ajouter une entrée</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-          ${EVENT_TYPES.map(t => `<button class="btn" style="padding:6px 12px;font-size:13px;background:#f5f5f5;color:var(--text)" id="evtype-${t.id}" onclick="selectEventType('${t.id}')">${t.emoji} ${t.label}</button>`).join('')}
+          ${EVENT_TYPES.map(t => `<button class="btn" style="padding:6px 12px;font-size: calc(13px * var(--ui-text-scale));background:#f5f5f5;color:var(--text)" id="evtype-${t.id}" onclick="selectEventType('${t.id}')">${t.emoji} ${t.label}</button>`).join('')}
         </div>
-        <textarea id="event-text" placeholder="Description..." rows="2" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;resize:none;margin-bottom:10px"></textarea>
+        <textarea id="event-text" placeholder="Description..." rows="2" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size: calc(14px * var(--ui-text-scale));resize:none;margin-bottom:10px"></textarea>
         <button class="btn btn-primary" onclick="addEventEntry('${groupId}')">Ajouter</button>
       </div>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>
@@ -57,7 +57,7 @@ async function refreshEventsList(groupId) {
       .where('groupId', '==', groupId)
       .get();
     if (snap.empty) {
-      listEl.innerHTML = '<div style="color:var(--text-light);font-size:14px">Aucune entrée pour ce séjour.</div>';
+      listEl.innerHTML = '<div style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale))">Aucune entrée pour ce séjour.</div>';
       return;
     }
     listEl.innerHTML = snap.docs.map(doc => {
@@ -67,15 +67,15 @@ async function refreshEventsList(groupId) {
       return `<div style="background:#f8f9fa;border-radius:10px;padding:10px 12px;margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
           <span>${typeInfo.emoji}</span>
-          <span style="font-weight:600;font-size:13px">${typeInfo.label}</span>
-          <span style="color:var(--text-light);font-size:12px;margin-left:auto">${ts}</span>
+          <span style="font-weight:600;font-size: calc(13px * var(--ui-text-scale))">${typeInfo.label}</span>
+          <span style="color:var(--text-light);font-size: calc(12px * var(--ui-text-scale));margin-left:auto">${ts}</span>
         </div>
-        <div style="font-size:14px">${d.description || ''}</div>
-        <div style="color:var(--text-light);font-size:12px;margin-top:4px">${d.userName || ''}</div>
+        <div style="font-size: calc(14px * var(--ui-text-scale))">${d.description || ''}</div>
+        <div style="color:var(--text-light);font-size: calc(12px * var(--ui-text-scale));margin-top:4px">${d.userName || ''}</div>
       </div>`;
     }).join('');
   } catch(e) {
-    listEl.innerHTML = '<div style="color:var(--danger);font-size:14px">Erreur de chargement.</div>';
+    listEl.innerHTML = '<div style="color:var(--danger);font-size: calc(14px * var(--ui-text-scale))">Erreur de chargement.</div>';
   }
 }
 

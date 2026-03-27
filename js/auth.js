@@ -825,7 +825,7 @@ function showEditProfileSheet() {
       <h2>Modifier le profil</h2>
       <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:20px">
         <div class="profile-avatar">${av}</div>
-        <label style="font-size:12px;color:var(--accent);cursor:pointer;text-decoration:underline" onclick="document.getElementById('profile-photo-input').click()">Modifier la photo</label>
+        <label style="font-size: calc(12px * var(--ui-text-scale));color:var(--accent);cursor:pointer;text-decoration:underline" onclick="document.getElementById('profile-photo-input').click()">Modifier la photo</label>
         <input type="file" id="profile-photo-input" accept="image/*" style="display:none" onchange="changeProfilePhoto(this)">
       </div>
       <div class="input-group">
@@ -888,7 +888,7 @@ function showChangePin() {
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
       <h2>Nouveau code</h2>
-      <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">Choisissez un nouveau code à 4 chiffres</p>
+      <p style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));margin-bottom:20px">Choisissez un nouveau code à 4 chiffres</p>
       <div class="pin-input" id="change-pin-input">
         <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
         <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">

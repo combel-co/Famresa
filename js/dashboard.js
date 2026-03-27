@@ -297,12 +297,12 @@ function showHouseDirectionsSheet() {
   sheet.innerHTML = `
     <div class="login-sheet">
       <div class="ccv2-btn-manage-link" style="margin-top:0;margin-bottom:8px;cursor:default;text-decoration:none">Adresse</div>
-      <div style="font-size:13px;line-height:1.45;color:#6b7280;margin-bottom:14px">${_escapeHtml(address)}</div>
+      <div style="font-size: calc(13px * var(--ui-text-scale));line-height:1.45;color:#6b7280;margin-bottom:14px">${_escapeHtml(address)}</div>
       <button class="btn btn-outline" style="${disabledStyle}" ${disabledAttr} onclick="_openMapProvider('apple', resources.find(r => r.id === selectedResource))">Ouvrir dans Apple Maps</button>
       <button class="btn btn-outline" style="${disabledStyle}" ${disabledAttr} onclick="_openMapProvider('google', resources.find(r => r.id === selectedResource))">Ouvrir dans Google Maps</button>
       <button class="btn btn-outline" style="${disabledStyle}" ${disabledAttr} onclick="_openMapProvider('waze', resources.find(r => r.id === selectedResource))">Ouvrir dans Waze</button>
       <button class="btn btn-outline" style="${disabledStyle}" ${disabledAttr} onclick="_copyHouseAddress(resources.find(r => r.id === selectedResource))">Copier l'adresse</button>
-      ${hasAddress ? '' : '<div style="font-size:12px;color:#b45309;margin-top:8px">Complète l’adresse de la maison pour activer les actions.</div>'}
+      ${hasAddress ? '' : '<div style="font-size: calc(12px * var(--ui-text-scale));color:#b45309;margin-top:8px">Complète l’adresse de la maison pour activer les actions.</div>'}
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:6px;margin-bottom:-16px" onclick="closeSheet()">Annuler</button>
     </div>
   `;
@@ -404,7 +404,7 @@ function renderBedIcons(totalBeds, occupiedBeds) {
     const filled = i < occupied;
     icons += `<span style="opacity:${filled ? '1' : '0.25'}">🛏</span>`;
   }
-  return `<div style="font-size:11px;line-height:1.1;display:flex;gap:2px;align-items:center">${icons}</div>`;
+  return `<div style="font-size: calc(11px * var(--ui-text-scale));line-height:1.1;display:flex;gap:2px;align-items:center">${icons}</div>`;
 }
 
 function getCtClass(ctLabel) {
@@ -686,7 +686,7 @@ function renderHistoryList() {
   if (!historyEl) return;
 
   if (!history.length) {
-    historyEl.innerHTML = '<div style="color:var(--text-light);font-size:14px;padding:16px 0">Aucune réservation enregistrée.</div>';
+    historyEl.innerHTML = '<div style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));padding:16px 0">Aucune réservation enregistrée.</div>';
     return;
   }
 
@@ -709,7 +709,7 @@ function renderHistoryList() {
         </div>
         <div class="history-right">
           <div class="history-section-label">Statut</div>
-          <div style="margin-top:2px;font-size:13px;font-weight:600">Confirmé</div>
+          <div style="margin-top:2px;font-size: calc(13px * var(--ui-text-scale));font-weight:600">Confirmé</div>
         </div>
       </div>`;
     }).join('');
@@ -722,11 +722,11 @@ function renderHistoryList() {
       const dest = getBookingDestinationLabel(h);
       const km = estimateDistanceForBooking(h);
       const fuelLevel = getFuelReturnLevelForBooking(h);
-      const fuelLeft = (fuelLevel !== undefined && fuelLevel !== null) ? getFuelBar(fuelLevel) : '<span style="color:#b45309;font-size:12px">Donnée manquante</span>';
+      const fuelLeft = (fuelLevel !== undefined && fuelLevel !== null) ? getFuelBar(fuelLevel) : '<span style="color:#b45309;font-size: calc(12px * var(--ui-text-scale))">Donnée manquante</span>';
       const isFuture = (h.endDate || h.startDate || h.date || '') >= today;
       const isOwn = currentUser && h.userId === currentUser.id;
       const cancelBtn = (isFuture && isOwn)
-        ? `<button class="btn btn-danger" style="margin-top:8px;font-size:12px;padding:6px 12px;width:100%" onclick="event.stopPropagation();showDeleteBookingSheet('${h.id}','${h.startDate || h.date}')">Annuler la réservation</button>`
+        ? `<button class="btn btn-danger" style="margin-top:8px;font-size: calc(12px * var(--ui-text-scale));padding:6px 12px;width:100%" onclick="event.stopPropagation();showDeleteBookingSheet('${h.id}','${h.startDate || h.date}')">Annuler la réservation</button>`
         : '';
       return `<div class="history-card">
         <div class="history-left">

@@ -551,7 +551,7 @@ function showDeleteBookingSheet(bookingId, dateStr) {
     truncateSection = `
       <div style="margin:0 0 12px;padding:14px;background:#fff8ed;border-radius:12px;border:1px solid #fde68a">
         <div style="font-weight:600;margin-bottom:4px">Retour anticipé</div>
-        <div style="font-size:13px;color:var(--text-light);margin-bottom:10px">La voiture est rendue le ${prettyNewEnd}. Les jours suivants sont libérés.</div>
+        <div style="font-size: calc(13px * var(--ui-text-scale));color:var(--text-light);margin-bottom:10px">La voiture est rendue le ${prettyNewEnd}. Les jours suivants sont libérés.</div>
         <button class="btn btn-primary" onclick="truncateCarBooking('${booking.id}','${newEndStr}')">Rendre la voiture le ${prettyNewEnd}</button>
       </div>`;
   }
@@ -559,11 +559,11 @@ function showDeleteBookingSheet(bookingId, dateStr) {
   const html = `
     <div class="login-sheet">
       <h2>Gérer la réservation</h2>
-      <div style="color:var(--text-light);font-size:14px;margin-bottom:16px">${prettyDate}</div>
+      <div style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));margin-bottom:16px">${prettyDate}</div>
       ${truncateSection}
       <div style="margin:0 0 12px;padding:14px;background:#fff0f0;border-radius:12px;border:1px solid #fecaca">
         <div style="font-weight:600;margin-bottom:4px">${isMultiDay ? 'Annuler toute la réservation' : 'Annuler la réservation'}</div>
-        <div style="font-size:13px;color:var(--text-light);margin-bottom:10px">Cette action est irréversible.</div>
+        <div style="font-size: calc(13px * var(--ui-text-scale));color:var(--text-light);margin-bottom:10px">Cette action est irréversible.</div>
         <button class="btn btn-danger" onclick="cancelBooking('${booking.id}')">${isMultiDay ? 'Annuler toute la réservation' : 'Confirmer l\'annulation'}</button>
       </div>
       <button class="btn" style="background:#f5f5f5;color:var(--text)" onclick="closeSheet()">Retour</button>
@@ -589,7 +589,7 @@ function showEarlyReturnSheet(bookingId) {
   const html = `
     <div class="login-sheet">
       <h2>🔑 Rendre plus tôt</h2>
-      <p style="color:var(--text-light);font-size:14px;margin-bottom:16px">
+      <p style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));margin-bottom:16px">
         Indiquez l'heure de retour et l'état du véhicule
       </p>
       <div class="input-group" style="margin-bottom:14px">
@@ -597,11 +597,11 @@ function showEarlyReturnSheet(bookingId) {
         <input type="time" id="early-return-hour" value="${currentTime}">
       </div>
       <div style="margin-bottom:14px">
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">État du véhicule</label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:6px;cursor:pointer">
+        <label style="font-size: calc(13px * var(--ui-text-scale));font-weight:600;display:block;margin-bottom:8px">État du véhicule</label>
+        <label style="display:flex;align-items:center;gap:8px;font-size: calc(14px * var(--ui-text-scale));margin-bottom:6px;cursor:pointer">
           <input type="checkbox" id="early-return-cleaning"> À nettoyer
         </label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:6px;cursor:pointer">
+        <label style="display:flex;align-items:center;gap:8px;font-size: calc(14px * var(--ui-text-scale));margin-bottom:6px;cursor:pointer">
           <input type="checkbox" id="early-return-repair"> Réparation nécessaire
         </label>
       </div>
@@ -619,7 +619,7 @@ function showEarlyReturnSheet(bookingId) {
         </select>
       </div>
       <div style="margin-bottom:14px;padding-top:14px;border-top:1px solid var(--border)">
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:10px">Niveau d'essence rendu</label>
+        <label style="font-size: calc(13px * var(--ui-text-scale));font-weight:600;display:block;margin-bottom:10px">Niveau d'essence rendu</label>
         <div class="fuel-selector">${renderFuelButtons()}</div>
       </div>
       <div class="lock-error" id="early-return-error"></div>
