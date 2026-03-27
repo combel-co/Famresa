@@ -57,6 +57,7 @@
 
   /* ── Layout ── */
   --header-h: 85px;
+  --bottom-nav-h: 84px;
 }
 
   /* ═══════════════════════════════════════════
@@ -153,7 +154,7 @@
     max-width: 520px;
     margin: 0 auto;
     width: 100%;
-    padding: 0 20px calc(20px + env(safe-area-inset-bottom) + 76px);
+    padding: 0 20px calc(20px + env(safe-area-inset-bottom) + var(--bottom-nav-h));
     position: relative;
     z-index: 1;
   }
@@ -462,9 +463,14 @@
   padding: 8px 20px 0;
   padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
   flex-shrink: 0;
-  position: sticky;
+  position: fixed;
+  left: 0;
+  right: 0;
   bottom: 0;
-  z-index: 500;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  z-index: 300;
 }
 
 .nav-item {
@@ -870,7 +876,7 @@
   .dash-kpi-item { flex:1; padding:10px 12px; }
   .dash-kpi-item + .dash-kpi-item { border-left:0.5px solid #e5e4df; }
   .ccv2-btn-manage-link {
-    margin-top:8px; width:100%; border:none; background:transparent; cursor:pointer;
+    margin-top:12px; width:100%; border:none; background:transparent; cursor:pointer;
     color:var(--text-muted); font-size:12px; font-weight:500; text-align:center;
     text-decoration:none; font-family:'DM Sans', sans-serif;
   }
@@ -922,7 +928,7 @@
   .ccv2-fuel-bar { display:flex; align-items:center; gap:8px; margin-top:4px; }
   .ccv2-fuel-track { flex:1; height:6px; background:#e5e4df; border-radius:3px; overflow:hidden; }
   .ccv2-fuel-fill { height:100%; border-radius:3px; }
-  .ccv2-reserve-wrap { padding:10px 14px 0; }
+  .ccv2-reserve-wrap { padding:10px 14px var(--gap-lg); }
   .ccv2-btn-reserve { width:100%; padding:14px; background:var(--text); color:#fff; border:none; border-radius:14px; font-size:15px; font-weight:500; font-family:'DM Sans',sans-serif; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .ccv2-card.state-occupied .ccv2-btn-reserve { background:#92400e; }
   .ccv2-card.state-soon .ccv2-btn-reserve { background:var(--success); }
@@ -1038,7 +1044,7 @@
      BOOKING MODAL — visual refonte beige/vert
      =================================================== */
   .booking-modal {
-    position: fixed; inset: 0; z-index: 250;
+    position: fixed; inset: 0; z-index: 900;
     background: #faf8f4;
     transform: translateY(100%);
     transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
@@ -1403,7 +1409,7 @@
   /* ---- RESPONSIVE ---- */
   @media (max-width: 480px) {
     header { padding: 16px 18px; }
-    main { padding: 0 14px calc(20px + env(safe-area-inset-bottom) + 76px); }
+    main { padding: 0 14px calc(20px + env(safe-area-inset-bottom) + var(--bottom-nav-h)); }
     .resource-tabs { margin-left: -14px; margin-right: -14px; padding-left: 14px; padding-right: 14px; }
     :root { --header-h: 77px; }  /* mobile: padding 16+16 + content 44 + border 1 */
     .cal-day { font-size: 13px; border-radius: 10px; height: 48px; padding-top: 7px; padding-bottom: 18px; }
@@ -1414,7 +1420,7 @@
      ═══════════════════════════════════════════ */
   /* ===== Onboarding Wizard ===== */
   .ob-overlay {
-    position: fixed; inset: 0; z-index: 500; background: white;
+    position: fixed; inset: 0; z-index: 1000; background: white;
     display: flex; align-items: center; justify-content: center;
     overflow-y: auto; padding: 20px;
   }
@@ -1442,7 +1448,7 @@
   /* ---- RESOURCE TABS (pills) ---- */
   .resource-tabs {
     display: flex; flex-wrap: nowrap; gap: 6px;
-    padding: 10px 0;
+    padding: 8px 0 0;
     position: sticky; top: -1px; z-index: 100;
     background: white;
     margin-left: -20px; margin-right: -20px;
