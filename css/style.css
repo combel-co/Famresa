@@ -674,9 +674,12 @@
     display: flex; align-items: center; justify-content: center;
     flex-direction: column;
   }
+  body.celebration-active {
+    background: #2f7759;
+  }
   .celebration-inner {
     text-align: center; color: white; z-index: 1;
-    padding: 24px 18px;
+    padding: calc(24px + env(safe-area-inset-top, 0px)) 18px 24px;
     width: min(420px, 100%);
   }
   .celebration-check {
