@@ -598,6 +598,7 @@ async function showCarInfo() {
   if (res.type === 'house') { showHouseInfo(); return; }
   window._resourcePhotoDraft = res.photoUrl || null;
   const plaque = res.plaque || '';
+  const carLocation = res.carLocation || res.lieu || '';
   const assurance = res.assurance || '';
   const observations = res.observations || '';
   const seatCount = res.seatCount ?? res.seats ?? '';
@@ -617,15 +618,44 @@ async function showCarInfo() {
       ${plaque ? `<div style="display:inline-block;font-size:12px;font-weight:700;color:var(--accent);background:rgba(99,102,241,0.10);border:1px solid rgba(99,102,241,0.18);border-radius:6px;padding:3px 10px;letter-spacing:0.5px;margin-bottom:20px">${plaque}</div>` : '<div style="margin-bottom:20px"></div>'}
       <div class="input-group">
         <label>Plaque d'immatriculation</label>
-        <input type="text" id="car-plaque" placeholder="Ex: AB-123-CD" value="${plaque}" style="text-transform:uppercase">
+        <input type="text" id="car-plaque" placeholder="Ex: AB-123-CD" value="${_rmEscapeHtml(plaque)}" style="text-transform:uppercase">
+      </div>
+      <div class="input-group">
+        <label>Lieu (ville, parking…)</label>
+        <input type="text" id="car-location" placeholder="Paris" value="${_rmEscapeHtml(carLocation)}">
+      </div>
+      <div class="input-group">
+        <label>Nombre de places</label>
+        <input type="number" id="car-seat-count" min="1" max="99" placeholder="5" value="${seatCount === '' ? '' : _rmEscapeHtml(String(seatCount))}">
+      </div>
+      <div class="input-group">
+        <label>Énergie</label>
+        <select id="car-fuel-type" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px">
+          <option value="" ${!fuelType ? 'selected' : ''}>—</option>
+          <option value="essence" ${fuelType === 'essence' ? 'selected' : ''}>Essence</option>
+          <option value="diesel" ${fuelType === 'diesel' ? 'selected' : ''}>Diesel</option>
+          <option value="electrique" ${fuelType === 'electrique' ? 'selected' : ''}>Électrique</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Kilométrage</label>
+        <input type="text" id="car-mileage" inputmode="numeric" placeholder="ex: 45000" value="${_rmEscapeHtml(mileageKm)}">
+      </div>
+      <div class="input-group">
+        <label>Bluetooth</label>
+        <select id="car-bluetooth" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px">
+          <option value="" ${!btVal ? 'selected' : ''}>—</option>
+          <option value="yes" ${btVal === 'yes' ? 'selected' : ''}>Oui</option>
+          <option value="no" ${btVal === 'no' ? 'selected' : ''}>Non</option>
+        </select>
       </div>
       <div class="input-group">
         <label>Assurance</label>
-        <input type="text" id="car-assurance" placeholder="Compagnie / n° de contrat" value="${assurance}">
+        <input type="text" id="car-assurance" placeholder="Compagnie / n° de contrat" value="${_rmEscapeHtml(assurance)}">
       </div>
       <div class="input-group">
         <label>Observations</label>
-        <textarea id="car-observations" placeholder="Carrosserie, entretien, notes..." rows="3" style="resize:none;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;width:100%">${observations}</textarea>
+        <textarea id="car-observations" placeholder="Carrosserie, entretien, notes..." rows="3" style="resize:none;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;width:100%">${_rmEscapeHtml(observations)}</textarea>
       </div>
       <button class="btn btn-primary" onclick="saveCarInfo()">Enregistrer</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>
@@ -645,6 +675,10 @@ async function saveCarInfo() {
   const photoUrl = window._resourcePhotoDraft || null;
   try {
     const updates = { plaque, assurance, observations };
+    if (carLocation) {
+      updates.carLocation = carLocation;
+      updates.lieu = carLocation;
+    }
     if (Number.isFinite(seatParsed) && seatParsed > 0) updates.seatCount = seatParsed;
     if (fuelType) updates.fuelType = fuelType;
     if (mileageRaw) updates.mileageKm = mileageRaw;
@@ -658,6 +692,7 @@ async function saveCarInfo() {
     closeSheet();
     showToast('Infos enregistrées ✓');
     if (typeof renderExperiencePanels === 'function') renderExperiencePanels();
+    if (typeof renderProfileTab === 'function') renderProfileTab();
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 

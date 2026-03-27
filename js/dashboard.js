@@ -364,7 +364,7 @@ function renderCarRawInfo(resource) {
   const wrap = document.getElementById('car-raw-list');
   if (!wrap) return;
   const seats = Number(resource?.seatCount ?? resource?.seats ?? 0);
-  const seatsLabel = seats > 0 ? String(seats) : '—';
+  const seatsLabel = seats > 0 ? `${seats} pers.` : '—';
   const fuel = _fuelTypeLabel(resource?.fuelType || '');
   const mileage =
     resource?.mileageKm != null && String(resource.mileageKm).trim() !== ''
@@ -487,8 +487,12 @@ function renderExperiencePanels() {
   }
   if (cardTitle) cardTitle.textContent = res?.name || (isHouse ? 'Maison' : 'Voiture');
   if (cardSubtitle) {
-    if (!isHouse && res?.plaque) cardSubtitle.textContent = res.plaque;
-    else if (isHouse && hasUsableResourceAddress(res)) cardSubtitle.textContent = getResourceAddressDisplay(res, 'Maison de famille');
+    if (!isHouse) {
+      const loc = (res?.carLocation || res?.lieu || '').trim();
+      if (loc) cardSubtitle.textContent = loc;
+      else if (res?.plaque) cardSubtitle.textContent = res.plaque;
+      else cardSubtitle.textContent = 'Voiture familiale';
+    } else if (isHouse && hasUsableResourceAddress(res)) cardSubtitle.textContent = getResourceAddressDisplay(res, 'Maison de famille');
     else cardSubtitle.textContent = isHouse ? 'Maison de famille' : 'Voiture familiale';
   }
 
@@ -501,11 +505,13 @@ function renderExperiencePanels() {
   const houseWeekView = document.getElementById('house-week-view');
   const houseRawInfo = document.getElementById('house-raw-info');
   const houseInfoCard = document.getElementById('house-info-card');
+  const carInfoCard = document.getElementById('car-info-card');
   const carInfoGrid = document.getElementById('car-info-grid');
   if (houseQuickSummary) houseQuickSummary.style.display = isHouse ? '' : 'none';
   if (houseWeekView) houseWeekView.style.display = isHouse ? '' : 'none';
   if (houseRawInfo) houseRawInfo.style.display = isHouse ? '' : 'none';
   if (houseInfoCard) houseInfoCard.style.display = isHouse ? '' : 'none';
+  if (carInfoCard) carInfoCard.style.display = !isHouse ? '' : 'none';
   if (carInfoGrid) carInfoGrid.style.display = isHouse ? 'none' : '';
   if (tripBanner) tripBanner.style.display = isHouse ? 'none' : tripBanner.style.display;
   if (mainCard) {

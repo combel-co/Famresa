@@ -14,6 +14,23 @@
 <meta name="apple-mobile-web-app-title" content="FamResa">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="theme-color" content="#ffffff">
+<script>
+(function () {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var large = params.get('large');
+    if (large === '1') {
+      localStorage.setItem('famresa_ui_scale', 'large');
+      document.documentElement.classList.add('ui-large');
+    } else if (large === '0') {
+      localStorage.removeItem('famresa_ui_scale');
+      document.documentElement.classList.remove('ui-large');
+    } else if (localStorage.getItem('famresa_ui_scale') === 'large') {
+      document.documentElement.classList.add('ui-large');
+    }
+  } catch (e) {}
+})();
+</script>
 <!-- Preconnect to external origins (parallel DNS+TLS handshakes) -->
 <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,6 +39,7 @@
 <!-- Non-blocking font loading (swap prevents FOIT) -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/ui-scale-large.css?v=2">
 <!-- Firebase SDK (defer = non-blocking parse, keeps order) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
@@ -249,9 +267,9 @@
 
     <div class="ccv2-card house-info-card car-info-card" id="car-info-card" style="display:none">
       <div class="house-raw-info" id="car-raw-info">
-        <div class="house-section-title">Informations véhicule</div>
+        <div class="house-section-title">Mes informations voiture</div>
         <div class="house-raw-list" id="car-raw-list"></div>
-        <button class="ccv2-btn-manage-link" onclick="showResourceManagePage(selectedResource)">Gérer la ressource</button>
+        <button class="ccv2-btn-manage-link" onclick="showResourceManagePage(selectedResource)">Gerer la ressource</button>
       </div>
     </div>
 
