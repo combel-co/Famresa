@@ -133,9 +133,9 @@ document.addEventListener('click', function (e) {
 function switchTab(tab) {
   const normalizedTab = (tab === 'resource')
     ? 'dashboard'
-    : (tab === 'planning' ? 'calendar' : (tab === 'profile' ? 'history' : tab));
+    : (tab === 'planning' ? 'calendar' : (tab === 'history' ? 'profile' : tab));
   activeTab = normalizedTab;
-  ['dashboard', 'calendar', 'history'].forEach(name => {
+  ['dashboard', 'calendar', 'profile'].forEach(name => {
     const isActive = name === normalizedTab;
     const panel = document.getElementById(`tab-${name}`);
     if (panel) panel.classList.toggle('active', isActive);
@@ -144,17 +144,17 @@ function switchTab(tab) {
   });
   document.querySelectorAll('.bottom-nav .nav-item[data-tab]').forEach((item) => {
     const t = item.getAttribute('data-tab');
-    const mapped = t === 'planning' ? 'calendar' : (t === 'profile' ? 'history' : t);
+    const mapped = t === 'planning' ? 'calendar' : (t === 'history' ? 'profile' : t);
     item.classList.toggle('active', mapped === normalizedTab);
   });
   // Hide header banner and resource tabs on profile tab
   const appHeader = document.getElementById('app-header');
   const resourceTabs = document.getElementById('resource-tabs');
-  if (appHeader) appHeader.style.display = normalizedTab === 'history' ? 'none' : '';
-  if (resourceTabs) resourceTabs.style.display = normalizedTab === 'history' ? 'none' : '';
+  if (appHeader) appHeader.style.display = normalizedTab === 'profile' ? 'none' : '';
+  if (resourceTabs) resourceTabs.style.display = normalizedTab === 'profile' ? 'none' : '';
 
   if (normalizedTab === 'dashboard') renderExperiencePanels();
-  if (normalizedTab === 'history') renderProfileTab();
+  if (normalizedTab === 'profile') renderProfileTab();
 }
 
 // ==========================================
