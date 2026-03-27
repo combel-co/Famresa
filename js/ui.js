@@ -356,9 +356,11 @@ function enterApp(targetTab) {
   hideSplash();
   hideSkeleton();
   const header = document.getElementById('app-header');
+  const bottomNav = document.querySelector('.bottom-nav');
   header.style.display = 'flex';
   header.style.visibility = 'visible';
   document.getElementById('app-main').style.display = 'block';
+  if (bottomNav) bottomNav.style.display = 'flex';
   // Sync CSS variable to actual rendered header height (fixes sticky gap on all screen sizes)
   requestAnimationFrame(_syncHeaderHeight);
   updateUserPill();

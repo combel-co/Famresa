@@ -62,34 +62,59 @@ function getNextFreeDate() {
 function renderTripBanner(resourceId) {
   const banner = document.getElementById('trip-banner');
   if (!banner || !currentUser) return;
+  const kickerEl = banner.querySelector('.dash-trip-kicker');
   const titleEl = document.getElementById('trip-banner-title');
   const subEl = document.getElementById('trip-banner-sub');
   const iconEl = document.getElementById('trip-banner-icon');
   const res = resources.find(r => r.id === resourceId);
+  const isHouse = res?.type === 'house';
+  const approachingLabel = isHouse ? 'Votre sejour approche' : 'Votre trajet approche';
+  const inProgressLabel = isHouse ? 'Sejour en cours' : 'Trajet en cours';
   const today = new Date();
-  const upcomingMine = getUniqueBookingsSorted()
+  const todayStr = today.toISOString().slice(0, 10);
+  const todayMidnightMs = new Date(todayStr + 'T00:00:00').getTime();
+  const mineBookings = getUniqueBookingsSorted()
     .filter((b) => {
       const bRes = b.ressource_id || b.resourceId || selectedResource;
       const start = b.startDate || b.date || '';
-      return b.userId === currentUser.id && bRes === resourceId && start >= today.toISOString().slice(0, 10);
+      return b.userId === currentUser.id && bRes === resourceId && !!start;
     })
-    .sort((a, b) => (a.startDate || a.date || '').localeCompare(b.startDate || b.date || ''))[0];
+    .sort((a, b) => (a.startDate || a.date || '').localeCompare(b.startDate || b.date || ''));
 
-  if (!upcomingMine) {
+  const currentMine = mineBookings.find((b) => {
+    const start = b.startDate || b.date || '';
+    const end = b.endDate || start;
+    return start <= todayStr && end >= todayStr;
+  });
+  const upcomingMine = mineBookings.find((b) => {
+    const start = b.startDate || b.date || '';
+    return start >= todayStr;
+  });
+  const targetBooking = currentMine || upcomingMine;
+
+  if (!targetBooking) {
     banner.style.display = 'none';
     return false;
   }
-  const start = new Date((upcomingMine.startDate || upcomingMine.date) + 'T00:00:00');
-  const diffDays = Math.ceil((start.getTime() - today.setHours(0, 0, 0, 0)) / 86400000);
-  if (diffDays < 0 || diffDays > 7) {
+  const startDateStr = targetBooking.startDate || targetBooking.date;
+  const endDate = targetBooking.endDate || startDateStr;
+  const start = new Date(startDateStr + 'T00:00:00');
+  const diffDays = Math.ceil((start.getTime() - todayMidnightMs) / 86400000);
+  const isInProgress = !!currentMine;
+
+  if (!isInProgress && (diffDays < 0 || diffDays > 7)) {
     banner.style.display = 'none';
     return false;
   }
 
-  const endDate = upcomingMine.endDate || upcomingMine.startDate || upcomingMine.date;
-  const nights = Math.max(1, Math.round((new Date(endDate + 'T00:00:00') - new Date((upcomingMine.startDate || upcomingMine.date) + 'T00:00:00')) / 86400000));
-  if (titleEl) titleEl.textContent = `${res?.name || 'Ressource'} · dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
-  if (subEl) subEl.textContent = `${formatRelativeDate(upcomingMine.startDate || upcomingMine.date)} → ${formatRelativeDate(endDate)} · ${nights} nuit${nights > 1 ? 's' : ''}`;
+  const nights = Math.max(1, Math.round((new Date(endDate + 'T00:00:00') - new Date(startDateStr + 'T00:00:00')) / 86400000));
+  if (kickerEl) kickerEl.textContent = isInProgress ? inProgressLabel : approachingLabel;
+  if (titleEl) {
+    titleEl.textContent = isInProgress
+      ? `${res?.name || 'Ressource'} · en cours`
+      : `${res?.name || 'Ressource'} · dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+  }
+  if (subEl) subEl.textContent = `${formatRelativeDate(startDateStr)} → ${formatRelativeDate(endDate)} · ${nights} nuit${nights > 1 ? 's' : ''}`;
   if (iconEl) iconEl.textContent = res?.emoji || (res?.type === 'house' ? '🏠' : '🚗');
   banner.style.display = '';
   return true;

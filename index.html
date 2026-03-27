@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>FamResa — Réservation familiale</title>
 <meta name="description" content="FamResa — Réservation de ressources familiales, simple et rapide.">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -319,7 +319,7 @@
 
 </main>
 
-<nav class="bottom-nav">
+<nav class="bottom-nav" style="display:none">
 
   <div class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
     <div class="nav-pill">
@@ -872,6 +872,20 @@
 <script>
 window.__startupCacheCheckPending = true;
 window.__startupHideSplashRequested = false;
+
+// Prevent browser zoom gestures in the app shell (mobile webview/PWA).
+(function preventAppZoom() {
+  document.addEventListener('gesturestart', function (e) {
+    e.preventDefault();
+  }, { passive: false });
+
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', function (e) {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
+})();
 
 (async function initServiceWorker() {
   if (!('serviceWorker' in navigator)) {

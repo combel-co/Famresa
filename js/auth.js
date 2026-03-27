@@ -8,6 +8,8 @@ function showWelcomeScreen() {
   hideSkeleton();
   document.getElementById('app-header').style.display = 'none';
   document.getElementById('app-main').style.display = 'none';
+  const bottomNav = document.querySelector('.bottom-nav');
+  if (bottomNav) bottomNav.style.display = 'none';
   document.getElementById('login-overlay').classList.add('hidden');
   document.getElementById('signup-overlay').classList.add('hidden');
   document.getElementById('welcome-screen').style.display = 'flex';
@@ -16,6 +18,8 @@ function showWelcomeScreen() {
 // ---- LOGIN ----
 function connectUser() {
   document.getElementById('welcome-screen').style.display = 'none';
+  const bottomNav = document.querySelector('.bottom-nav');
+  if (bottomNav) bottomNav.style.display = 'none';
   const emailEl = document.getElementById('login-email');
   if (emailEl) emailEl.value = '';
   clearPinInputs('#login-pin input');
@@ -370,6 +374,8 @@ let _isSubmittingFamily = false;
 
 function startSignup() {
   document.getElementById('welcome-screen').style.display = 'none';
+  const bottomNav = document.querySelector('.bottom-nav');
+  if (bottomNav) bottomNav.style.display = 'none';
   suTempPhoto = null;
   suInviteUrl = '';
   suPendingFamilyId = null;
