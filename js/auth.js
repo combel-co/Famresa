@@ -11,7 +11,7 @@ function _isInvitePreAuthFlow() {
 }
 
 function showWelcomeScreen() {
-  hideSplash();
+  showSplash({ resetTimer: true });
   hideSkeleton();
   document.body.classList.add('auth-mode');
   document.documentElement.style.setProperty('--sheet-bottom-offset', '0px');
@@ -21,7 +21,7 @@ function showWelcomeScreen() {
   if (bottomNav) bottomNav.style.display = 'none';
   document.getElementById('login-overlay').classList.add('hidden');
   document.getElementById('signup-overlay').classList.add('hidden');
-  document.getElementById('welcome-screen').style.display = 'flex';
+  _renderSplashGuestMode();
 }
 
 function _renderSplashInviteMode() {
@@ -186,7 +186,8 @@ function connectUser() {
   hideSplash();
   document.body.classList.add('auth-mode');
   document.documentElement.style.setProperty('--sheet-bottom-offset', '0px');
-  document.getElementById('welcome-screen').style.display = 'none';
+  const welcome = document.getElementById('welcome-screen');
+  if (welcome) welcome.style.display = 'none';
   const bottomNav = document.querySelector('.bottom-nav');
   if (bottomNav) bottomNav.style.display = 'none';
   const emailEl = document.getElementById('login-email');
@@ -532,14 +533,14 @@ async function loginUser() {
 
 // ---- SIGNUP ----
 let suTempPhoto = null;
-let suPendingFamilyId = null;
 
 function startSignup() {
   _resetSplashInviteMode();
   hideSplash();
   document.body.classList.add('auth-mode');
   document.documentElement.style.setProperty('--sheet-bottom-offset', '0px');
-  document.getElementById('welcome-screen').style.display = 'none';
+  const welcome = document.getElementById('welcome-screen');
+  if (welcome) welcome.style.display = 'none';
   const bottomNav = document.querySelector('.bottom-nav');
   if (bottomNav) bottomNav.style.display = 'none';
   suTempPhoto = null;

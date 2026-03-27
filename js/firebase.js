@@ -55,6 +55,23 @@ async function getFamilleRessources(familyId) {
     .sort((a, b) => (a.nom || a.name || '').localeCompare(b.nom || b.name || ''));
 }
 
+async function getRessourcesByIds(resourceIds) {
+  const ids = [...new Set((resourceIds || []).filter(Boolean))];
+  if (ids.length === 0) return [];
+  const docs = await Promise.all(ids.map(async (id) => {
+    try {
+      const snap = await ressourcesRef().doc(id).get();
+      if (!snap.exists) return null;
+      return { id: snap.id, ...snap.data() };
+    } catch (_) {
+      return null;
+    }
+  }));
+  return docs
+    .filter(Boolean)
+    .sort((a, b) => (a.nom || a.name || '').localeCompare(b.nom || b.name || ''));
+}
+
 // RESERVATION (was: families/{id}/bookings)
 // Maps Firestore fields ↔ JS fields
 function reservationsRef() { return db.collection('reservations'); }

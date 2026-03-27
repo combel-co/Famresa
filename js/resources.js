@@ -8,71 +8,94 @@ window._myResourceRoles = {};
 // Load resources — reads from new 'ressources' collection with fallback to legacy
 async function loadResources() {
   try {
-    let familyId = currentUser.familyId;
+    const familyId = currentUser.familyId || null;
+    let allowLegacyFallback = (typeof isLegacyFallbackAllowed === 'function')
+      ? isLegacyFallbackAllowed()
+      : true;
+    if (familyId) {
+      try {
+        const famDoc = await familleRef(familyId).get();
+        if (famDoc.exists) {
+          const fd = famDoc.data() || {};
+          allowLegacyFallback = fd.disable_legacy_fallback !== true;
+          window._legacyFallbackAllowed = allowLegacyFallback;
+        }
+      } catch (_) {}
+    }
+
+    // Resource-first: compute access from profile, independent from active family
+    let myAccessEntries = [];
+    try {
+      myAccessEntries = await getMyResourceAccessEntries(currentUser.id, null);
+    } catch(_) {}
+    if (allowLegacyFallback && myAccessEntries.length === 0) {
+      try {
+        const snap = await db.collection('resource_access').where('profileId', '==', currentUser.id).get();
+        snap.forEach(d => myAccessEntries.push(accesRessourceToJS(d.data(), d.id)));
+      } catch(_) {}
+    }
+
+    window._myResourceRoles = {};
+    myAccessEntries.forEach((entry) => {
+      const rid = entry.ressource_id || entry.resourceId;
+      if (!rid) return;
+      const prev = window._myResourceRoles[rid];
+      const role = entry.role || 'guest';
+      if (!prev || role === 'admin' || (role === 'member' && prev === 'guest')) {
+        window._myResourceRoles[rid] = role;
+      }
+    });
+
+    const acceptedIds = [...new Set(
+      myAccessEntries
+        .filter(e => (e.statut ?? e.status) === 'accepted')
+        .map(e => e.ressource_id || e.resourceId)
+        .filter(Boolean)
+    )];
+
+    if (acceptedIds.length > 0) {
+      let accessibleResources = [];
+      try {
+        accessibleResources = await getRessourcesByIds(acceptedIds);
+      } catch(_) {}
+
+      resources = accessibleResources.map((r) => ({
+        ...r,
+        name: r.name || r.nom || 'Ressource',
+        type: r.type || 'car'
+      }));
+
+      if (resources.length === 0) {
+        renderNoAccessState();
+        return;
+      }
+
+      selectedResource = resources.some((r) => r.id === selectedResource)
+        ? selectedResource
+        : resources[0].id;
+      renderResourceTabs();
+      subscribeBookings();
+      fuelReportsByBooking = {};
+      return;
+    }
+
+    // Fallback when no accepted access: keep family-based behavior for first setup / pending users
     if (!familyId) {
       resources = [];
       window._myResourceRoles = {};
       showResourceChoiceSheet();
       return;
     }
-    let allowLegacyFallback = (typeof isLegacyFallbackAllowed === 'function')
-      ? isLegacyFallbackAllowed()
-      : true;
-    try {
-      const famDoc = await familleRef(familyId).get();
-      if (famDoc.exists) {
-        const fd = famDoc.data() || {};
-        allowLegacyFallback = fd.disable_legacy_fallback !== true;
-        window._legacyFallbackAllowed = allowLegacyFallback;
-      }
-    } catch (_) {}
 
-    // ── 1. Load resources (new collection first, legacy fallback) ──
     let allResources = [];
     try {
       allResources = await getFamilleRessources(familyId);
     } catch(_) {}
-
     if (allowLegacyFallback && allResources.length === 0) {
-      // Fallback: legacy families/{id}/resources then cars
       try {
         const snap = await db.collection('families').doc(familyId).collection('resources').get();
         snap.forEach(d => allResources.push({ id: d.id, ...d.data() }));
       } catch(_) {}
-    }
-
-    // Compatibility guard: if the selected family has no resources, but the user still has
-    // accepted access entries in another family (e.g. after a resource migration), switch
-    // to that family so existing members keep seeing the same resource.
-    if (allResources.length === 0) {
-      try {
-        const allAccess = await getMyResourceAccessEntries(currentUser.id, null);
-        const accepted = allAccess.filter((entry) => (entry.statut ?? entry.status) === 'accepted');
-        const candidateFamilyIds = [...new Set(accepted.map((entry) => entry.famille_id || entry.familyId).filter(Boolean))];
-        const fallbackFamilyId = candidateFamilyIds.find((fid) => fid !== familyId) || null;
-        if (fallbackFamilyId) {
-          familyId = fallbackFamilyId;
-          currentUser.familyId = fallbackFamilyId;
-          localStorage.setItem('famcar_user', JSON.stringify(currentUser));
-          try { await loadFamilyName(); } catch (_) {}
-
-          try {
-            allResources = await getFamilleRessources(familyId);
-          } catch(_) { allResources = []; }
-          if (allowLegacyFallback && allResources.length === 0) {
-            try {
-              const snap = await db.collection('families').doc(familyId).collection('resources').get();
-              snap.forEach(d => allResources.push({ id: d.id, ...d.data() }));
-            } catch(_) {}
-          }
-          if (allowLegacyFallback && allResources.length === 0) {
-            try {
-              const snap = await db.collection('families').doc(familyId).collection('cars').get();
-              snap.forEach(d => allResources.push({ id: d.id, type: 'car', ...d.data() }));
-            } catch(_) {}
-          }
-        }
-      } catch (_) {}
     }
     if (allowLegacyFallback && allResources.length === 0) {
       try {
@@ -81,51 +104,20 @@ async function loadResources() {
       } catch(_) {}
     }
 
-    // Normalise field names
     allResources = allResources.map(r => ({
       ...r,
       name: r.name || r.nom || 'Ressource',
       type: r.type || 'car'
     }));
-
-    // If no resources exist, show the resource choice screen instead of auto-creating
     if (allResources.length === 0) {
       showResourceChoiceSheet();
       return;
     }
 
-    // ── 2. Access check (new collection first, legacy fallback) ──
-    let myAccessEntries = [];
-    try {
-      myAccessEntries = await getMyResourceAccessEntries(currentUser.id, familyId);
-    } catch(_) {}
-
-    if (allowLegacyFallback && myAccessEntries.length === 0) {
-      // Fallback: legacy resource_access
-      try {
-        const snap = await db.collection('resource_access').where('profileId', '==', currentUser.id).get();
-        snap.forEach(d => myAccessEntries.push(accesRessourceToJS(d.data(), d.id)));
-        myAccessEntries = myAccessEntries.filter(e => e.familyId === familyId || e.famille_id === familyId);
-      } catch(_) {}
-    }
-
-    // If our standard queries missed access docs (legacy field names on acces_ressource),
-    // attempt a per-resource lookup before seeding new entries.
-    if (myAccessEntries.length === 0 && allResources.length > 0) {
-      try {
-        const docsByResource = await Promise.all(
-          allResources.map((res) => findResourceAccessDocs(res.id, currentUser.id))
-        );
-        const existingDocs = docsByResource.flat();
-        if (existingDocs.length > 0) {
-          myAccessEntries = existingDocs
-            .map((d) => accesRessourceToJS(d.data(), d.id))
-            .filter((e) => e.famille_id === familyId || e.familyId === familyId);
-        }
-      } catch(_) {}
-    }
-
-    if (myAccessEntries.length === 0 && allResources.length > 0) {
+    const myAccessEntriesForFamily = myAccessEntries.filter(
+      (e) => (e.famille_id === familyId || e.familyId === familyId)
+    );
+    if (myAccessEntriesForFamily.length === 0 && allResources.length > 0) {
       // No access records yet — determine role from family created_by
       let role = 'member';
       try {
@@ -165,18 +157,18 @@ async function loadResources() {
 
       allResources.forEach(r => { window._myResourceRoles[r.id] = role; });
       resources = allResources;
-    } else if (myAccessEntries.length > 0) {
+    } else if (myAccessEntriesForFamily.length > 0) {
       window._myResourceRoles = {};
-      myAccessEntries.forEach(e => {
+      myAccessEntriesForFamily.forEach(e => {
         const rid = e.ressource_id || e.resourceId;
         window._myResourceRoles[rid] = e.role;
       });
-      const acceptedIds = new Set(
-        myAccessEntries
+      const acceptedIdsInFamily = new Set(
+        myAccessEntriesForFamily
           .filter(e => (e.statut ?? e.status) === 'accepted')
           .map(e => e.ressource_id || e.resourceId)
       );
-      resources = allResources.filter(r => acceptedIds.has(r.id));
+      resources = allResources.filter(r => acceptedIdsInFamily.has(r.id));
       // If none match (e.g. access entries from old IDs), grant all
       if (resources.length === 0 && allResources.length > 0) {
         resources = allResources;
