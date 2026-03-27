@@ -170,7 +170,7 @@
 
     <!-- Carte ressource dashboard -->
     <div class="ccv2-card" id="resource-main-card">
-      <div class="dash-hero">
+      <div class="dash-hero house-hero">
         <div class="dash-hero-media" id="resource-card-photo">
           <span id="resource-card-emoji">🚗</span>
         </div>
@@ -180,17 +180,26 @@
             <div class="ccv2-name" id="resource-card-title">Voiture</div>
             <div class="ccv2-model" id="resource-card-subtitle">—</div>
           </div>
-          <div class="ccv2-badge available" id="availability-badge">
-            <div class="ccv2-dot" id="car-status-dot"></div>
-            <span id="car-status-text">Disponible</span>
-          </div>
         </div>
       </div>
-      <div class="dash-context-strip" id="dash-context-strip">
-        <div class="dash-context-text" id="next-slot-text">Libre jusqu'au 16 avril</div>
-        <div class="dash-context-link" id="dash-context-link">Voir le calendrier →</div>
+
+      <div class="house-quick-summary" id="house-quick-summary">
+        <div class="house-summary-line" id="house-summary-line">Disponible</div>
+        <div class="house-summary-details" id="house-summary-details">Aucune réservation en cours</div>
       </div>
-      <div class="dash-kpi-strip" id="car-info-grid" onclick="showCarInfo()">
+
+      <div class="house-week-view" id="house-week-view">
+        <div class="house-section-title">Cette semaine</div>
+        <div class="dash-week-strip house-week-strip" id="dash-week-strip"></div>
+        <div class="house-week-meta" id="house-week-meta">Semaine libre</div>
+      </div>
+
+      <div class="house-primary-action">
+        <button class="ccv2-btn-reserve" id="reserve-cta-btn" onclick="openBookingModal()">Réserver la maison</button>
+        <div id="early-return-container" style="display:none"></div>
+      </div>
+
+      <div class="dash-kpi-strip" id="car-info-grid" onclick="showCarInfo()" style="display:none">
         <div class="dash-kpi-item" id="cell-assurance">
           <div class="ccv2-label">Assurance</div>
           <div class="ccv2-value" id="info-assurance">—</div>
@@ -204,15 +213,19 @@
           <div id="car-fuel-display"></div>
         </div>
       </div>
-      <div class="ccv2-reserve-wrap">
-        <button class="ccv2-btn-reserve" id="reserve-cta-btn" onclick="openBookingModal()">Réserver la voiture</button>
-        <div id="early-return-container" style="display:none"></div>
+    </div>
+    <div class="ccv2-card house-info-card" id="house-info-card">
+      <div class="house-raw-info" id="house-raw-info">
+        <div class="house-section-title">Mes informations maison</div>
+        <div class="house-raw-list" id="house-raw-list">
+          <div class="house-raw-row">
+            <div class="house-raw-label">Capacité</div>
+            <div class="house-raw-value">—</div>
+          </div>
+        </div>
         <button class="ccv2-btn-manage-link" onclick="showResourceManagePage(selectedResource)">Gerer la ressource</button>
       </div>
     </div>
-
-    <div class="ccv2-section-label">Cette semaine</div>
-    <div class="dash-week-strip" id="dash-week-strip"></div>
 
     <div id="post-trip-reminder"></div>
 
@@ -231,15 +244,11 @@
   <section class="tab-panel" id="tab-calendar">
     <div class="cal-sticky-header">
       <div class="cal-header">
-        <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
+        <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
       </div>
     </div>
     <div class="cal-scroll-body" id="cal-scroll-body">
       <div id="cal-grid"></div>
-      <div class="legend" style="margin-bottom:130px">
-        <span><span class="legend-dot" style="background:var(--accent)"></span> Ma résa</span>
-        <span><span class="legend-dot" style="background:var(--accent-light);border:1px solid var(--accent)"></span> Réservé</span>
-      </div>
     </div>
   </section>
 

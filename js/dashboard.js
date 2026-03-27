@@ -120,36 +120,165 @@ function renderTripBanner(resourceId) {
   return true;
 }
 
-function renderWeekStrip(resourceId) {
-  const wrap = document.getElementById('dash-week-strip');
-  if (!wrap) return;
-  const labels = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+function getHousePeopleCount(booking) {
+  if (!booking) return 0;
+  return Number(booking.occupiedBeds || booking.guestCount || booking.peopleCount || 1);
+}
+
+function getHouseDecisionState(resourceId) {
   const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const todayMidnightMs = new Date(todayStr + 'T00:00:00').getTime();
+  const state = getCurrentResourceBookingState(resourceId);
+  const currentBooking = state.occupied ? state.booking : null;
+  const labels = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
   const base = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  let html = '';
+  const weekDays = [];
+  let occupiedDays = 0;
+
   for (let i = 0; i < 7; i++) {
     const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
-    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const booking = getResourceBookingForDate(ds, resourceId);
-    const isToday = i === 0;
-    const isMine = booking && currentUser && booking.userId === currentUser.id;
-    const dayLabel = isToday ? 'Auj' : labels[d.getDay()];
-    let av = '<div class="dash-week-free"></div>';
-    if (booking) {
-      const initials = getInitials(booking.userName || '?');
-      let cls = '';
-      if (initials === 'AG') cls = 'ag';
-      else if (initials === 'MC') cls = 'mc';
-      else if (initials === 'GA') cls = 'ga';
-      av = `<div class="dash-week-avatar ${cls}">${initials}</div>`;
-    }
-    html += `<div class="dash-week-day${isToday ? ' today' : ''}${isMine ? ' mine' : ''}">
-      <div class="dash-week-lbl">${dayLabel}</div>
-      <div class="dash-week-num">${d.getDate()}</div>
-      ${av}
-    </div>`;
+    if (booking) occupiedDays++;
+    weekDays.push({
+      date: ds,
+      dayLabel: i === 0 ? 'Auj' : labels[d.getDay()],
+      dayNum: d.getDate(),
+      occupied: !!booking,
+      booking
+    });
   }
-  wrap.innerHTML = html;
+
+  const occupantName = currentBooking?.userName || '—';
+  const peopleCount = getHousePeopleCount(currentBooking);
+  const endDate = currentBooking?.endDate || currentBooking?.date_fin || todayStr;
+  const endMidnightMs = new Date(endDate + 'T00:00:00').getTime();
+  const nightsLeft = currentBooking ? Math.max(1, Math.ceil((endMidnightMs - todayMidnightMs) / 86400000) + 1) : 0;
+
+  let primaryAction = 'reserve';
+  if (currentBooking) {
+    primaryAction = currentBooking.userId === currentUser?.id ? 'viewReservation' : 'contact';
+  }
+
+  return {
+    availabilityStatus: currentBooking ? 'occupied' : 'available',
+    occupantName,
+    peopleCount,
+    endDate,
+    nightsLeft,
+    weekDays,
+    occupiedDays,
+    freeDays: Math.max(0, 7 - occupiedDays),
+    booking: currentBooking,
+    primaryAction,
+    state
+  };
+}
+
+function renderWeekStrip(resourceId, decisionState) {
+  const wrap = document.getElementById('dash-week-strip');
+  const meta = document.getElementById('house-week-meta');
+  if (!wrap) return;
+  const ds = decisionState || getHouseDecisionState(resourceId);
+
+  wrap.innerHTML = ds.weekDays.map((day) => {
+    const initials = day.booking ? getInitials(day.booking.userName || '?') : '';
+    return `<div class="dash-week-day${day.occupied ? ' occupied' : ' free'}">
+      <div class="dash-week-lbl">${day.dayLabel}</div>
+      <div class="dash-week-num">${day.dayNum}</div>
+      <div class="dash-week-state">${day.occupied ? initials : 'Libre'}</div>
+    </div>`;
+  }).join('');
+
+  if (meta) {
+    if (ds.availabilityStatus === 'occupied') {
+      meta.textContent = `Libre à partir du ${formatRelativeDate(ds.state.freeFrom)}`;
+    } else {
+      meta.textContent = 'Maison libre cette semaine';
+    }
+  }
+}
+
+function openHousePrimaryAction() {
+  const btn = document.getElementById('reserve-cta-btn');
+  const action = btn?.dataset.action || 'reserve';
+  const bookingId = btn?.dataset.bookingId || '';
+  const groupId = btn?.dataset.groupId || '';
+  const occupantName = btn?.dataset.occupantName || 'Occupant';
+
+  if (action === 'contact') {
+    showToast(`Contacter ${occupantName} depuis votre canal familial`);
+    return;
+  }
+  if (action === 'viewReservation' && typeof showStaySheet === 'function' && (groupId || bookingId)) {
+    showStaySheet(groupId || bookingId);
+    return;
+  }
+  openBookingModal();
+}
+
+function showHouseDirectionsSheet() {
+  const res = resources.find(r => r.id === selectedResource);
+  const address = res?.address || 'Adresse non renseignée';
+  const sheet = document.getElementById('sheet-content');
+  if (!sheet) return;
+
+  sheet.innerHTML = `
+    <div class="login-sheet">
+      <div class="ccv2-btn-manage-link" style="margin-top:0;margin-bottom:12px;cursor:default;text-decoration:none">Adresse</div>
+      <button class="btn btn-outline" onclick="showToast('Bientôt disponible')">Ouvrir dans Apple Maps</button>
+      <button class="btn btn-outline" onclick="showToast('Bientôt disponible')">Ouvrir dans Google Maps</button>
+      <button class="btn btn-outline" onclick="showToast('Bientôt disponible')">Ouvrir dans Waze</button>
+      <button class="btn btn-outline" onclick="showToast('Bientôt disponible')">Copier l'adresse</button>
+      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:6px;margin-bottom:-16px" onclick="closeSheet()">Annuler</button>
+    </div>
+  `;
+  document.getElementById('overlay')?.classList.add('open');
+}
+
+function renderHouseRawInfo(resource, decisionState) {
+  const wrap = document.getElementById('house-raw-list');
+  if (!wrap) return;
+  const capacity = Number(resource?.capacity || 8);
+  const rooms = Number(resource?.rooms || resource?.bedrooms || resource?.chambres || 0);
+  const checkIn = resource?.checkIn || resource?.checkin || '—';
+  const checkOut = resource?.checkOut || resource?.checkout || '—';
+  const address = resource?.address || '—';
+  const roomsLabel = rooms > 0 ? `${rooms}` : '—';
+
+  wrap.innerHTML = `
+    <div class="house-raw-grid">
+      <div class="house-raw-cell">
+        <div class="house-raw-label">Capacité</div>
+        <div class="house-raw-value">${capacity} pers.</div>
+      </div>
+      <div class="house-raw-cell">
+        <div class="house-raw-label">Chambres</div>
+        <div class="house-raw-value">${roomsLabel}</div>
+      </div>
+      <div class="house-raw-cell">
+        <div class="house-raw-label">Check-in</div>
+        <div class="house-raw-value">${checkIn || '—'}</div>
+      </div>
+      <div class="house-raw-cell">
+        <div class="house-raw-label">Check-out</div>
+        <div class="house-raw-value">${checkOut || '—'}</div>
+      </div>
+      <div class="house-raw-cell house-raw-cell-full">
+        <div class="house-raw-label">Adresse</div>
+        <div class="house-raw-address-row">
+          <div class="house-raw-address">
+            <span class="house-raw-address-text">${address}</span>
+          </div>
+          <button class="house-route-btn" type="button" onclick="showHouseDirectionsSheet()">
+            <span class="house-route-btn-arrow" aria-hidden="true">→</span>
+            <span class="house-route-btn-text">Obtenir l'itinéraire</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function renderBedIcons(totalBeds, occupiedBeds) {
@@ -225,11 +354,11 @@ function renderUpcomingBookings() {
 
 function renderExperiencePanels() {
   const monthEntries = getMonthBookingEntries();
-  const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
   const res = resources.find(r => r.id === selectedResource);
   const isHouse = res && res.type === 'house';
-  const state = getCurrentResourceBookingState(selectedResource);
-  const todayBooking = state.occupied ? state.booking : null;
+  const decisionState = getHouseDecisionState(selectedResource);
+  const state = decisionState.state;
+  const todayBooking = decisionState.booking;
 
   // ── Nom, media, sous-titre ──
   const cardEmoji = document.getElementById('resource-card-emoji');
@@ -253,13 +382,25 @@ function renderExperiencePanels() {
   const badge = document.getElementById('availability-badge');
   const statusText = document.getElementById('car-status-text');
   const mainCard = document.getElementById('resource-main-card');
+  const tripBanner = document.getElementById('trip-banner');
+  const houseQuickSummary = document.getElementById('house-quick-summary');
+  const houseWeekView = document.getElementById('house-week-view');
+  const houseRawInfo = document.getElementById('house-raw-info');
+  const houseInfoCard = document.getElementById('house-info-card');
+  const carInfoGrid = document.getElementById('car-info-grid');
+  if (houseQuickSummary) houseQuickSummary.style.display = isHouse ? '' : 'none';
+  if (houseWeekView) houseWeekView.style.display = isHouse ? '' : 'none';
+  if (houseRawInfo) houseRawInfo.style.display = isHouse ? '' : 'none';
+  if (houseInfoCard) houseInfoCard.style.display = isHouse ? '' : 'none';
+  if (carInfoGrid) carInfoGrid.style.display = isHouse ? 'none' : '';
+  if (tripBanner) tripBanner.style.display = isHouse ? 'none' : tripBanner.style.display;
   if (mainCard) {
     mainCard.classList.remove('state-available', 'state-occupied', 'state-soon');
   }
   if (badge && statusText) {
     if (todayBooking) {
       badge.className = 'ccv2-badge reserved';
-      statusText.textContent = isHouse ? 'Occupee' : 'Occupee';
+      statusText.textContent = isHouse ? 'Occupée' : 'Occupée';
       if (mainCard) mainCard.classList.add('state-occupied');
     } else {
       badge.className = 'ccv2-badge available';
@@ -268,38 +409,14 @@ function renderExperiencePanels() {
     }
   }
 
-  // ── Info grid (voiture) ──
-  const infoGrid = document.getElementById('car-info-grid');
-  if (infoGrid) infoGrid.style.display = '';
+  // ── Infos details (voiture) ──
+  const infoGrid = carInfoGrid;
+  if (infoGrid && !isHouse) infoGrid.style.display = '';
   if (infoGrid) infoGrid.onclick = isHouse ? showGuideSheet : showCarInfo;
 
   const infoAssurance = document.getElementById('info-assurance');
   const infoCt = document.getElementById('info-ct');
-  if (isHouse && infoGrid) {
-    const capacity = Number(res?.capacity || 8);
-    const occupiedBeds = Number(todayBooking?.occupiedBeds || todayBooking?.guestCount || todayBooking?.peopleCount || (state.occupied ? 1 : 0));
-    const beds = renderBedIcons(capacity, occupiedBeds);
-    const exitRaw = res?.houseExitState || '';
-    const exitLabel = exitRaw === 'nickel' ? 'Nickel'
-      : exitRaw === 'cleanup' ? 'A nettoyer'
-      : exitRaw === 'issue' ? 'Probleme'
-      : 'Non renseigne';
-    infoGrid.innerHTML = `
-      <div class="dash-kpi-item">
-        <div class="ccv2-label">Capacite</div>
-        <div class="ccv2-value">${occupiedBeds}/${capacity} couchages</div>
-        ${beds}
-      </div>
-      <div class="dash-kpi-item">
-        <div class="ccv2-label">Guide d'entree</div>
-        <div class="ccv2-value ok">Acceder</div>
-      </div>
-      <div class="dash-kpi-item">
-        <div class="ccv2-label">Etat laisse</div>
-        <div class="ccv2-value ${exitRaw === 'issue' ? 'warn' : (exitRaw === 'cleanup' ? 'warn' : (exitRaw === 'nickel' ? 'ok' : ''))}">${exitLabel}</div>
-      </div>
-    `;
-  } else {
+  if (!isHouse) {
     if (infoGrid && !document.getElementById('info-assurance')) {
       infoGrid.innerHTML = `
       <div class="dash-kpi-item" id="cell-assurance">
@@ -335,7 +452,7 @@ function renderExperiencePanels() {
     }
   }
 
-  // ── Réservoir ──
+  // ── Réservoir voiture ──
   const fuelDisplay = document.getElementById('car-fuel-display');
   const fuelCell = document.getElementById('car-fuel-row');
   if (fuelDisplay) {
@@ -348,11 +465,49 @@ function renderExperiencePanels() {
     }
   }
 
-  // ── Bouton Réserver ──
+  // ── Bloc maison: quick summary, semaine, infos brutes, CTA unique ──
+  const summaryLine = document.getElementById('house-summary-line');
+  const summaryDetails = document.getElementById('house-summary-details');
+
+  if (isHouse) {
+    const untilLabel = decisionState.availabilityStatus === 'occupied'
+      ? formatRelativeDate(decisionState.endDate)
+      : formatRelativeDate(state.freeUntil);
+    if (decisionState.availabilityStatus === 'occupied') {
+      if (summaryLine) {
+        summaryLine.innerHTML = `
+          <span class="ccv2-badge reserved house-summary-status-badge"><span class="ccv2-dot"></span>Occupée</span>
+          <span class="house-summary-inline-text">${decisionState.occupantName} · ${decisionState.peopleCount} personne${decisionState.peopleCount > 1 ? 's' : ''} · Départ le ${untilLabel}</span>
+        `;
+      }
+      if (summaryDetails) summaryDetails.style.display = 'none';
+    } else {
+      if (summaryLine) summaryLine.textContent = 'Disponible';
+      if (summaryDetails) {
+        summaryDetails.style.display = '';
+        summaryDetails.textContent = `Libre à partir du ${untilLabel}`;
+      }
+    }
+
+    renderWeekStrip(selectedResource, decisionState);
+    renderHouseRawInfo(res || {}, decisionState);
+  }
+
+  // ── Action primaire ──
   const reserveBtn = document.getElementById('reserve-cta-btn');
   if (reserveBtn) {
-    if (state.occupied) reserveBtn.textContent = `Réserver dès le ${formatRelativeDate(state.freeFrom)}`;
-    else reserveBtn.textContent = isHouse ? 'Réserver la maison' : 'Réserver la voiture';
+    if (isHouse) {
+      reserveBtn.onclick = openBookingModal;
+      reserveBtn.dataset.bookingId = todayBooking?.id || '';
+      reserveBtn.dataset.groupId = todayBooking?.reservationGroupId || '';
+      reserveBtn.dataset.occupantName = decisionState.occupantName || '';
+      reserveBtn.dataset.action = 'reserve';
+      reserveBtn.textContent = 'Réserver la maison';
+    } else {
+      reserveBtn.onclick = openBookingModal;
+      if (state.occupied) reserveBtn.textContent = `Réserver dès le ${formatRelativeDate(state.freeFrom)}`;
+      else reserveBtn.textContent = 'Réserver la voiture';
+    }
   }
 
   // ── Bouton "Rendre plus tôt" (visible si réservation active aujourd'hui pour moi, voiture uniquement) ──
@@ -367,9 +522,9 @@ function renderExperiencePanels() {
     }
   }
 
-  // ── Prochain créneau libre ──
+  // ── Texte de contexte legacy (voiture) ──
   const nextSlot = document.getElementById('next-slot-text');
-  if (nextSlot) {
+  if (nextSlot && !isHouse) {
     if (state.occupied) {
       const who = todayBooking?.userName || 'Quelqu’un';
       nextSlot.innerHTML = `${who} · <strong>jusqu'au ${formatRelativeDate(state.occupiedUntil)}</strong> · libre dès ${formatRelativeDate(state.freeFrom)}`;
@@ -378,14 +533,17 @@ function renderExperiencePanels() {
     }
   }
 
-  const hasSoonTrip = renderTripBanner(selectedResource);
-  if (hasSoonTrip && !state.occupied && mainCard) {
-    mainCard.classList.remove('state-available');
-    mainCard.classList.add('state-soon');
+  if (!isHouse) {
+    const hasSoonTrip = renderTripBanner(selectedResource);
+    if (hasSoonTrip && !state.occupied && mainCard) {
+      mainCard.classList.remove('state-available');
+      mainCard.classList.add('state-soon');
+    }
+  } else if (tripBanner) {
+    tripBanner.style.display = 'none';
   }
-  renderWeekStrip(selectedResource);
 
-  // ── Prochaines réservations ──
+  // ── Prochaines réservations (si le bloc existe encore) ──
   renderUpcomingBookings();
 
   const myMonthRides = monthEntries.filter(b => currentUser && b.userId === currentUser.id).length;
