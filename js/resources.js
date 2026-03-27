@@ -179,7 +179,7 @@ function renderNoAccessState() {
         <div style="font-size:52px;margin-bottom:16px">⏳</div>
         <div style="font-weight:700;font-size:20px;margin-bottom:8px">En attente d'accès</div>
         <div style="color:var(--text-light);font-size:14px;line-height:1.6;margin-bottom:24px">
-          Tu es membre de la famille, mais tu n'as pas encore accès à une ressource.<br>
+          Ton compte est actif, mais tu n'as pas encore accès à une ressource.<br>
           Demande à un admin de t'envoyer un lien d'invitation spécifique.
         </div>
         <div style="background:#f0f4ff;border:1px solid #c7d2fe;border-radius:12px;padding:16px;font-size:13px;color:#4338ca;line-height:1.5">
@@ -194,7 +194,7 @@ function renderNoAccessState() {
   if (upcomingBookings) upcomingBookings.innerHTML = '';
 }
 
-// Show resource choice sheet when a new family has no resources yet
+// Show resource choice sheet when a new account has no resources yet
 function showResourceChoiceSheet() {
   // Render an empty main card state while the sheet is shown
   const tabsEl = document.getElementById('resource-tabs');
@@ -207,7 +207,7 @@ function showResourceChoiceSheet() {
         <div style="font-size:52px;margin-bottom:16px">🏁</div>
         <div style="font-weight:700;font-size:20px;margin-bottom:8px">Bienvenue !</div>
         <div style="color:var(--text-light);font-size:14px;line-height:1.6">
-          Pour commencer, créez une ressource ou rejoignez-en une existante.
+          Pour commencer, cree une premiere ressource.
         </div>
       </div>`;
   }
@@ -216,22 +216,11 @@ function showResourceChoiceSheet() {
     <div class="login-sheet">
       <h2>Première ressource</h2>
       <p style="color:var(--text-light);font-size:14px;margin-bottom:20px">
-        Que souhaitez-vous faire ?
+        Cree ta premiere ressource.
       </p>
       <button class="btn btn-primary" style="width:100%;padding:14px;margin-bottom:12px" onclick="closeSheet();showAddResourceSheet()">
         🆕 Créer une ressource
       </button>
-      <div style="text-align:center;color:var(--text-light);font-size:13px;margin-bottom:12px">ou</div>
-      <div id="resource-join-section">
-        <div class="input-group" style="margin-bottom:8px">
-          <label>Code d'invitation ressource</label>
-          <input type="text" id="resource-choice-join-code" placeholder="Ex: ABC123" autocomplete="off" style="text-transform:uppercase">
-        </div>
-        <div class="lock-error" id="resource-choice-join-error"></div>
-        <button class="btn" style="width:100%;background:#f0f4ff;color:#4338ca;font-weight:600;padding:12px" onclick="submitResourceChoiceJoin()">
-          Rejoindre une ressource
-        </button>
-      </div>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:14px;width:100%" onclick="closeSheet()">Plus tard</button>
     </div>`;
   document.getElementById('overlay').classList.add('open');
@@ -682,7 +671,7 @@ async function showResourceAccessSheet(resourceId) {
 
 async function approveResourceAccess(accessId, userName) {
   try {
-    await resourceService.approveManageAccess({ accessId });
+    await resourceService.approveManageAccess({ accessId, approverProfileId: currentUser?.id || null });
     showToast(`Accès approuvé${userName ? ' pour ' + userName : ''} ✓`);
     closeSheet();
   } catch(e) { showToast('Erreur — réessayez'); }
@@ -690,7 +679,7 @@ async function approveResourceAccess(accessId, userName) {
 
 async function rejectResourceAccess(accessId) {
   try {
-    await resourceService.rejectManageAccess({ accessId });
+    await resourceService.rejectManageAccess({ accessId, approverProfileId: currentUser?.id || null });
     showToast('Demande refusée');
     closeSheet();
   } catch(e) { showToast('Erreur — réessayez'); }
@@ -906,7 +895,7 @@ async function showResourceManagePage(resourceId) {
 
 async function _rmApprove(accessId, userName, resourceId) {
   try {
-    await resourceService.approveManageAccess({ accessId });
+    await resourceService.approveManageAccess({ accessId, approverProfileId: currentUser?.id || null });
     showToast(`${userName} a accès ✓`);
     await showResourceManagePage(resourceId);
   } catch(e) { showToast('Erreur — réessayez'); }
@@ -914,7 +903,7 @@ async function _rmApprove(accessId, userName, resourceId) {
 
 async function _rmReject(accessId, resourceId) {
   try {
-    await resourceService.rejectManageAccess({ accessId });
+    await resourceService.rejectManageAccess({ accessId, approverProfileId: currentUser?.id || null });
     showToast('Demande refusée');
     await showResourceManagePage(resourceId);
   } catch(e) { showToast('Erreur — réessayez'); }
@@ -1033,19 +1022,38 @@ async function _rmConfirmDelete(resourceId) {
 }
 
 // Called when user visits ?resource_join=CODE (after being logged in)
-async function handleResourceJoinCode(code) {
-  if (!currentUser?.familyId) return;
+async function handleResourceJoinCode(code, options = {}) {
+  const opts = options || {};
+  const notify = (message) => {
+    if (!opts.silent) showToast(message);
+  };
+  if (!currentUser?.id) {
+    notify('Connecte-toi pour traiter ce lien');
+    return { status: 'auth_required' };
+  }
+
   try {
     const snap = await ressourcesRef().where('inviteCode', '==', code).limit(1).get();
-    if (snap.empty) { showToast('Lien invalide ou expiré'); return; }
+    if (snap.empty) {
+      notify('Lien invalide ou expiré');
+      return { status: 'invalid_link' };
+    }
     const resourceId = snap.docs[0].id;
+    const resourceData = snap.docs[0].data() || {};
+    const resourceName = resourceData.nom || resourceData.name || 'Ressource';
 
     const existingDocs = await findResourceAccessDocs(resourceId, currentUser.id);
     const existingEntries = existingDocs.map((d) => accesRessourceToJS(d.data(), d.id));
     const statuts = new Set(existingEntries.map((e) => (e.statut ?? e.status)).filter(Boolean));
 
-    if (statuts.has('accepted')) { showToast('Tu as déjà accès à cette ressource'); return; }
-    if (statuts.has('pending')) { showToast('Ta demande est déjà en attente d\'approbation'); return; }
+    if (statuts.has('accepted')) {
+      notify('Tu as déjà accès à cette ressource');
+      return { status: 'already_accepted', resourceId, resourceName };
+    }
+    if (statuts.has('pending')) {
+      notify('Ta demande est déjà en attente d\'approbation');
+      return { status: 'already_pending', resourceId, resourceName };
+    }
 
     // Previously rejected (or unknown status): re-submit by updating an existing doc if possible
     if (existingDocs.length > 0) {
@@ -1054,16 +1062,21 @@ async function handleResourceJoinCode(code) {
         invited_at: ts(),
         accepted_at: null,
       });
-      showToast('Demande envoyée — en attente d\'approbation par l\'admin');
-      return;
+      notify('Demande envoyee — en attente de validation par un admin');
+      return { status: 'pending_created', resourceId, resourceName };
     }
 
     await accesRessourceRef().add({
       ressource_id: resourceId, profil_id: currentUser.id,
-      famille_id: currentUser.familyId,
+      famille_id: currentUser.familyId || null,
       role: 'member', statut: 'pending',
       invited_at: ts(), accepted_at: null,
     });
-    showToast('Demande envoyée — en attente d\'approbation par l\'admin');
-  } catch(e) { console.error(e); showToast('Erreur — réessayez'); }
+    notify('Demande envoyee — en attente de validation par un admin');
+    return { status: 'pending_created', resourceId, resourceName };
+  } catch(e) {
+    console.error(e);
+    notify('Erreur — réessayez');
+    return { status: 'error' };
+  }
 }

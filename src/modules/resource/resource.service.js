@@ -205,16 +205,16 @@ const resourceService = {
     };
   },
 
-  async approveManageAccess({ accessId }) {
-    await accessService.approveManageAccess({ accessId });
+  async approveManageAccess({ accessId, approverProfileId }) {
+    await accessService.approveManageAccess({ accessId, approverProfileId });
   },
 
-  async rejectManageAccess({ accessId }) {
-    await accessService.rejectManageAccess({ accessId });
+  async rejectManageAccess({ accessId, approverProfileId }) {
+    await accessService.rejectManageAccess({ accessId, approverProfileId });
   },
 
-  async removeManageAccess({ accessId }) {
-    await accessService.removeManageAccess({ accessId });
+  async removeManageAccess({ accessId, approverProfileId }) {
+    await accessService.removeManageAccess({ accessId, approverProfileId });
   },
 
   async deleteManagedResource({ resourceId }) {

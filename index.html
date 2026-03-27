@@ -30,7 +30,7 @@
 
 <!-- ── SPLASH SCREEN (visible immediately, hidden by JS) ── -->
 <div id="splash-screen" style="position:fixed;inset:0;z-index:999;background:#ffffff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;transition:opacity 0.3s ease">
-  <div style="display:flex;flex-direction:column;align-items:center;gap:16px;margin-bottom:48px">
+  <div id="splash-brand" style="display:flex;flex-direction:column;align-items:center;gap:16px;margin-bottom:48px">
     <div style="width:64px;height:64px;border-radius:18px;background:#3d4a2e;display:flex;align-items:center;justify-content:center">
       <svg width="34" height="34" viewBox="0 0 32 36" fill="none" aria-hidden="true">
         <path d="M16 2 L30 18 L2 18 Z" fill="#d4e8a0"/>
@@ -42,11 +42,31 @@
     <div style="font-size:26px;font-weight:500;letter-spacing:-0.5px;color:#1a1a1a;font-family:Georgia,serif">FamResa</div>
     <div style="font-size:13px;color:#aaa;margin-top:-10px">Réservez en famille</div>
   </div>
-  <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+  <div id="splash-loading" style="display:flex;flex-direction:column;align-items:center;gap:10px">
     <div style="width:80px;height:2px;background:#eee;border-radius:2px;overflow:hidden">
       <div id="splash-bar" style="height:100%;width:0%;background:#1a1a1a;border-radius:2px;animation:splashFill 1.8s cubic-bezier(0.4,0,0.2,1) forwards"></div>
     </div>
     <div id="splash-status" style="font-size:11px;color:#bbb">Chargement…</div>
+  </div>
+  <div id="splash-guest-flow" style="display:none;width:100%;max-width:360px;padding:0 20px;box-sizing:border-box">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-primary" onclick="connectUser()">Se connecter</button>
+      <button class="btn btn-outline" onclick="startSignup()">S'inscrire</button>
+    </div>
+  </div>
+  <div id="splash-invite-flow" style="display:none;width:100%;max-width:360px;padding:0 20px;box-sizing:border-box">
+    <div style="font-size:19px;line-height:1.35;font-weight:700;color:#1f2937;text-align:center;margin-bottom:14px">
+      Vous avez été invité à rejoindre
+    </div>
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:14px 14px 12px;box-shadow:0 8px 30px rgba(0,0,0,.06);margin-bottom:20px">
+      <div id="splash-invite-resource-name" style="font-size:16px;font-weight:700;color:#111827;margin-bottom:6px">Ressource</div>
+      <div id="splash-invite-family-name" style="font-size:13px;color:#4b5563;margin-bottom:4px">Espace</div>
+      <div id="splash-invite-location" style="font-size:13px;color:#6b7280">Lieu non renseigné</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-primary" onclick="connectUser()">Se connecter</button>
+      <button class="btn btn-outline" onclick="startSignup()">S'inscrire</button>
+    </div>
   </div>
 </div>
 <style>
@@ -529,18 +549,25 @@
   <div style="font-size:64px;margin-bottom:16px">🏠</div>
   <h1 style="font-size:32px;margin-bottom:8px">FamResa</h1>
   <p style="color:var(--text-light);font-size:16px;margin-bottom:48px;text-align:center">Gérez vos ressources familiales<br>simplement, ensemble.</p>
-  <div style="width:100%;max-width:320px">
-    <button class="btn btn-primary" onclick="connectUser()">Se connecter</button>
-    <button class="btn btn-outline" onclick="startSignup()">S'inscrire</button>
+  <div style="width:100%;max-width:320px"></div>
+</div>
+
+<div id="invite-pending-screen" class="ob-overlay hidden">
+  <div class="ob-card">
+    <div class="ob-emoji">⏳</div>
+    <h2 style="margin-bottom:6px">Demande en attente</h2>
+    <p id="invite-pending-copy" style="color:var(--text-light);margin-bottom:20px;font-size:14px;line-height:1.5">
+      Votre demande d'acces a ete envoyee. Un admin de la ressource doit la valider.
+    </p>
+    <button class="btn btn-primary" onclick="closeInvitePendingScreen()">Continuer</button>
   </div>
 </div>
 
 <!-- Login Overlay -->
 <div id="login-overlay" class="ob-overlay hidden">
   <div class="ob-card">
-    <button class="ob-back" onclick="document.getElementById('login-overlay').classList.add('hidden');showWelcomeScreen()">←</button>
-    <div class="ob-emoji">👋</div>
-    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px">
+    <button class="ob-back" onclick="backFromLogin()">←</button>
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0 10px">
       <h2 id="login-title" style="margin:0">Connexion</h2>
       <button
         type="button"
@@ -550,19 +577,24 @@
         style="width:22px;height:22px;border-radius:999px;border:1px solid #d1d5db;background:#fff;color:#6b7280;font-size:13px;line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:0"
       >i</button>
     </div>
-    <p style="color:var(--text-light);margin-bottom:24px;font-size:14px">Entrez votre email et votre code secret.</p>
-    <div class="ob-fields">
-      <div class="input-group" style="margin-bottom:0">
-        <label>Email</label>
-        <input type="email" id="login-email" placeholder="ton@email.com" autocomplete="email">
-      </div>
-      <div>
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Code secret (4 chiffres)</label>
-        <div class="pin-input" id="login-pin" style="justify-content:center">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+    <p id="login-subtitle" style="color:var(--text-light);margin-bottom:14px;font-size:14px;text-align:center">Entrez votre email et votre code secret.</p>
+    <div id="login-invite-context" style="display:none;background:#f0f4ff;border:1px solid #c7d2fe;border-radius:12px;padding:10px 12px;margin-bottom:14px">
+      <div id="login-invite-context-text" style="font-size:12px;line-height:1.45;color:#3730a3"></div>
+    </div>
+    <div style="background:#f6f6f6;border:1px solid #ececec;border-radius:16px;padding:16px 14px 14px;margin-bottom:12px">
+      <div class="ob-fields" style="gap:14px">
+        <div class="input-group" style="margin-bottom:0">
+          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Email</label>
+          <input type="email" id="login-email" placeholder="marie@hotmail.com" autocomplete="email">
+        </div>
+        <div>
+          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Code secret (4 chiffres)</label>
+          <div class="pin-input" id="login-pin" style="justify-content:center">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          </div>
         </div>
       </div>
     </div>
@@ -571,7 +603,7 @@
       <div id="login-diagnostic-text" style="font-size:12px;color:#4b5563;line-height:1.4"></div>
       <button class="btn btn-outline" style="margin-top:8px;padding:10px 12px;font-size:13px" onclick="copyLastLoginDiagnostic()">Copier le diagnostic</button>
     </div>
-    <button class="btn btn-primary" style="margin-top:16px" onclick="loginUser()">Se connecter →</button>
+    <button class="btn btn-primary" style="margin-top:10px;background:#3d4a2e;border-color:#3d4a2e" onclick="loginUser()">Se connecter →</button>
   </div>
 </div>
 
@@ -579,72 +611,53 @@
 <div id="signup-overlay" class="ob-overlay hidden">
 
   <!-- Step 1: join or create -->
-  <div class="su-step ob-card" id="su-step-1">
+  <div class="su-step ob-card hidden" id="su-step-1">
     <button class="ob-back" onclick="document.getElementById('signup-overlay').classList.add('hidden');showWelcomeScreen()">←</button>
-    <div class="ob-emoji">👨‍👩‍👧‍👦</div>
-    <h2 style="margin-bottom:6px">Bienvenue !</h2>
-    <p style="color:var(--text-light);margin-bottom:28px;font-size:14px">Vous rejoignez une famille déjà créée ?</p>
-    <button class="btn btn-primary" onclick="signupChooseJoin()">Oui, rejoindre une famille →</button>
-    <button class="btn btn-outline" onclick="signupChooseCreate()">Non, créer ma famille →</button>
-  </div>
-
-  <!-- Step 2a: join — paste invite URL -->
-  <div class="su-step ob-card hidden" id="su-step-2a">
-    <button class="ob-back" onclick="showSignupStep(1)">←</button>
-    <div class="ob-dots"><div class="ob-dot active"></div><div class="ob-dot"></div></div>
-    <div class="ob-emoji">🔗</div>
-    <h2 style="margin-bottom:6px">Code d'invitation</h2>
-    <p style="color:var(--text-light);margin-bottom:20px;font-size:14px">Entrez le code que votre famille vous a partagé.</p>
-    <div class="ob-fields">
-      <div class="input-group" style="margin-bottom:0">
-        <label>Code d'invitation</label>
-        <input type="text" id="su-invite-url" placeholder="Ex : A3B7K9" autocomplete="off">
-      </div>
-    </div>
-    <div class="lock-error" id="su-join-error"></div>
-    <button class="btn btn-primary" style="margin-top:16px" onclick="signupJoinAdvance()">Continuer →</button>
-  </div>
-
-  <!-- Step 2b: create family -->
-  <div class="su-step ob-card hidden" id="su-step-2b">
-    <button class="ob-back" onclick="showSignupStep(1)">←</button>
-    <div class="ob-dots"><div class="ob-dot active"></div><div class="ob-dot"></div></div>
     <div class="ob-emoji">🏠</div>
-    <h2 style="margin-bottom:6px">Créer ma famille</h2>
-    <p style="color:var(--text-light);margin-bottom:20px;font-size:14px">Choisissez un nom et un code d'accès familial.</p>
-    <div class="ob-fields">
-      <div class="input-group" style="margin-bottom:0">
-        <label>Nom de la famille</label>
-        <input type="text" id="su-family-name" placeholder="Ex : Les Dupont" autocomplete="off">
-      </div>
-      <div>
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Code familial (4 chiffres)</label>
-        <div class="pin-input" id="su-family-pin" style="justify-content:center">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+    <h2 style="margin-bottom:6px">Créer votre espace</h2>
+    <p style="color:var(--text-light);margin-bottom:28px;font-size:14px">Commencez par configurer votre premier espace partagé.</p>
+    <button class="btn btn-primary" onclick="signupChooseCreate()">Continuer →</button>
+  </div>
+
+  <!-- Step 2b: create workspace -->
+  <div class="su-step ob-card hidden" id="su-step-2b">
+    <button class="ob-back" onclick="backFromSignupSetup()">←</button>
+    <h2 style="margin:4px 0 12px">Créer mon espace</h2>
+    <div style="background:#f6f6f6;border:1px solid #ececec;border-radius:16px;padding:16px 14px 14px;margin-bottom:14px">
+      <div class="ob-fields" style="gap:14px">
+        <div class="input-group" style="margin-bottom:0">
+          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Nom de l'espace</label>
+          <input type="text" id="su-family-name" placeholder="Maison des Dupont" autocomplete="off">
         </div>
-      </div>
-      <div>
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Confirmer le code</label>
-        <div class="pin-input" id="su-family-pin-confirm" style="justify-content:center">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <div>
+          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Code admin (4 chiffres)</label>
+          <div class="pin-input" id="su-family-pin" style="justify-content:center">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Confirmer le code</label>
+          <div class="pin-input" id="su-family-pin-confirm" style="justify-content:center">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          </div>
         </div>
       </div>
     </div>
     <div class="lock-error" id="su-create-error"></div>
-    <button class="btn btn-primary" style="margin-top:16px" onclick="signupCreateAdvance()">Créer →</button>
+    <button class="btn btn-primary" style="margin-top:10px;background:#3d4a2e;border-color:#3d4a2e" onclick="signupCreateAdvance()">Créer →</button>
   </div>
 
   <!-- Step 2b-link: show generated invite link -->
   <div class="su-step ob-card hidden" id="su-step-2b-link">
     <div class="ob-emoji">🎉</div>
-    <h2 style="margin-bottom:6px">Famille créée !</h2>
-    <p style="color:var(--text-light);margin-bottom:20px;font-size:14px">Partagez ce code pour inviter d'autres membres.</p>
+    <h2 style="margin-bottom:6px">Espace cree !</h2>
+    <p style="color:var(--text-light);margin-bottom:20px;font-size:14px">Partagez ce code pour inviter d'autres admins.</p>
     <div style="background:var(--surface);border-radius:12px;padding:14px;word-break:break-all;font-size:13px;color:var(--text);margin-bottom:12px" id="su-invite-display"></div>
     <button class="btn btn-outline" style="margin-bottom:8px" onclick="copyInviteLink()">Copier le code</button>
     <button class="btn btn-primary" onclick="showSignupStep(3)">Continuer →</button>
@@ -652,38 +665,40 @@
 
   <!-- Step 3: profile -->
   <div class="su-step ob-card hidden" id="su-step-3">
-    <div class="ob-dots"><div class="ob-dot"></div><div class="ob-dot active"></div></div>
-    <div class="ob-emoji">👤</div>
-    <h2 style="margin-bottom:6px">Votre profil</h2>
-    <p style="color:var(--text-light);margin-bottom:20px;font-size:14px">Créez votre profil pour rejoindre la famille.</p>
-    <div class="ob-fields">
-      <div class="input-group" style="margin-bottom:0">
-        <label>Prénom</label>
-        <input type="text" id="su-name" placeholder="Ton prénom" autocomplete="given-name">
-      </div>
-      <div class="input-group" style="margin-bottom:0">
-        <label>Email</label>
-        <input type="email" id="su-email" placeholder="ton@email.com" autocomplete="email">
-      </div>
-      <div>
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Photo <span style="color:var(--text-light);font-weight:400">(optionnel)</span></label>
-        <div class="ob-photo-row">
-          <div class="photo-preview" id="su-photo-preview" onclick="document.getElementById('su-photo-input').click()" style="width:72px;height:72px;font-size:24px;cursor:pointer">📷</div>
-          <input type="file" id="su-photo-input" accept="image/*" style="display:none" onchange="handleSignupPhoto(this)">
+    <button class="ob-back" onclick="signupBackFromSimpleForm()">←</button>
+    <h2 style="margin:4px 0 12px">Créer un compte</h2>
+    <div style="background:#f6f6f6;border:1px solid #ececec;border-radius:16px;padding:16px 14px 14px;margin-bottom:14px">
+      <div class="ob-fields" style="gap:14px">
+        <div class="input-group" style="margin-bottom:0">
+          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Prénom</label>
+          <input type="text" id="su-name" placeholder="Marie" autocomplete="given-name">
         </div>
-      </div>
-      <div>
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:8px">Code secret (4 chiffres)</label>
-        <div class="pin-input" id="su-user-pin" style="justify-content:center">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+        <div class="input-group" style="margin-bottom:0">
+          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Email</label>
+          <input type="email" id="su-email" placeholder="marie@hotmail.com" autocomplete="email">
+        </div>
+        <div>
+          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Code (4 chiffres)</label>
+          <div class="pin-input" id="su-user-pin" style="justify-content:center">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Confirmer le code</label>
+          <div class="pin-input" id="su-user-pin-confirm" style="justify-content:center">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
+          </div>
         </div>
       </div>
     </div>
     <div class="lock-error" id="su-profile-error"></div>
-    <button class="btn btn-primary" style="margin-top:8px" onclick="signupProfileAdvance()">C'est parti ! →</button>
+    <button class="btn btn-primary" style="margin-top:10px;background:#3d4a2e;border-color:#3d4a2e" onclick="signupProfileAdvance()">Créer mon compte</button>
   </div>
 
 </div>

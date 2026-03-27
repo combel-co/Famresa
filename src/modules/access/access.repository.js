@@ -4,6 +4,13 @@
 // No business logic. Only DB operations.
 
 const accessRepository = {
+  async getById(accessId) {
+    if (!accessId) return null;
+    const doc = await accesRessourceRef().doc(accessId).get().catch(() => null);
+    if (!doc || !doc.exists) return null;
+    return accesRessourceToJS(doc.data(), doc.id);
+  },
+
   async listByResourceId(resourceId) {
     const [newSnap, legacySnap] = await Promise.all([
       accesRessourceRef().where('ressource_id', '==', resourceId).get().catch(() => ({ docs: [] })),
