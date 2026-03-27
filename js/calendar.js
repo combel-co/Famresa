@@ -45,8 +45,9 @@ function renderCalendar() {
 
       let avatarHtml = '';
       if (booking) {
-        if (booking.photo) {
-          avatarHtml = `<div class="booking-avatar"><img src="${booking.photo}" alt=""></div>`;
+        const avatarPhoto = booking._currentPhoto || booking.photo || null;
+        if (avatarPhoto) {
+          avatarHtml = `<div class="booking-avatar"><img src="${avatarPhoto}" alt=""></div>`;
         } else {
           avatarHtml = `<div class="booking-avatar">${getInitials(booking.userName)}</div>`;
         }
@@ -167,7 +168,8 @@ function onDayClick(dateStr, isPast) {
       showStaySheet(booking.reservationGroupId || booking.id, booking);
       return;
     }
-    const avatarContent = booking.photo ? `<img src="${booking.photo}" alt="">` : getInitials(booking.userName);
+    const avatarPhoto = booking._currentPhoto || booking.photo || null;
+    const avatarContent = avatarPhoto ? `<img src="${avatarPhoto}" alt="">` : getInitials(booking.userName);
     const dateRange = booking.startDate && booking.endDate && booking.startDate !== booking.endDate
       ? `${new Date(booking.startDate + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} → ${new Date(booking.endDate + 'T00:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`
       : prettyDate;

@@ -333,6 +333,28 @@ function subscribeBookings() {
   let _readyNew     = false;
   let _readyLegacy  = false;
 
+  let _photoHydrationRun = 0;
+
+  async function _hydrateCurrentBookingPhotos() {
+    const runId = ++_photoHydrationRun;
+    const uniqueBookings = new Map();
+    Object.values(bookings || {}).forEach((booking) => {
+      if (!booking?.id) return;
+      if (!uniqueBookings.has(booking.id)) uniqueBookings.set(booking.id, booking);
+    });
+
+    await Promise.all([...uniqueBookings.values()].map(async (booking) => {
+      const currentPhoto = await getCurrentPhotoForBooking(booking);
+      booking._currentPhoto = currentPhoto || null;
+    }));
+
+    // Ignore outdated async runs when newer rebuilds already happened
+    if (runId !== _photoHydrationRun) return;
+    renderCalendar();
+    renderExperiencePanels();
+    if (document.getElementById('booking-modal')?.classList.contains('open')) renderBmCalendar();
+  }
+
   function _rebuild() {
     bookings = {};
     // Legacy first, new data takes precedence (overwrites same dates)
@@ -341,6 +363,7 @@ function subscribeBookings() {
     renderCalendar();
     renderExperiencePanels();
     if (document.getElementById('booking-modal')?.classList.contains('open')) renderBmCalendar();
+    _hydrateCurrentBookingPhotos().catch(() => {});
   }
 
   function _expandToMap(d, map) {

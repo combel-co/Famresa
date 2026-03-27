@@ -225,8 +225,9 @@ function renderBmCalendar() {
 
       let avHtml = '';
       if (booking) {
-        avHtml = booking.photo
-          ? `<div class="bm-booking-avatar"><img src="${booking.photo}" alt=""></div>`
+        const avatarPhoto = booking._currentPhoto || booking.photo || null;
+        avHtml = avatarPhoto
+          ? `<div class="bm-booking-avatar"><img src="${avatarPhoto}" alt=""></div>`
           : `<div class="bm-booking-avatar">${getInitials(booking.userName || '?')}</div>`;
       }
 
@@ -434,6 +435,8 @@ async function confirmRangeBooking() {
 
   try {
     const booker = _resolveBooker();
+    // Keep photo snapshot in booking payload for legacy history,
+    // while UI rendering always prioritizes live profil photo.
     window.__lastCelebrationRecap = bmBuildCelebrationRecap(res, res?.emoji || '🚗');
     const result = await reservationService.createCarReservation({
       resourceId: selectedResource,
@@ -469,6 +472,8 @@ async function createStay() {
 
   try {
     const booker = _resolveBooker();
+    // Keep photo snapshot in booking payload for legacy history,
+    // while UI rendering always prioritizes live profil photo.
     window.__lastCelebrationRecap = bmBuildCelebrationRecap(resources.find(r => r.id === selectedResource), '🏠');
     const result = await reservationService.createStayReservation({
       resourceId: selectedResource,

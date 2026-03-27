@@ -12,6 +12,31 @@
 // PROFIL (was: users)
 function profilsRef() { return db.collection('profils'); }
 function profilRef(id) { return profilsRef().doc(id); }
+const _profilPhotoCache = new Map();
+
+async function getProfilPhoto(profilId) {
+  const id = String(profilId || '').trim();
+  if (!id || id === 'external') return null;
+  if (_profilPhotoCache.has(id)) return _profilPhotoCache.get(id);
+  try {
+    const snap = await profilRef(id).get();
+    if (!snap.exists) {
+      _profilPhotoCache.set(id, null);
+      return null;
+    }
+    const photo = snap.data()?.photo || null;
+    _profilPhotoCache.set(id, photo);
+    return photo;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function getCurrentPhotoForBooking(booking) {
+  const profileId = booking?.userId || booking?.profil_id || booking?.profileId || null;
+  const livePhoto = await getProfilPhoto(profileId);
+  return livePhoto || booking?.photo || null;
+}
 
 // FAMILLE (was: families)
 function famillesRef() { return db.collection('familles'); }

@@ -155,13 +155,14 @@
   /* ---- MAIN ---- */
   main {
     flex: 1;              /* occupe tout l'espace entre header et nav */
+    min-height: 0;        /* indispensable en flex pour autoriser le scroll iOS */
     overflow-y: auto;     /* seule zone de scroll de la page */
     overflow-x: hidden;
     overscroll-behavior-y: none;  /* empêche le pull-down natif du navigateur */
     max-width: 520px;
     margin: 0 auto;
     width: 100%;
-    padding: 0 20px calc(8px + env(safe-area-inset-bottom));
+    padding: 0 20px calc(var(--bottom-nav-h) + 12px + env(safe-area-inset-bottom));
     position: relative;
     z-index: 1;
   }
@@ -1607,7 +1608,7 @@
   /* ---- RESPONSIVE ---- */
   @media (max-width: 480px) {
     header { padding: 10px 14px; }
-    main { padding: 0 14px calc(8px + env(safe-area-inset-bottom)); }
+    main { padding: 0 14px calc(var(--bottom-nav-h) + 12px + env(safe-area-inset-bottom)); }
     .cal-sticky-header { padding: 2px 14px 0; margin-left: -14px; margin-right: -14px; top: var(--resource-tabs-h); }
     .resource-tabs { margin-left: -14px; margin-right: -14px; padding-left: 14px; padding-right: 14px; }
     :root { --header-h: 77px; }  /* mobile: padding 16+16 + content 44 + border 1 */
