@@ -6,6 +6,7 @@ const AUTH_BUILD = 'auth-v14-20260324';
 function showWelcomeScreen() {
   hideSplash();
   hideSkeleton();
+  document.body.classList.add('auth-mode');
   document.getElementById('app-header').style.display = 'none';
   document.getElementById('app-main').style.display = 'none';
   const bottomNav = document.querySelector('.bottom-nav');
@@ -17,6 +18,7 @@ function showWelcomeScreen() {
 
 // ---- LOGIN ----
 function connectUser() {
+  document.body.classList.add('auth-mode');
   document.getElementById('welcome-screen').style.display = 'none';
   const bottomNav = document.querySelector('.bottom-nav');
   if (bottomNav) bottomNav.style.display = 'none';
@@ -373,6 +375,7 @@ let suInviteUrl = '';
 let _isSubmittingFamily = false;
 
 function startSignup() {
+  document.body.classList.add('auth-mode');
   document.getElementById('welcome-screen').style.display = 'none';
   const bottomNav = document.querySelector('.bottom-nav');
   if (bottomNav) bottomNav.style.display = 'none';
