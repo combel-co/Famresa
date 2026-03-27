@@ -191,11 +191,12 @@ function getHouseDecisionState(resourceId) {
   };
 }
 
-function renderWeekStrip(resourceId, decisionState) {
+function renderWeekStrip(resourceId, decisionState, isHouseResource) {
   const wrap = document.getElementById('dash-week-strip');
   const meta = document.getElementById('house-week-meta');
   if (!wrap) return;
   const ds = decisionState || getHouseDecisionState(resourceId);
+  const houseRes = isHouseResource !== false;
 
   wrap.innerHTML = ds.weekDays.map((day) => {
     const initials = day.booking ? getInitials(day.booking.userName || '?') : '';
@@ -216,7 +217,7 @@ function renderWeekStrip(resourceId, decisionState) {
         const d = formatRelativeDate(fu);
         meta.innerHTML = `Libre à partir du <span class="house-week-meta-date">${_escapeHtml(d)}</span>`;
       } else {
-        meta.textContent = 'Maison libre cette semaine';
+        meta.textContent = houseRes ? 'Maison libre cette semaine' : 'Voiture libre cette semaine';
       }
     }
   }
@@ -523,7 +524,7 @@ function renderExperiencePanels() {
   const houseInfoCard = document.getElementById('house-info-card');
   const carInfoCard = document.getElementById('car-info-card');
   const carInfoGrid = document.getElementById('car-info-grid');
-  if (houseWeekSection) houseWeekSection.style.display = isHouse ? '' : 'none';
+  if (houseWeekSection) houseWeekSection.style.display = '';
   if (houseRawInfo) houseRawInfo.style.display = isHouse ? '' : 'none';
   if (houseInfoCard) houseInfoCard.style.display = isHouse ? '' : 'none';
   if (carInfoCard) carInfoCard.style.display = !isHouse ? '' : 'none';
@@ -600,28 +601,36 @@ function renderExperiencePanels() {
     }
   }
 
-  // ── Bloc maison: titre « Cette semaine », statut, strip, meta ──
+  // ── Bloc « Cette semaine » (maison et voiture): badge, strip, meta ──
   const weekStatus = document.getElementById('house-week-status');
+  if (houseWeekSection) {
+    houseWeekSection.classList.toggle('house-week-section--house', !!isHouse);
+    houseWeekSection.classList.toggle('house-week-section--car', !isHouse);
+  }
 
-  if (isHouse) {
+  if (res) {
     if (decisionState.availabilityStatus === 'occupied') {
       const n = decisionState.peopleCount;
       if (weekStatus) {
         const nameEsc = _escapeHtml(decisionState.occupantName);
-        weekStatus.innerHTML = `<span class="house-week-status-badge">Occupée</span><span class="house-week-status-detail"> · ${nameEsc} · ${n} personne${n > 1 ? 's' : ''}</span>`;
+        const detailSuffix = isHouse
+          ? `${n} personne${n > 1 ? 's' : ''}`
+          : (n > 1 ? `${n} personnes` : 'conducteur');
+        weekStatus.innerHTML = `<span class="house-week-status-badge">Occupée</span><span class="house-week-status-detail"> · ${nameEsc} · ${detailSuffix}</span>`;
         weekStatus.classList.remove('house-week-status--available');
         weekStatus.classList.add('house-week-status--occupied');
       }
     } else if (weekStatus) {
-      weekStatus.textContent = 'Disponible';
+      weekStatus.innerHTML = '<span class="house-week-status-badge house-week-status-badge--free">Libre</span>';
       weekStatus.classList.remove('house-week-status--occupied');
       weekStatus.classList.add('house-week-status--available');
     }
-
-    renderWeekStrip(selectedResource, decisionState);
-    renderHouseRawInfo(res || {}, decisionState);
+    renderWeekStrip(selectedResource, decisionState, isHouse);
   }
 
+  if (isHouse) {
+    renderHouseRawInfo(res || {}, decisionState);
+  }
   if (!isHouse) {
     renderCarRawInfo(res || {});
   }

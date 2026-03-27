@@ -945,15 +945,25 @@ html.ui-large {
     background: linear-gradient(160deg, #dbeafe 0%, #bfdbfe 50%, #93c5fd 100%);
     border-radius: 20px 20px 0 0;
     overflow: hidden;
+    position: relative;
+  }
+  /* Photo : absolute inset évite le flou fréquent flex+img (WebKit / mobile) */
+  .dash-hero-media:has(> img) {
+    display: block;
   }
   .dash-hero-media img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: center center;
     display: block;
-    filter: none;
+    filter: none !important;
     image-rendering: auto;
+    image-rendering: high-quality;
+    -webkit-backface-visibility: visible;
+    backface-visibility: visible;
   }
   .dash-hero-content {
     position: relative;
@@ -1048,6 +1058,7 @@ html.ui-large {
     --house-week-occupied-text: #9a3412;
     --house-week-free-border: #52525b;
     --house-week-free-bg: #fafafa;
+    --house-week-free-text: #3f3f46;
     padding: 10px 14px;
     border-bottom: 0.5px solid #e5e4df;
     background: #fff;
@@ -1087,9 +1098,18 @@ html.ui-large {
     min-width: 0;
   }
   .house-week-status--available {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 8px;
     padding: 0;
     border: none;
     background: transparent;
+  }
+  .house-week-status-badge--free {
+    border-color: var(--house-week-free-border);
+    background: var(--house-week-free-bg);
+    color: var(--house-week-free-text);
   }
   .house-week-strip { margin-bottom: 6px; }
   .house-week-meta {

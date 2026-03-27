@@ -41,7 +41,7 @@
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <!-- Non-blocking font loading (swap prevents FOIT) -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/style.css?v=15">
+<link rel="stylesheet" href="css/style.css?v=17">
 <!-- Firebase SDK (defer = non-blocking parse, keeps order) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
@@ -224,7 +224,7 @@
 
       <div class="house-week-section" id="house-week-section">
         <div class="house-section-title">Cette semaine</div>
-        <div class="house-week-status house-week-status--available" id="house-week-status">Disponible</div>
+        <div class="house-week-status house-week-status--available" id="house-week-status"><span class="house-week-status-badge house-week-status-badge--free">Libre</span></div>
         <div class="dash-week-strip house-week-strip" id="dash-week-strip"></div>
         <div class="house-week-meta" id="house-week-meta">Semaine libre</div>
       </div>
@@ -859,7 +859,7 @@
 <script src="src/modules/profile/profile.service.js?v=1" defer></script>
 <script src="js/profile.js?v=6" defer></script>
 <script src="js/resources.js?v=10" defer></script>
-<script src="js/dashboard.js?v=13" defer></script>
+<script src="js/dashboard.js?v=15" defer></script>
 <script src="js/stay.js?v=4" defer></script>
 <script src="js/checklist.js?v=4" defer></script>
 <script src="js/events.js?v=4" defer></script>
