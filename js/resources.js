@@ -660,6 +660,7 @@ function showHouseInfo() {
   const res = resources.find(r => r.id === selectedResource);
   if (!res) return;
   window._resourcePhotoDraft = res.photoUrl || null;
+  const structuredAddress = getResourceStructuredAddress(res);
   const photoPreview = res.photoUrl
     ? `<img src="${res.photoUrl}" alt="" style="width:100%;height:100%;object-fit:cover">`
     : (res.emoji || '🏠');
@@ -671,8 +672,22 @@ function showHouseInfo() {
       <h2>Info maison</h2>
       <div style="color:var(--text-light);font-size:13px;margin-bottom:20px">${res.emoji || '🏠'} ${res.name}</div>
       <div class="input-group">
-        <label>Adresse</label>
-        <input type="text" id="house-address" placeholder="123 rue..." value="${res.address || ''}">
+        <label>Rue</label>
+        <input type="text" id="house-address-street" placeholder="123 rue..." value="${structuredAddress.street || ''}">
+      </div>
+      <div class="input-group">
+        <label>Ville</label>
+        <input type="text" id="house-address-city" placeholder="Les Lèves-et-Thoumeyragues" value="${structuredAddress.city || ''}">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="input-group">
+          <label>Code postal</label>
+          <input type="text" id="house-address-postal" placeholder="33220" value="${structuredAddress.postalCode || ''}">
+        </div>
+        <div class="input-group">
+          <label>Pays</label>
+          <input type="text" id="house-address-country" placeholder="France" value="${structuredAddress.country || ''}">
+        </div>
       </div>
       <div class="input-group">
         <label>Observations</label>
@@ -685,11 +700,22 @@ function showHouseInfo() {
 }
 
 async function saveHouseInfo() {
-  const address = (document.getElementById('house-address')?.value || '').trim();
+  const street = (document.getElementById('house-address-street')?.value || '').trim();
+  const city = (document.getElementById('house-address-city')?.value || '').trim();
+  const postalCode = (document.getElementById('house-address-postal')?.value || '').trim();
+  const country = (document.getElementById('house-address-country')?.value || '').trim();
   const observations = (document.getElementById('house-observations')?.value || '').trim();
   const photoUrl = window._resourcePhotoDraft || null;
   try {
-    const updates = { address, observations };
+    const address = formatStructuredAddress({ street, city, postalCode, country });
+    const updates = {
+      address,
+      address_street: street,
+      address_city: city,
+      address_postal_code: postalCode,
+      address_country: country,
+      observations
+    };
     if (photoUrl) updates.photoUrl = photoUrl;
     await ressourcesRef().doc(selectedResource).update(updates);
     const res = resources.find(r => r.id === selectedResource);
@@ -851,7 +877,7 @@ function _rmLoadingMarkup(resourceId) {
   const preview = resources.find((item) => item.id === resourceId);
   const title = preview?.name || 'Ressource';
   const subtitle = preview?.type === 'house'
-    ? (preview.address || 'Chargement…')
+    ? (getResourceAddressDisplay(preview, 'Chargement…'))
     : (preview?.plaque || 'Chargement…');
 
   return `

@@ -36,8 +36,6 @@ function _renderResourcesByFamily() {
     guest:  { bg: '#fefce8', color: '#a16207', label: 'Invité' },
   };
 
-  const isAnyAdmin = Object.values(window._myResourceRoles || {}).includes('admin');
-
   if (groups.length === 0 && resources.length === 0) {
     container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-light);font-size:14px">
       ⏳ Aucune ressource accessible — en attente d'invitation
@@ -45,9 +43,7 @@ function _renderResourcesByFamily() {
     return;
   }
 
-  const sectionsHtml = groups.map((group, groupIdx) => {
-    const showAddCard = isAnyAdmin && groupIdx === groups.length - 1;
-
+  const sectionsHtml = groups.map((group) => {
     const resCards = group.resources.map(res => {
       const isAvailable = !bookings[todayStr] || bookings[todayStr].resourceId !== res.id;
       const availBadge = isAvailable
@@ -66,21 +62,15 @@ function _renderResourcesByFamily() {
 
       return `<div class="pf-resource-card" onclick="selectResource('${res.id}');showResourceManagePage('${res.id}')">
         <div class="pf-resource-icon">${res.emoji || (res.type === 'house' ? '🏠' : '🚗')}</div>
-        <div class="pf-resource-title">${res.name}</div>
-        <div class="pf-resource-sub">${sub}</div>
-        ${availBadge}
-        ${rolePill}
-        ${manageBtn}
+        <div class="pf-resource-main">
+          <div class="pf-resource-title">${res.name}</div>
+          <div class="pf-resource-sub">${sub}</div>
+          ${availBadge}
+          ${rolePill}
+          ${manageBtn}
+        </div>
       </div>`;
     });
-
-    if (showAddCard) {
-      resCards.push(`<div class="pf-resource-card pf-add-card" onclick="showAddResourceSheet()">
-        <div class="pf-add-plus">+</div>
-        <div class="pf-resource-title">Ajouter une ressource</div>
-        <div class="pf-resource-sub">Voiture, maison, vélo…</div>
-      </div>`);
-    }
 
     const showLabel = groups.length > 1;
     const labelHtml = showLabel
@@ -93,21 +83,21 @@ function _renderResourcesByFamily() {
     </div>`;
   }).join('');
 
-  // If no groups but user is admin, still show "add" button
-  const addOnlyHtml = (groups.length === 0 && isAnyAdmin)
-    ? `<div class="pf-family-section">
-        <div class="pf-section-lbl">Ressources partagées</div>
-        <div class="pf-resources-grid">
-          <div class="pf-resource-card pf-add-card" onclick="showAddResourceSheet()">
-            <div class="pf-add-plus">+</div>
+  const standaloneAddHtml = `
+    <div class="pf-family-section pf-add-standalone-wrap">
+      <div class="pf-resources-grid pf-resources-grid-add">
+        <div class="pf-resource-card pf-add-card pf-add-card-compact" onclick="showAddResourceSheet()">
+          <div class="pf-add-plus">+</div>
+          <div class="pf-resource-main">
             <div class="pf-resource-title">Ajouter une ressource</div>
-            <div class="pf-resource-sub">Voiture, maison, vélo…</div>
+            <div class="pf-resource-sub">Choix de la famille dans l'etape suivante</div>
           </div>
         </div>
-      </div>`
-    : '';
+      </div>
+    </div>
+  `;
 
-  container.innerHTML = sectionsHtml + addOnlyHtml;
+  container.innerHTML = sectionsHtml + standaloneAddHtml;
 }
 
 async function _renderAdminPendingSection() {

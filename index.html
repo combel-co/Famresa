@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="FamResa">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<meta name="theme-color" content="#3d4a2e">
+<meta name="theme-color" content="#ffffff">
 <!-- Preconnect to external origins (parallel DNS+TLS handshakes) -->
 <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <!-- Non-blocking font loading (swap prevents FOIT) -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=6">
 <!-- Firebase SDK (defer = non-blocking parse, keeps order) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
@@ -281,14 +281,19 @@
     </div>
 
     <!-- Ressources par famille -->
-    <div id="pf-resources-by-family"></div>
+    <div class="pf-resources-block">
+      <div id="pf-resources-by-family"></div>
+    </div>
 
-    <!-- Promo invite -->
-    <div class="pf-promo-card" onclick="loadAndCopyInviteLink()">
-      <div class="pf-promo-icon">🔗</div>
+    <div class="pf-content-divider"></div>
+
+    <div class="pf-section-lbl pf-section-lbl-muted">Partager l'application</div>
+    <!-- Promo share app -->
+    <div class="pf-promo-card" onclick="shareApp()">
+      <div class="pf-promo-icon">📤</div>
       <div class="pf-promo-text">
-        <div class="pf-promo-title">Inviter une famille</div>
-        <div class="pf-promo-desc">Partagez le lien. Quand ils activent, vous gagnez des avantages.</div>
+        <div class="pf-promo-title">Partager l'application</div>
+        <div class="pf-promo-desc">Partagez l'app en un clic avec la feuille de partage iPhone.</div>
       </div>
       <div class="pf-promo-chevron">›</div>
     </div>
@@ -797,12 +802,12 @@
 <!-- JS modules (defer = non-blocking, preserves order) -->
 <script src="src/infra/firebase/firebase.client.js?v=7" defer></script>
 <script src="src/infra/firebase/firebase.mapper.js?v=5" defer></script>
-<script src="js/firebase.js?v=7" defer></script>
+<script src="js/firebase.js?v=8" defer></script>
 <script src="js/app.js?v=6" defer></script>
 <script src="js/ui.js?v=5" defer></script>
 <script src="js/xp.js?v=4" defer></script>
 <script src="js/celebration.js?v=4" defer></script>
-<script src="js/auth.js?v=16" defer></script>
+<script src="js/auth.js?v=17" defer></script>
 <script src="js/fuel.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.repository.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.service.js?v=4" defer></script>
@@ -819,8 +824,8 @@
 <script src="js/history.js?v=4" defer></script>
 <script src="src/modules/profile/profile.service.js?v=1" defer></script>
 <script src="js/profile.js?v=5" defer></script>
-<script src="js/resources.js?v=7" defer></script>
-<script src="js/dashboard.js?v=4" defer></script>
+<script src="js/resources.js?v=8" defer></script>
+<script src="js/dashboard.js?v=5" defer></script>
 <script src="js/stay.js?v=4" defer></script>
 <script src="js/checklist.js?v=4" defer></script>
 <script src="js/events.js?v=4" defer></script>

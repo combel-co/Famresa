@@ -218,19 +218,88 @@ function openHousePrimaryAction() {
   openBookingModal();
 }
 
+function _escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function _openMapProvider(provider, resource) {
+  const encoded = getEncodedResourceAddress(resource);
+  if (!encoded) return false;
+
+  const mapUrls = {
+    apple: {
+      app: `maps://?q=${encoded}`,
+      web: `https://maps.apple.com/?q=${encoded}`
+    },
+    google: {
+      app: `comgooglemaps://?q=${encoded}`,
+      web: `https://www.google.com/maps/search/?api=1&query=${encoded}`
+    },
+    waze: {
+      app: `waze://?q=${encoded}&navigate=yes`,
+      web: `https://waze.com/ul?q=${encoded}&navigate=yes`
+    }
+  };
+  const selected = mapUrls[provider];
+  if (!selected) return false;
+
+  const ua = (navigator.userAgent || '').toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(ua);
+  const prefersWeb = (provider === 'apple' && !isIOS);
+  const targetUrl = prefersWeb ? selected.web : selected.app;
+
+  try {
+    window.location.href = targetUrl;
+    setTimeout(() => {
+      if (document.visibilityState === 'visible') window.open(selected.web, '_blank', 'noopener');
+    }, 700);
+    closeSheet();
+    return true;
+  } catch (_) {
+    window.open(selected.web, '_blank', 'noopener');
+    closeSheet();
+    return true;
+  }
+}
+
+async function _copyHouseAddress(resource) {
+  const address = getResourceAddressDisplay(resource, '');
+  if (!address) {
+    showToast('Adresse incomplète');
+    return;
+  }
+  try {
+    await navigator.clipboard?.writeText(address);
+    showToast('Adresse copiée');
+    closeSheet();
+  } catch (_) {
+    showToast('Impossible de copier');
+  }
+}
+
 function showHouseDirectionsSheet() {
   const res = resources.find(r => r.id === selectedResource);
-  const address = res?.address || 'Adresse non renseignée';
+  const address = getResourceAddressDisplay(res, 'Adresse non renseignée');
+  const hasAddress = hasUsableResourceAddress(res);
+  const disabledAttr = hasAddress ? '' : 'disabled aria-disabled="true"';
+  const disabledStyle = hasAddress ? '' : 'opacity:0.45;cursor:not-allowed';
   const sheet = document.getElementById('sheet-content');
   if (!sheet) return;
 
   sheet.innerHTML = `
     <div class="login-sheet">
-      <div class="ccv2-btn-manage-link" style="margin-top:0;margin-bottom:12px;cursor:default;text-decoration:none">Adresse</div>
-      <button class="btn btn-outline" onclick="showToast('Bientôt disponible')">Ouvrir dans Apple Maps</button>
-      <button class="btn btn-outline" onclick="showToast('Bientôt disponible')">Ouvrir dans Google Maps</button>
-      <button class="btn btn-outline" onclick="showToast('Bientôt disponible')">Ouvrir dans Waze</button>
-      <button class="btn btn-outline" onclick="showToast('Bientôt disponible')">Copier l'adresse</button>
+      <div class="ccv2-btn-manage-link" style="margin-top:0;margin-bottom:8px;cursor:default;text-decoration:none">Adresse</div>
+      <div style="font-size:13px;line-height:1.45;color:#6b7280;margin-bottom:14px">${_escapeHtml(address)}</div>
+      <button class="btn btn-outline" style="${disabledStyle}" ${disabledAttr} onclick="_openMapProvider('apple', resources.find(r => r.id === selectedResource))">Ouvrir dans Apple Maps</button>
+      <button class="btn btn-outline" style="${disabledStyle}" ${disabledAttr} onclick="_openMapProvider('google', resources.find(r => r.id === selectedResource))">Ouvrir dans Google Maps</button>
+      <button class="btn btn-outline" style="${disabledStyle}" ${disabledAttr} onclick="_openMapProvider('waze', resources.find(r => r.id === selectedResource))">Ouvrir dans Waze</button>
+      <button class="btn btn-outline" style="${disabledStyle}" ${disabledAttr} onclick="_copyHouseAddress(resources.find(r => r.id === selectedResource))">Copier l'adresse</button>
+      ${hasAddress ? '' : '<div style="font-size:12px;color:#b45309;margin-top:8px">Complète l’adresse de la maison pour activer les actions.</div>'}
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:6px;margin-bottom:-16px" onclick="closeSheet()">Annuler</button>
     </div>
   `;
@@ -244,7 +313,7 @@ function renderHouseRawInfo(resource, decisionState) {
   const rooms = Number(resource?.rooms || resource?.bedrooms || resource?.chambres || 0);
   const checkIn = resource?.checkIn || resource?.checkin || '—';
   const checkOut = resource?.checkOut || resource?.checkout || '—';
-  const address = resource?.address || '—';
+  const address = getResourceAddressDisplay(resource, '—');
   const roomsLabel = rooms > 0 ? `${rooms}` : '—';
 
   wrap.innerHTML = `
@@ -374,7 +443,7 @@ function renderExperiencePanels() {
   if (cardTitle) cardTitle.textContent = res?.name || (isHouse ? 'Maison' : 'Voiture');
   if (cardSubtitle) {
     if (!isHouse && res?.plaque) cardSubtitle.textContent = res.plaque;
-    else if (isHouse && res?.address) cardSubtitle.textContent = res.address;
+    else if (isHouse && hasUsableResourceAddress(res)) cardSubtitle.textContent = getResourceAddressDisplay(res, 'Maison de famille');
     else cardSubtitle.textContent = isHouse ? 'Maison de famille' : 'Voiture familiale';
   }
 
