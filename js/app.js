@@ -73,6 +73,29 @@ async function loadFamilyName() {
       }
     } catch(_) {}
 
+    // Compatibility: also include families found through accepted resource access.
+    // This keeps migrated resources reachable even if famille_membres wasn't updated yet.
+    try {
+      const accessSnap = await accesRessourceRef()
+        .where('profil_id', '==', currentUser.id)
+        .get();
+      const acceptedFamilyIds = accessSnap.docs
+        .map((doc) => accesRessourceToJS(doc.data(), doc.id))
+        .filter((entry) => (entry.statut ?? entry.status) === 'accepted')
+        .map((entry) => entry.famille_id || entry.familyId)
+        .filter(Boolean);
+      const existingIds = new Set(_userFamilies.map((f) => f.id));
+      const missingIds = [...new Set(acceptedFamilyIds)].filter((fid) => !existingIds.has(fid));
+      for (const fid of missingIds) {
+        try {
+          const fDoc = await familleRef(fid).get();
+          if (fDoc.exists) {
+            _userFamilies.push({ id: fid, name: fDoc.data().nom || fDoc.data().name || 'Famille' });
+          }
+        } catch(_) {}
+      }
+    } catch(_) {}
+
     // Fallback: at least show current family
     if (_userFamilies.length === 0) {
       let name = '';

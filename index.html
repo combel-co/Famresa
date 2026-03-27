@@ -610,59 +610,6 @@
 <!-- Signup Overlay -->
 <div id="signup-overlay" class="ob-overlay hidden">
 
-  <!-- Step 1: join or create -->
-  <div class="su-step ob-card hidden" id="su-step-1">
-    <button class="ob-back" onclick="document.getElementById('signup-overlay').classList.add('hidden');showWelcomeScreen()">←</button>
-    <div class="ob-emoji">🏠</div>
-    <h2 style="margin-bottom:6px">Créer votre espace</h2>
-    <p style="color:var(--text-light);margin-bottom:28px;font-size:14px">Commencez par configurer votre premier espace partagé.</p>
-    <button class="btn btn-primary" onclick="signupChooseCreate()">Continuer →</button>
-  </div>
-
-  <!-- Step 2b: create workspace -->
-  <div class="su-step ob-card hidden" id="su-step-2b">
-    <button class="ob-back" onclick="backFromSignupSetup()">←</button>
-    <h2 style="margin:4px 0 12px">Créer mon espace</h2>
-    <div style="background:#f6f6f6;border:1px solid #ececec;border-radius:16px;padding:16px 14px 14px;margin-bottom:14px">
-      <div class="ob-fields" style="gap:14px">
-        <div class="input-group" style="margin-bottom:0">
-          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280">Nom de l'espace</label>
-          <input type="text" id="su-family-name" placeholder="Maison des Dupont" autocomplete="off">
-        </div>
-        <div>
-          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Code admin (4 chiffres)</label>
-          <div class="pin-input" id="su-family-pin" style="justify-content:center">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          </div>
-        </div>
-        <div>
-          <label style="font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;display:block;margin-bottom:8px">Confirmer le code</label>
-          <div class="pin-input" id="su-family-pin-confirm" style="justify-content:center">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-            <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="lock-error" id="su-create-error"></div>
-    <button class="btn btn-primary" style="margin-top:10px;background:#3d4a2e;border-color:#3d4a2e" onclick="signupCreateAdvance()">Créer →</button>
-  </div>
-
-  <!-- Step 2b-link: show generated invite link -->
-  <div class="su-step ob-card hidden" id="su-step-2b-link">
-    <div class="ob-emoji">🎉</div>
-    <h2 style="margin-bottom:6px">Espace cree !</h2>
-    <p style="color:var(--text-light);margin-bottom:20px;font-size:14px">Partagez ce code pour inviter d'autres admins.</p>
-    <div style="background:var(--surface);border-radius:12px;padding:14px;word-break:break-all;font-size:13px;color:var(--text);margin-bottom:12px" id="su-invite-display"></div>
-    <button class="btn btn-outline" style="margin-bottom:8px" onclick="copyInviteLink()">Copier le code</button>
-    <button class="btn btn-primary" onclick="showSignupStep(3)">Continuer →</button>
-  </div>
-
   <!-- Step 3: profile -->
   <div class="su-step ob-card hidden" id="su-step-3">
     <button class="ob-back" onclick="signupBackFromSimpleForm()">←</button>
@@ -860,11 +807,11 @@
 <script src="src/infra/firebase/firebase.client.js?v=7" defer></script>
 <script src="src/infra/firebase/firebase.mapper.js?v=5" defer></script>
 <script src="js/firebase.js?v=5" defer></script>
-<script src="js/app.js?v=5" defer></script>
+<script src="js/app.js?v=6" defer></script>
 <script src="js/ui.js?v=5" defer></script>
 <script src="js/xp.js?v=4" defer></script>
 <script src="js/celebration.js?v=4" defer></script>
-<script src="js/auth.js?v=14" defer></script>
+<script src="js/auth.js?v=15" defer></script>
 <script src="js/fuel.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.repository.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.service.js?v=4" defer></script>
@@ -881,7 +828,7 @@
 <script src="js/history.js?v=4" defer></script>
 <script src="src/modules/profile/profile.service.js?v=1" defer></script>
 <script src="js/profile.js?v=5" defer></script>
-<script src="js/resources.js?v=4" defer></script>
+<script src="js/resources.js?v=6" defer></script>
 <script src="js/dashboard.js?v=4" defer></script>
 <script src="js/stay.js?v=4" defer></script>
 <script src="js/checklist.js?v=4" defer></script>
