@@ -14,3 +14,31 @@ async function loadAndCopyInviteLink() {
       .catch(() => showToast('Code : ' + code));
   } catch(e) { el.textContent = 'Erreur de chargement.'; }
 }
+
+async function shareApp() {
+  const appUrl = `${location.origin}${location.pathname}`;
+  const shareTitle = 'FamResa';
+  const shareText = "Je t'invite a utiliser FamResa pour reserver et partager les ressources familiales.";
+  const clipboardMessage = `${shareText}\n${appUrl}`;
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: shareTitle,
+        text: shareText,
+        url: appUrl,
+      });
+      return;
+    }
+  } catch (e) {
+    // iOS returns AbortError when the user closes the sheet without sharing.
+    if (e?.name === 'AbortError') return;
+  }
+
+  try {
+    await navigator.clipboard?.writeText(clipboardMessage);
+    showToast('Lien de partage copie');
+  } catch (e) {
+    showToast('Impossible de partager pour le moment');
+  }
+}

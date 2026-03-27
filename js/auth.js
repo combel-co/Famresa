@@ -88,7 +88,7 @@ async function _resolvePendingInviteResourceMeta() {
           }
         } catch (_) {}
       }
-      const location = data.address || data.adresse || data.plaque || 'Lieu non renseigné';
+      const location = getResourceAddressDisplay(data, data.plaque || 'Lieu non renseigné');
       _pendingInviteResourceMeta = { resourceName, familyName, location, familyId };
     }
   } catch (_) {

@@ -38,6 +38,46 @@ async function getCurrentPhotoForBooking(booking) {
   return livePhoto || booking?.photo || null;
 }
 
+function _normalizeAddressPart(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function getResourceStructuredAddress(resource) {
+  const r = resource || {};
+  return {
+    street: _normalizeAddressPart(r.address_street || r.addressStreet || r.street || r.adresse_rue || ''),
+    city: _normalizeAddressPart(r.address_city || r.addressCity || r.city || r.ville || ''),
+    postalCode: _normalizeAddressPart(r.address_postal_code || r.addressPostalCode || r.postalCode || r.code_postal || ''),
+    country: _normalizeAddressPart(r.address_country || r.addressCountry || r.country || r.pays || '')
+  };
+}
+
+function formatStructuredAddress(addressObj) {
+  const a = addressObj || {};
+  const street = _normalizeAddressPart(a.street);
+  const city = _normalizeAddressPart(a.city);
+  const postalCode = _normalizeAddressPart(a.postalCode);
+  const country = _normalizeAddressPart(a.country);
+  const cityLine = _normalizeAddressPart([postalCode, city].filter(Boolean).join(' '));
+  return [street, cityLine, country].filter(Boolean).join(', ');
+}
+
+function getResourceAddressDisplay(resource, fallback = 'Adresse non renseignée') {
+  const structured = formatStructuredAddress(getResourceStructuredAddress(resource));
+  if (structured) return structured;
+  const flat = _normalizeAddressPart(resource?.address || resource?.adresse || '');
+  return flat || fallback;
+}
+
+function hasUsableResourceAddress(resource) {
+  return getResourceAddressDisplay(resource, '') !== '';
+}
+
+function getEncodedResourceAddress(resource) {
+  const label = getResourceAddressDisplay(resource, '');
+  return label ? encodeURIComponent(label) : '';
+}
+
 // FAMILLE (was: families)
 function famillesRef() { return db.collection('familles'); }
 function familleRef(id) { return famillesRef().doc(id || currentUser?.familyId); }
