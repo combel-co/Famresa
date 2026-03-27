@@ -81,6 +81,12 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* Force-hide app chrome while auth/welcome overlays are active */
+  body.auth-mode .bottom-nav,
+  body.auth-mode header {
+    display: none !important;
+  }
+
   /* ═══════════════════════════════════════════
      LAYOUT — HEADER / MAIN / NAV
      ═══════════════════════════════════════════ */
@@ -1448,7 +1454,7 @@
   /* ---- RESOURCE TABS (pills) ---- */
   .resource-tabs {
     display: flex; flex-wrap: nowrap; gap: 6px;
-    padding: 8px 0 0;
+    padding: 8px 0;
     position: sticky; top: -1px; z-index: 100;
     background: white;
     margin-left: -20px; margin-right: -20px;

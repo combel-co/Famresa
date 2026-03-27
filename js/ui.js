@@ -355,6 +355,7 @@ function hideSkeleton() {
 function enterApp(targetTab) {
   hideSplash();
   hideSkeleton();
+  document.body.classList.remove('auth-mode');
   const header = document.getElementById('app-header');
   const bottomNav = document.querySelector('.bottom-nav');
   header.style.display = 'flex';
