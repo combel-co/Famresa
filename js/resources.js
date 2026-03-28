@@ -286,7 +286,6 @@ function showResourceChoiceSheet() {
       <button class="btn btn-primary" style="width:100%;padding:14px;margin-bottom:12px" onclick="closeSheet();showAddResourceSheet()">
         Créer une ressource
       </button>
-      <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:14px;width:100%" onclick="closeSheet()">Plus tard</button>
     </div>`;
   document.getElementById('overlay').classList.add('open');
 }

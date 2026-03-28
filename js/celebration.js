@@ -39,7 +39,13 @@ function _restoreThemeColor() {
   delete meta.dataset.prevColor;
 }
 
-function celebrate(icon, title, xpText, subtitle, onClose) {
+/**
+ * @param {function} [onClose] — appelé après fermeture auto
+ * @param {{ closeDelayMs?: number }} [opts] — closeDelayMs défaut 2500 ; raccourcir pour enchaîner onboarding sans attendre 2,5 s
+ */
+function celebrate(icon, title, xpText, subtitle, onClose, opts) {
+  const closeDelayMs =
+    opts && typeof opts.closeDelayMs === 'number' ? opts.closeDelayMs : 2500;
   _clearCelebrateCloseTimer();
   const onboardCard = document.getElementById('cel-onboarding-card');
   if (onboardCard) onboardCard.style.display = 'none';
@@ -90,7 +96,8 @@ function celebrate(icon, title, xpText, subtitle, onClose) {
   document.body?.classList.add('celebration-active');
   _setThemeColor('#2f7759');
   celEl.style.display = 'flex';
-  _celebrateCloseTimer = setTimeout(() => {
+
+  const runClose = () => {
     _closeCelebrationCommon();
     if (typeof onClose === 'function') {
       try {
@@ -99,7 +106,14 @@ function celebrate(icon, title, xpText, subtitle, onClose) {
         console.warn('[celebrate onClose]', e);
       }
     }
-  }, 2500);
+  };
+
+  if (closeDelayMs <= 0) {
+    _celebrateCloseTimer = setTimeout(runClose, 0);
+    return;
+  }
+
+  _celebrateCloseTimer = setTimeout(runClose, closeDelayMs);
 }
 
 /**
