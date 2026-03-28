@@ -41,7 +41,7 @@
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <!-- Non-blocking font loading (swap prevents FOIT) -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/style.css?v=21">
+<link rel="stylesheet" href="css/style.css?v=24">
 <!-- Firebase SDK (defer = non-blocking parse, keeps order) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
@@ -60,7 +60,7 @@
       </svg>
     </div>
     <div style="font-size: calc(26px * var(--ui-text-scale));font-weight:500;letter-spacing:-0.5px;color:#1a1a1a;font-family:Georgia,serif">FamResa</div>
-    <div style="font-size: calc(13px * var(--ui-text-scale));color:#aaa;margin-top:-10px">Réservez en famille</div>
+    <div style="font-size: calc(13px * var(--ui-text-scale));color:#aaa;margin-top:-10px">La réservation en famille</div>
   </div>
   <div id="splash-loading" style="display:flex;flex-direction:column;align-items:center;gap:10px">
     <div style="width:80px;height:2px;background:#eee;border-radius:2px;overflow:hidden">
@@ -70,22 +70,29 @@
   </div>
   <div id="splash-guest-flow" style="display:none;width:100%;max-width:360px;padding:0 20px;box-sizing:border-box">
     <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="btn btn-primary" onclick="connectUser()">Se connecter</button>
-      <button class="btn btn-outline" onclick="startSignup()">S'inscrire</button>
+      <button class="btn btn-primary" onclick="startSignup()">Créer un compte</button>
+      <button class="btn btn-outline" onclick="connectUser()" style="background:transparent;border:none;box-shadow:none">J'ai déjà un compte</button>
     </div>
   </div>
   <div id="splash-invite-flow" style="display:none;width:100%;max-width:360px;padding:0 20px;box-sizing:border-box">
-    <div style="font-size: calc(19px * var(--ui-text-scale));line-height:1.35;font-weight:700;color:#1f2937;text-align:center;margin-bottom:14px">
-      Vous avez été invité à rejoindre
+    <div id="splash-invite-invalid" style="display:none;text-align:center;margin-bottom:18px">
+      <p style="font-size: calc(16px * var(--ui-text-scale));color:#374151;margin-bottom:16px">Ce lien n'est plus valide.</p>
+      <button type="button" class="btn btn-primary" style="width:100%" onclick="dismissInvalidInviteSplash()">Accéder à FamResa</button>
     </div>
-    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:14px 14px 12px;box-shadow:0 8px 30px rgba(0,0,0,.06);margin-bottom:20px">
-      <div id="splash-invite-resource-name" style="font-size: calc(16px * var(--ui-text-scale));font-weight:700;color:#111827;margin-bottom:6px">Ressource</div>
-      <div id="splash-invite-family-name" style="font-size: calc(13px * var(--ui-text-scale));color:#4b5563;margin-bottom:4px">Espace</div>
-      <div id="splash-invite-location" style="font-size: calc(13px * var(--ui-text-scale));color:#6b7280">Lieu non renseigné</div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="btn btn-primary" onclick="connectUser()">Se connecter</button>
-      <button class="btn btn-outline" onclick="startSignup()">S'inscrire</button>
+    <div id="splash-invite-valid">
+      <div id="splash-invite-headline" style="font-size: calc(18px * var(--ui-text-scale));line-height:1.35;font-weight:700;color:#1f2937;text-align:center;margin-bottom:14px">
+        Tu as été invité à rejoindre
+      </div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:14px 14px 12px;box-shadow:0 8px 30px rgba(0,0,0,.06);margin-bottom:20px;text-align:center">
+        <div id="splash-invite-emoji" style="font-size: calc(36px * var(--ui-text-scale));margin-bottom:8px">🏠</div>
+        <div id="splash-invite-resource-name" style="font-size: calc(16px * var(--ui-text-scale));font-weight:700;color:#111827;margin-bottom:6px">Maison ou voiture</div>
+        <div id="splash-invite-family-name" style="font-size: calc(13px * var(--ui-text-scale));color:#4b5563;margin-bottom:4px">Groupe</div>
+        <div id="splash-invite-location" style="font-size: calc(13px * var(--ui-text-scale));color:#6b7280">Lieu non renseigné</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-primary" onclick="startSignup()">Créer un compte</button>
+        <button class="btn btn-outline" onclick="connectUser()" style="background:transparent;border:none;box-shadow:none">J'ai déjà un compte</button>
+      </div>
     </div>
   </div>
 </div>
@@ -199,7 +206,7 @@
       </article>
     </div>
 
-    <div class="dash-trip-banner" id="trip-banner" style="display:none">
+    <div class="dash-trip-banner" id="trip-banner" style="display:none" role="button" tabindex="0">
       <div class="dash-trip-icon" id="trip-banner-icon">🏠</div>
       <div class="dash-trip-copy">
         <div class="dash-trip-kicker">Votre sejour approche</div>
@@ -221,6 +228,8 @@
           </div>
         </div>
       </div>
+
+      <div id="dash-completion-card" class="dash-completion-wrap" style="display:none" aria-live="polite"></div>
 
       <div class="house-week-section" id="house-week-section">
         <div class="house-section-title">Cette semaine</div>
@@ -403,7 +412,7 @@
           <rect x="13" y="13" width="8" height="8" rx="2"/>
         </svg>
       </div>
-      <span class="nav-label">Dashboard</span>
+      <span class="nav-label">Accueil</span>
     </div>
   </div>
 
@@ -574,14 +583,11 @@
     <div class="celebration-title" id="cel-title">Réservation confirmée !</div>
     <div class="celebration-xp" id="cel-xp">+20 XP</div>
     <div class="celebration-sub" id="cel-sub">La voiture est à toi</div>
-    <div class="cel-onboarding-card" id="cel-onboarding-card" style="display:none">
-      <p class="cel-onboarding-share-label" id="cel-onboarding-share-label"></p>
-      <div class="cel-onboarding-btns">
-        <button type="button" class="btn btn-outline" id="cel-onboarding-copy">Copier le lien d’invitation</button>
-        <button type="button" class="btn btn-outline" id="cel-onboarding-native-share">Partager…</button>
-        <button type="button" class="btn btn-primary" id="cel-onboarding-book">Réserver cette ressource</button>
-        <button type="button" class="btn cel-onboarding-secondary" id="cel-onboarding-dashboard">Accéder au tableau de bord</button>
-      </div>
+    <div class="cel-onboarding-card cel-share-card" id="cel-onboarding-card" style="display:none">
+      <button type="button" class="btn btn-primary cel-share-card-primary" id="cel-onboarding-invite-family">Inviter ma famille</button>
+      <button type="button" class="cel-copy-link-btn" id="cel-onboarding-copy-link">Copier le lien</button>
+      <div class="cel-share-card-spacer" aria-hidden="true"></div>
+      <button type="button" class="btn cel-onboarding-dashboard-ghost" id="cel-onboarding-dashboard">Voir l'accueil →</button>
     </div>
     <div class="celebration-invite-footer" id="cel-invite-footer" style="display:none">
       <button type="button" class="btn btn-primary celebration-invite-cta" id="cel-invite-cta">Découvrir l'accueil</button>
@@ -606,14 +612,25 @@
 <div id="invite-pending-screen" class="ob-overlay hidden">
   <div class="ob-card ob-card--auth">
     <div class="ob-auth-panel">
-      <div class="ob-emoji">⏳</div>
-      <h2 class="ob-auth-title">Demande en attente</h2>
-      <p id="invite-pending-copy" class="ob-auth-lead">
-        Votre demande d'accès a été envoyée. Un administrateur de la ressource doit la valider.
-      </p>
-      <p class="ob-auth-section-lbl">Mot de passe d'invitation</p>
-      <button type="button" class="btn ob-auth-btn-secondary" onclick="openSecurityFromInvitePending()">Saisir le mot de passe</button>
-      <button type="button" class="btn btn-primary ob-auth-btn-primary" onclick="closeInvitePendingScreen()">Continuer</button>
+      <div class="ob-emoji">✉️</div>
+      <h2 class="ob-auth-title">Demande envoyée !</h2>
+      <p id="invite-pending-copy" class="ob-auth-lead"></p>
+      <div id="invite-pending-pin-block" class="ob-auth-fields-wrap" style="display:none;margin-top:12px;text-align:left">
+        <p style="font-size: calc(13px * var(--ui-text-scale));color:var(--text-light);margin:0 0 10px">Tu as un code d'accès ? Entre-le ici.</p>
+        <fieldset class="pin-fieldset">
+          <legend class="pin-fieldset-legend pin-fieldset-legend--compact">Code à 4 chiffres</legend>
+          <div class="pin-input" id="invite-pending-pin" style="justify-content:center">
+            <input type="tel" id="invite-pending-pin-0" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="invite-pending-pin-1" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="invite-pending-pin-2" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="invite-pending-pin-3" maxlength="1" inputmode="numeric" autocomplete="off">
+          </div>
+        </fieldset>
+        <div class="lock-error" id="invite-pending-pin-error"></div>
+        <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" onclick="submitInvitePendingEmbeddedPin()">Valider</button>
+      </div>
+      <p id="invite-pending-or" style="display:none;text-align:center;color:var(--text-light);font-size: calc(13px * var(--ui-text-scale));margin:14px 0 10px">ou</p>
+      <button type="button" class="btn btn-outline ob-auth-btn-secondary" style="width:100%;margin-top:4px" onclick="closeInvitePendingAndWait()">J'attends la validation →</button>
     </div>
   </div>
 </div>
@@ -646,25 +663,29 @@
 <!-- First resource onboarding (full screen, no bottom nav) -->
 <div id="first-resource-onboarding" class="ob-overlay fro-onboarding hidden">
   <div class="ob-card fro-onboarding-card">
+    <div class="fro-progress" role="status" aria-live="polite">
+      <span class="fro-dot" id="fro-dot-1" data-step="1"></span>
+      <span class="fro-dot" id="fro-dot-2" data-step="2"></span>
+      <span class="fro-dot" id="fro-dot-3" data-step="3"></span>
+    </div>
     <div id="fro-step-intro" class="fro-step">
-      <h2 class="ob-auth-title" style="text-align:center;margin-top:4px">Crée ton espace</h2>
-      <p class="ob-auth-lead">Partage une ressource avec les tiens : réservations et planning au même endroit.</p>
-      <p class="ob-auth-section-lbl">Par quoi on commence ?</p>
+      <h2 class="ob-auth-title" style="text-align:center;margin-top:4px">Qu'est-ce que tu partages ?</h2>
+      <p class="ob-auth-lead">Tu pourras en ajouter d'autres plus tard.</p>
       <div class="fro-type-pick">
-        <button type="button" id="fro-pick-house" class="btn btn-outline fro-type-btn" onclick="froPickType('house')">🏠 Maison</button>
-        <button type="button" id="fro-pick-car" class="btn btn-outline fro-type-btn" onclick="froPickType('car')">🚗 Voiture</button>
+        <button type="button" id="fro-pick-house" class="btn btn-outline fro-type-btn" onclick="froPickType('house')">🏠 Une maison</button>
+        <button type="button" id="fro-pick-car" class="btn btn-outline fro-type-btn" onclick="froPickType('car')">🚗 Une voiture</button>
       </div>
       <div class="lock-error" id="fro-intro-error"></div>
-      <button type="button" class="btn btn-primary fro-onboarding-primary" onclick="froIntroNext()">Continuer</button>
+      <button type="button" class="btn btn-primary fro-onboarding-primary" id="fro-intro-continue" disabled onclick="froIntroNext()">Continuer</button>
     </div>
 
     <div id="fro-step-family" class="fro-step hidden">
       <button type="button" class="ob-back" onclick="froBackToIntro()">←</button>
-      <h2 class="ob-auth-title" style="text-align:center;margin-top:8px">Ton espace famille</h2>
-      <p class="ob-auth-lead">C’est le nom de ton groupe : tu pourras y inviter d’autres personnes plus tard.</p>
+      <h2 class="ob-auth-title" style="text-align:center;margin-top:8px">Comment s'appelle ta famille ?</h2>
+      <p class="ob-auth-lead">Ce nom sera visible par les membres.</p>
       <div class="input-group">
-        <label for="fro-family-name">Nom de l’espace (obligatoire)</label>
-        <input type="text" id="fro-family-name" placeholder="Ex : Les Martin" autocomplete="organization">
+        <label for="fro-family-name">Nom du groupe</label>
+        <input type="text" id="fro-family-name" placeholder="Ex : Famille Martin" autocomplete="organization">
       </div>
       <div class="lock-error" id="fro-family-error"></div>
       <button type="button" class="btn btn-primary fro-onboarding-primary" onclick="froFamilyNext()">Continuer</button>
@@ -672,52 +693,26 @@
 
     <div id="fro-step-house" class="fro-step hidden">
       <button type="button" class="ob-back" onclick="froBackToFamily()">←</button>
-      <h2 class="ob-auth-title" style="text-align:center;margin-top:8px">Ta maison</h2>
-      <p class="ob-auth-lead">Quelques infos suffisent pour l’instant ; tu compléteras le reste (horaires, etc.) plus tard.</p>
+      <h2 class="ob-auth-title" style="text-align:center;margin-top:8px">Donne un nom à ta maison</h2>
+      <p class="ob-auth-lead">Tu compléteras les détails plus tard.</p>
       <div class="ob-photo-row">
         <label class="photo-preview" id="fro-house-photo-preview" onclick="document.getElementById('fro-house-photo-input').click()">📷</label>
         <input type="file" id="fro-house-photo-input" accept="image/*" class="hidden" onchange="froHousePhoto(this)">
       </div>
-      <div class="ob-fields fro-house-fields">
+      <div class="ob-fields">
         <div class="input-group">
           <label for="fro-house-name">Nom</label>
-          <input type="text" id="fro-house-name" placeholder="Ex : Maison du lac" autocomplete="off">
-        </div>
-        <div class="fro-house-inline-row">
-          <div class="input-group">
-            <label for="fro-house-capacity">Capacité (personnes)</label>
-            <input type="number" id="fro-house-capacity" min="1" placeholder="8" inputmode="numeric">
-          </div>
-          <div class="input-group">
-            <label for="fro-house-rooms">Chambres</label>
-            <input type="number" id="fro-house-rooms" min="0" placeholder="3" inputmode="numeric">
-          </div>
-        </div>
-        <div class="input-group">
-          <label for="fro-house-street">Adresse — rue</label>
-          <input type="text" id="fro-house-street" placeholder="Numéro et rue" autocomplete="street-address">
-        </div>
-        <div class="input-group">
-          <label for="fro-house-city">Ville</label>
-          <input type="text" id="fro-house-city" placeholder="Ville" autocomplete="address-level2">
-        </div>
-        <div class="input-group">
-          <label for="fro-house-postal">Code postal</label>
-          <input type="text" id="fro-house-postal" placeholder="75001" autocomplete="postal-code">
-        </div>
-        <div class="input-group">
-          <label for="fro-house-country">Pays</label>
-          <input type="text" id="fro-house-country" placeholder="France" autocomplete="country-name">
+          <input type="text" id="fro-house-name" placeholder="Ex : Maison de Bretagne" autocomplete="off">
         </div>
       </div>
       <div class="lock-error" id="fro-house-error"></div>
-      <button type="button" class="btn btn-primary fro-onboarding-primary" onclick="froSubmitHouse()">Créer la ressource</button>
+      <button type="button" class="btn btn-primary fro-onboarding-primary" onclick="froSubmitHouse()">Créer →</button>
     </div>
 
     <div id="fro-step-car" class="fro-step hidden">
       <button type="button" class="ob-back" onclick="froBackToFamily()">←</button>
-      <h2 class="ob-auth-title" style="text-align:center;margin-top:8px">Ta voiture</h2>
-      <p class="ob-auth-lead">Indique l’essentiel ; tu pourras affiner les détails depuis le tableau de bord.</p>
+      <h2 class="ob-auth-title" style="text-align:center;margin-top:8px">Donne un nom à ta voiture</h2>
+      <p class="ob-auth-lead">Tu compléteras les détails plus tard.</p>
       <div class="ob-photo-row">
         <label class="photo-preview" id="fro-car-photo-preview" onclick="document.getElementById('fro-car-photo-input').click()">📷</label>
         <input type="file" id="fro-car-photo-input" accept="image/*" class="hidden" onchange="froCarPhoto(this)">
@@ -725,40 +720,11 @@
       <div class="ob-fields">
         <div class="input-group">
           <label for="fro-car-name">Nom</label>
-          <input type="text" id="fro-car-name" placeholder="Ex : Clio" autocomplete="off">
-        </div>
-        <div class="input-group">
-          <label for="fro-car-seats">Places (sièges)</label>
-          <input type="number" id="fro-car-seats" min="1" placeholder="5" inputmode="numeric">
-        </div>
-        <div class="input-group">
-          <label for="fro-car-fuel">Énergie</label>
-          <select id="fro-car-fuel">
-            <option value="">—</option>
-            <option value="essence">Essence</option>
-            <option value="diesel">Diesel</option>
-            <option value="electrique">Électrique</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label for="fro-car-mileage">Kilométrage</label>
-          <input type="text" id="fro-car-mileage" placeholder="Ex : 45200" inputmode="numeric" autocomplete="off">
-        </div>
-        <div class="input-group">
-          <label for="fro-car-bluetooth">Bluetooth</label>
-          <select id="fro-car-bluetooth">
-            <option value="">—</option>
-            <option value="true">Oui</option>
-            <option value="false">Non</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label for="fro-car-lieu">Lieu habituel</label>
-          <input type="text" id="fro-car-lieu" placeholder="Ex : Parking sous-sol" autocomplete="off">
+          <input type="text" id="fro-car-name" placeholder="Ex : Clio familiale" autocomplete="off">
         </div>
       </div>
       <div class="lock-error" id="fro-car-error"></div>
-      <button type="button" class="btn btn-primary fro-onboarding-primary" onclick="froSubmitCar()">Créer la ressource</button>
+      <button type="button" class="btn btn-primary fro-onboarding-primary" onclick="froSubmitCar()">Créer →</button>
     </div>
   </div>
 </div>
@@ -784,7 +750,7 @@
         style="width:22px;height:22px;border-radius:999px;border:1px solid #d1d5db;background:#fff;color:#6b7280;font-size: calc(13px * var(--ui-text-scale));line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:0"
       >i</button>
     </div>
-    <p id="login-subtitle" style="color:var(--text-light);margin-bottom:14px;font-size: calc(14px * var(--ui-text-scale));text-align:center">Entrez votre email et votre code secret.</p>
+    <p id="login-subtitle" style="color:var(--text-light);margin-bottom:14px;font-size: calc(14px * var(--ui-text-scale));text-align:center">Entre ton email et ton code.</p>
     <div id="login-invite-context" style="display:none;background:#f0f4ff;border:1px solid #c7d2fe;border-radius:12px;padding:10px 12px;margin-bottom:14px">
       <div id="login-invite-context-text" style="font-size: calc(12px * var(--ui-text-scale));line-height:1.45;color:#3730a3"></div>
     </div>
@@ -795,7 +761,7 @@
           <input type="email" id="login-email" name="login-email" placeholder="marie@hotmail.com" autocomplete="email">
         </div>
         <fieldset class="pin-fieldset">
-          <legend class="pin-fieldset-legend pin-fieldset-legend--compact">Code secret (4 chiffres)</legend>
+          <legend class="pin-fieldset-legend pin-fieldset-legend--compact">Code à 4 chiffres</legend>
           <div class="pin-input" id="login-pin" style="justify-content:center">
             <input type="tel" id="login-pin-0" name="login-pin-0" maxlength="1" inputmode="numeric" autocomplete="off">
             <input type="tel" id="login-pin-1" name="login-pin-1" maxlength="1" inputmode="numeric" autocomplete="off">
@@ -820,7 +786,8 @@
   <!-- Step 3: profile -->
   <div class="su-step ob-card hidden" id="su-step-3">
     <button class="ob-back" onclick="signupBackFromSimpleForm()">←</button>
-    <h2 style="margin:4px 0 12px">Créer un compte</h2>
+    <h2 style="margin:4px 0 8px">Crée ton compte</h2>
+    <p id="su-auth-subtitle" style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));text-align:center;margin:0 0 14px;line-height:1.45">Tu pourras réserver en un clic.</p>
     <div style="background:#f6f6f6;border:1px solid #ececec;border-radius:16px;padding:16px 14px 14px;margin-bottom:14px">
       <div class="ob-fields" style="gap:14px">
         <div class="input-group" style="margin-bottom:0">
@@ -841,7 +808,7 @@
           </div>
         </fieldset>
         <fieldset class="pin-fieldset">
-          <legend class="pin-fieldset-legend pin-fieldset-legend--compact">Confirmer le code</legend>
+          <legend class="pin-fieldset-legend pin-fieldset-legend--compact">Confirme ton code</legend>
           <div class="pin-input" id="su-user-pin-confirm" style="justify-content:center">
             <input type="tel" id="su-user-pin-confirm-0" name="su-user-pin-confirm-0" maxlength="1" inputmode="numeric" autocomplete="off">
             <input type="tel" id="su-user-pin-confirm-1" name="su-user-pin-confirm-1" maxlength="1" inputmode="numeric" autocomplete="off">
@@ -852,150 +819,13 @@
       </div>
     </div>
     <div class="lock-error" id="su-profile-error"></div>
-    <button class="btn btn-primary" style="margin-top:10px;background:#3d4a2e;border-color:#3d4a2e" onclick="signupProfileAdvance()">Créer mon compte</button>
+    <button class="btn btn-primary" style="margin-top:10px;background:#3d4a2e;border-color:#3d4a2e" onclick="signupProfileAdvance()">C'est parti →</button>
   </div>
 
 </div>
 
-<!-- Legacy Onboarding Wizard (first-time setup) -->
-<div id="onboarding-overlay" class="ob-overlay hidden">
-
-  <!-- Step 1: Welcome -->
-  <div class="ob-step ob-card" id="ob-step-1">
-    <div class="ob-emoji">🏠</div>
-    <h1 style="font-size: calc(32px * var(--ui-text-scale));margin-bottom:8px">FamResa</h1>
-    <p style="color:var(--text-light);margin-bottom:40px;font-size: calc(16px * var(--ui-text-scale))">Gérez vos ressources familiales<br>simplement, ensemble.</p>
-    <button class="btn btn-primary" style="width:100%" onclick="showOnboardingStep(2)">Commencer →</button>
-  </div>
-
-  <!-- Step 2: Family PIN -->
-  <div class="ob-step ob-card hidden" id="ob-step-2">
-    <button class="ob-back" onclick="showOnboardingStep(1)">←</button>
-    <div class="ob-dots">
-      <div class="ob-dot active"></div>
-      <div class="ob-dot"></div>
-      <div class="ob-dot"></div>
-      <div class="ob-dot"></div>
-    </div>
-    <div class="ob-emoji">🔒</div>
-    <h2 style="margin-bottom:6px">Code familial</h2>
-    <p style="color:var(--text-light);margin-bottom:24px;font-size: calc(14px * var(--ui-text-scale))">Ce code protège l'accès à l'application.<br>Partagez-le avec tous les membres.</p>
-    <div class="ob-fields">
-      <fieldset class="pin-fieldset">
-        <legend class="pin-fieldset-legend">Choisissez un code à 4 chiffres</legend>
-        <div class="pin-input" id="ob-pin-create" style="justify-content:center">
-          <input type="tel" id="ob-pin-create-0" name="ob-pin-create-0" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" id="ob-pin-create-1" name="ob-pin-create-1" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" id="ob-pin-create-2" name="ob-pin-create-2" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" id="ob-pin-create-3" name="ob-pin-create-3" maxlength="1" inputmode="numeric" autocomplete="off">
-        </div>
-      </fieldset>
-      <fieldset class="pin-fieldset">
-        <legend class="pin-fieldset-legend">Confirmez le code</legend>
-        <div class="pin-input" id="ob-pin-confirm" style="justify-content:center">
-          <input type="tel" id="ob-pin-confirm-0" name="ob-pin-confirm-0" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" id="ob-pin-confirm-1" name="ob-pin-confirm-1" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" id="ob-pin-confirm-2" name="ob-pin-confirm-2" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" id="ob-pin-confirm-3" name="ob-pin-confirm-3" maxlength="1" inputmode="numeric" autocomplete="off">
-        </div>
-      </fieldset>
-    </div>
-    <div class="lock-error" id="ob-pin-error"></div>
-    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="obStep2Advance()">Continuer →</button>
-  </div>
-
-  <!-- Step 3: First member -->
-  <div class="ob-step ob-card hidden" id="ob-step-3">
-    <button class="ob-back" onclick="showOnboardingStep(2)">←</button>
-    <div class="ob-dots">
-      <div class="ob-dot"></div>
-      <div class="ob-dot active"></div>
-      <div class="ob-dot"></div>
-      <div class="ob-dot"></div>
-    </div>
-    <div class="ob-emoji">👤</div>
-    <h2 style="margin-bottom:6px">Premier membre</h2>
-    <p style="color:var(--text-light);margin-bottom:20px;font-size: calc(14px * var(--ui-text-scale))">Créez votre profil pour commencer.</p>
-    <div class="ob-fields">
-      <div class="input-group" style="margin-bottom:0">
-        <label>Prénom</label>
-        <input type="text" id="ob-name" placeholder="Ton prénom" autocomplete="given-name">
-      </div>
-      <div class="input-group" style="margin-bottom:0">
-        <label>Email</label>
-        <input type="email" id="ob-email" placeholder="ton@email.com" autocomplete="email">
-      </div>
-      <div>
-        <label style="font-size: calc(13px * var(--ui-text-scale));font-weight:600;display:block;margin-bottom:8px">Photo <span style="color:var(--text-light);font-weight:400">(optionnel)</span></label>
-        <div class="ob-photo-row">
-          <div class="photo-preview" id="photo-preview" onclick="document.getElementById('ob-photo-input').click()" style="width:72px;height:72px;font-size: calc(24px * var(--ui-text-scale));cursor:pointer">📷</div>
-          <input type="file" id="ob-photo-input" accept="image/*" style="display:none" onchange="handlePhoto(this)">
-        </div>
-      </div>
-      <div>
-        <label style="font-size: calc(13px * var(--ui-text-scale));font-weight:600;display:block;margin-bottom:8px">Votre code secret (4 chiffres)</label>
-        <div class="pin-input" id="ob-user-pin" style="justify-content:center">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-          <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off">
-        </div>
-      </div>
-    </div>
-    <div class="lock-error" id="ob-step3-error"></div>
-    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="obStep3Advance()">Créer mon profil →</button>
-  </div>
-
-  <!-- Step 4: Car setup -->
-  <div class="ob-step ob-card hidden" id="ob-step-4">
-    <button class="ob-back" onclick="showOnboardingStep(3)">←</button>
-    <div class="ob-dots">
-      <div class="ob-dot"></div>
-      <div class="ob-dot"></div>
-      <div class="ob-dot active"></div>
-      <div class="ob-dot"></div>
-    </div>
-    <div class="ob-emoji">🚗</div>
-    <h2 style="margin-bottom:6px">Votre voiture</h2>
-    <p style="color:var(--text-light);margin-bottom:20px;font-size: calc(14px * var(--ui-text-scale))">Personnalisez votre voiture familiale.</p>
-    <div class="ob-fields">
-      <div class="input-group" style="margin-bottom:0">
-        <label for="ob-car-name">Nom de la voiture</label>
-        <input type="text" id="ob-car-name" name="ob-car-name" placeholder="Ex: Renault Scenic" value="Voiture familiale">
-      </div>
-      <fieldset class="pin-fieldset ob-emoji-fieldset">
-        <legend class="pin-fieldset-legend">Emoji</legend>
-        <div class="ob-emoji-row" style="display:flex;gap:10px;justify-content:center">
-          <button type="button" onclick="selectCarEmoji(this,'🚗')" class="ob-emoji-btn active">🚗</button>
-          <button type="button" onclick="selectCarEmoji(this,'🚙')" class="ob-emoji-btn">🚙</button>
-          <button type="button" onclick="selectCarEmoji(this,'🚕')" class="ob-emoji-btn">🚕</button>
-          <button type="button" onclick="selectCarEmoji(this,'🏎️')" class="ob-emoji-btn">🏎️</button>
-        </div>
-      </fieldset>
-      <div class="input-group" style="margin-bottom:0">
-        <label for="ob-car-plaque">Plaque d'immatriculation <span style="color:var(--text-light);font-weight:400">(optionnel)</span></label>
-        <input type="text" id="ob-car-plaque" name="ob-car-plaque" placeholder="Ex: AB-123-CD" style="text-transform:uppercase">
-      </div>
-    </div>
-    <div class="lock-error" id="ob-step4-error"></div>
-    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="obStep4Advance()">Continuer →</button>
-  </div>
-
-  <!-- Step 5: Done -->
-  <div class="ob-step ob-card hidden" id="ob-step-5">
-    <div class="ob-dots">
-      <div class="ob-dot"></div>
-      <div class="ob-dot"></div>
-      <div class="ob-dot"></div>
-      <div class="ob-dot active"></div>
-    </div>
-    <div class="ob-emoji">🎉</div>
-    <h2 style="margin-bottom:8px">Famille créée !</h2>
-    <p style="color:var(--text-light);margin-bottom:40px;font-size: calc(16px * var(--ui-text-scale))">Vous êtes prêt·e à réserver<br>vos ressources familiales.</p>
-    <button class="btn btn-primary" style="width:100%" onclick="finishOnboarding()">Découvrir FamResa →</button>
-  </div>
-
-</div>
+<!-- Legacy onboarding wizard removed (v2) -->
+<div id="onboarding-overlay" class="ob-overlay hidden" aria-hidden="true"></div>
 
 <!-- Update banner -->
 <div id="sw-update-banner" style="display:none;position:fixed;bottom:80px;left:12px;right:12px;z-index:9999;background:#1a1a1a;color:#fff;border-radius:14px;padding:14px 16px;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.25);">
@@ -1014,11 +844,11 @@
 <script src="src/infra/firebase/firebase.client.js?v=7" defer></script>
 <script src="src/infra/firebase/firebase.mapper.js?v=5" defer></script>
 <script src="js/firebase.js?v=9" defer></script>
-<script src="js/app.js?v=6" defer></script>
+<script src="js/app.js?v=7" defer></script>
 <script src="js/ui.js?v=7" defer></script>
 <script src="js/xp.js?v=4" defer></script>
-<script src="js/celebration.js?v=6" defer></script>
-<script src="js/auth.js?v=21" defer></script>
+<script src="js/celebration.js?v=8" defer></script>
+<script src="js/auth.js?v=22" defer></script>
 <script src="js/fuel.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.repository.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.service.js?v=4" defer></script>
@@ -1028,16 +858,18 @@
 <script src="src/modules/family/family.service.js?v=4" defer></script>
 <script src="src/modules/user/user.repository.js?v=4" defer></script>
 <script src="src/modules/user/user.service.js?v=4" defer></script>
-<script src="src/modules/resource/resource.repository.js?v=6" defer></script>
-<script src="src/modules/resource/resource.service.js?v=7" defer></script>
+<script src="src/modules/resource/resource.repository.js?v=7" defer></script>
+<script src="src/modules/resource/resource.service.js?v=8" defer></script>
 <script src="js/booking.js?v=5" defer></script>
 <script src="js/calendar.js?v=5" defer></script>
 <script src="js/history.js?v=4" defer></script>
 <script src="src/modules/profile/profile.service.js?v=2" defer></script>
 <script src="js/profile.js?v=7" defer></script>
-<script src="js/resources.js?v=15" defer></script>
+<script src="js/resources.js?v=17" defer></script>
 <script src="js/onboarding-resource.js?v=4" defer></script>
-<script src="js/dashboard.js?v=16" defer></script>
+<script src="js/famresa-completion.js?v=1" defer></script>
+<script src="js/famresa-guides.js?v=1" defer></script>
+<script src="js/dashboard.js?v=17" defer></script>
 <script src="js/stay.js?v=4" defer></script>
 <script src="js/checklist.js?v=4" defer></script>
 <script src="js/events.js?v=4" defer></script>
@@ -1068,7 +900,7 @@ window.__startupHideSplashRequested = false;
     return;
   }
 
-  const APP_BUILD = 'famresa-build-20260328-4';
+  const APP_BUILD = 'famresa-build-20260328-8';
 
   async function purgeAppRuntime() {
     const regs = await navigator.serviceWorker.getRegistrations();
@@ -1148,6 +980,22 @@ function swApplyUpdate() {
 </script>
 
 <!-- ===== RESOURCE MANAGE PAGE ===== -->
+<div id="completion-overlay" class="rm-overlay hidden famresa-cpl-overlay" aria-hidden="true">
+  <div class="famresa-cpl-panel" id="completion-overlay-inner"></div>
+</div>
+
+<div id="guides-overlay" class="rm-overlay hidden famresa-ge-overlay" aria-hidden="true">
+  <div class="famresa-ge-panel" id="guides-overlay-inner"></div>
+</div>
+
+<div id="guides-read-overlay" class="rm-overlay hidden famresa-gr-overlay" aria-hidden="true">
+  <div class="famresa-gr-panel" id="guides-read-inner"></div>
+</div>
+
+<div id="guides-checkout-overlay" class="rm-overlay hidden famresa-co-overlay" aria-hidden="true">
+  <div class="famresa-co-panel" id="guides-checkout-inner"></div>
+</div>
+
 <div id="resource-manage-overlay" class="rm-overlay hidden">
   <div id="resource-manage-content"></div>
 </div>

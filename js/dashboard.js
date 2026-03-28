@@ -94,6 +94,9 @@ function renderTripBanner(resourceId) {
 
   if (!targetBooking) {
     banner.style.display = 'none';
+    banner.onclick = null;
+    banner.onkeydown = null;
+    banner.style.cursor = '';
     return false;
   }
   const startDateStr = targetBooking.startDate || targetBooking.date;
@@ -132,8 +135,56 @@ function renderTripBanner(resourceId) {
   if (subEl) subEl.textContent = tripSubLine;
   if (iconEl) iconEl.textContent = res?.emoji || (res?.type === 'house' ? '🏠' : '🚗');
   banner.style.display = '';
+  banner.style.cursor = res?.type === 'house' ? 'pointer' : '';
+  banner.onclick = res?.type === 'house' && typeof famresaOnTripBannerTap === 'function'
+    ? () => famresaOnTripBannerTap(resourceId)
+    : null;
+  banner.onkeydown = res?.type === 'house' && typeof famresaOnTripBannerTap === 'function'
+    ? (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          famresaOnTripBannerTap(resourceId);
+        }
+      }
+    : null;
   return true;
 }
+
+/** Contexte bandeau séjour (maison) pour guides F/G */
+function getDashboardTripContext(resourceId) {
+  if (!currentUser) return null;
+  const res = resources.find((r) => r.id === resourceId);
+  const isHouse = res?.type === 'house';
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const todayMidnightMs = new Date(todayStr + 'T00:00:00').getTime();
+  const mineBookings = getUniqueBookingsSorted()
+    .filter((b) => {
+      const bRes = b.ressource_id || b.resourceId || selectedResource;
+      const start = b.startDate || b.date || '';
+      return b.userId === currentUser.id && bRes === resourceId && !!start;
+    })
+    .sort((a, b) => (a.startDate || a.date || '').localeCompare(b.startDate || b.date || ''));
+
+  const currentMine = mineBookings.find((b) => {
+    const start = b.startDate || b.date || '';
+    const end = b.endDate || start;
+    return start <= todayStr && end >= todayStr;
+  });
+  const upcomingMine = mineBookings.find((b) => {
+    const start = b.startDate || b.date || '';
+    return start >= todayStr;
+  });
+  const targetBooking = currentMine || upcomingMine;
+  if (!targetBooking) return null;
+  const startDateStr = targetBooking.startDate || targetBooking.date;
+  const start = new Date(startDateStr + 'T00:00:00');
+  const diffDays = Math.ceil((start.getTime() - todayMidnightMs) / 86400000);
+  const isInProgress = !!currentMine;
+  if (!isInProgress && (diffDays < 0 || diffDays > 7)) return null;
+  return { targetBooking, isInProgress, isHouse, res, currentMine, upcomingMine };
+}
+window.getDashboardTripContext = getDashboardTripContext;
 
 function getHousePeopleCount(booking) {
   if (!booking) return 0;
@@ -317,47 +368,73 @@ function showHouseDirectionsSheet() {
   document.getElementById('overlay')?.classList.add('open');
 }
 
+function _dashIncompleteHtml() {
+  return '<span class="house-raw-incomplete">À compléter</span>';
+}
+
+function _famresaLatestBookingOnResource(resourceId) {
+  const list = getUniqueBookingsSorted().filter((b) => (b.ressource_id || b.resourceId) === resourceId);
+  return list.sort((a, b) =>
+    String(b.endDate || b.startDate || b.date || '').localeCompare(String(a.endDate || a.startDate || a.date || ''))
+  )[0] || null;
+}
+
 function renderHouseRawInfo(resource, decisionState) {
   const wrap = document.getElementById('house-raw-list');
   if (!wrap) return;
-  const capacity = Number(resource?.capacity || 8);
+  const capNum = resource?.capacity != null && resource.capacity !== '' ? Number(resource.capacity) : NaN;
+  const capVal = Number.isFinite(capNum) && capNum > 0 ? `${capNum} pers.` : _dashIncompleteHtml();
   const rooms = Number(resource?.rooms || resource?.bedrooms || resource?.chambres || 0);
-  const checkIn = resource?.checkIn || resource?.checkin || '—';
-  const checkOut = resource?.checkOut || resource?.checkout || '—';
-  const address = getResourceAddressDisplay(resource, '—');
-  const roomsLabel = rooms > 0 ? `${rooms}` : '—';
+  const roomsVal = rooms > 0 ? `${rooms}` : _dashIncompleteHtml();
+  const ci = (resource?.checkIn || resource?.checkin || '').trim();
+  const co = (resource?.checkOut || resource?.checkout || '').trim();
+  const checkInVal = ci ? ci : _dashIncompleteHtml();
+  const checkOutVal = co ? co : _dashIncompleteHtml();
+  const addrOk = hasUsableResourceAddress(resource);
+  const address = addrOk ? getResourceAddressDisplay(resource, '') : _dashIncompleteHtml();
+  const routeBtn = addrOk
+    ? `<button class="house-route-btn" type="button" onclick="showHouseDirectionsSheet()">
+            <span class="house-route-btn-arrow" aria-hidden="true">→</span>
+            <span class="house-route-btn-text">Obtenir l'itinéraire</span>
+          </button>`
+    : '';
 
   wrap.innerHTML = `
     <div class="house-raw-grid">
       <div class="house-raw-cell">
         <div class="house-raw-label">Capacité</div>
-        <div class="house-raw-value">${capacity} pers.</div>
+        <div class="house-raw-value">${capVal}</div>
       </div>
       <div class="house-raw-cell">
         <div class="house-raw-label">Chambres</div>
-        <div class="house-raw-value">${roomsLabel}</div>
+        <div class="house-raw-value">${roomsVal}</div>
       </div>
       <div class="house-raw-cell">
         <div class="house-raw-label">Check-in</div>
-        <div class="house-raw-value">${checkIn || '—'}</div>
+        <div class="house-raw-value">${checkInVal}</div>
       </div>
       <div class="house-raw-cell">
         <div class="house-raw-label">Check-out</div>
-        <div class="house-raw-value">${checkOut || '—'}</div>
+        <div class="house-raw-value">${checkOutVal}</div>
       </div>
       <div class="house-raw-cell house-raw-cell-full">
         <div class="house-raw-label">Adresse</div>
         <div class="house-raw-address-row">
           <div class="house-raw-address">
-            <span class="house-raw-address-text">${address}</span>
+            <span class="house-raw-address-text">${addrOk ? getResourceAddressDisplay(resource, '—') : address}</span>
           </div>
-          <button class="house-route-btn" type="button" onclick="showHouseDirectionsSheet()">
-            <span class="house-route-btn-arrow" aria-hidden="true">→</span>
-            <span class="house-route-btn-text">Obtenir l'itinéraire</span>
-          </button>
+          ${routeBtn}
         </div>
       </div>
     </div>
+    <div class="house-raw-modifier-row">
+      <button type="button" class="ccv2-btn-manage-link" onclick="showResourceManagePage(selectedResource)">Modifier</button>
+    </div>
+    ${
+      window._myResourceRoles?.[selectedResource] === 'admin' && typeof famresaCheckoutKpiHtml === 'function'
+        ? famresaCheckoutKpiHtml(resource, _famresaLatestBookingOnResource(selectedResource))
+        : ''
+    }
   `;
 }
 
@@ -365,6 +442,7 @@ function _fuelTypeLabel(ft) {
   if (ft === 'diesel') return 'Diesel';
   if (ft === 'electrique') return 'Électrique';
   if (ft === 'essence') return 'Essence';
+  if (ft === 'hybride') return 'Hybride';
   return '—';
 }
 
@@ -372,14 +450,15 @@ function renderCarRawInfo(resource) {
   const wrap = document.getElementById('car-raw-list');
   if (!wrap) return;
   const seats = Number(resource?.seatCount ?? resource?.seats ?? 0);
-  const seatsLabel = seats > 0 ? `${seats} pers.` : '—';
-  const fuel = _fuelTypeLabel(resource?.fuelType || '');
+  const seatsLabel = seats > 0 ? `${seats} pers.` : _dashIncompleteHtml();
+  const ft = (resource?.fuelType || '').trim();
+  const fuel = ft ? _fuelTypeLabel(ft) : _dashIncompleteHtml();
   const mileage =
     resource?.mileageKm != null && String(resource.mileageKm).trim() !== ''
       ? `${resource.mileageKm} km`
-      : '—';
+      : _dashIncompleteHtml();
   const bt =
-    resource?.carBluetooth === true ? 'Oui' : resource?.carBluetooth === false ? 'Non' : '—';
+    resource?.carBluetooth === true ? 'Oui' : resource?.carBluetooth === false ? 'Non' : _dashIncompleteHtml();
 
   wrap.innerHTML = `
     <div class="house-raw-grid">
@@ -399,6 +478,9 @@ function renderCarRawInfo(resource) {
         <div class="house-raw-label">Bluetooth</div>
         <div class="house-raw-value">${bt}</div>
       </div>
+    </div>
+    <div class="house-raw-modifier-row">
+      <button type="button" class="ccv2-btn-manage-link" onclick="showResourceManagePage(selectedResource)">Modifier</button>
     </div>
   `;
 }
@@ -478,6 +560,18 @@ function renderUpcomingBookings() {
 function applyDashHeroLayoutPreference() {
   const dashHeroEl = document.getElementById('dash-resource-hero');
   if (dashHeroEl) dashHeroEl.classList.remove('dash-hero--split');
+}
+
+function maybeShowFamresaSalutOnce() {
+  try {
+    if (typeof activeTab === 'undefined' || activeTab !== 'dashboard') return;
+    if (!resources || resources.length === 0) return;
+    if (sessionStorage.getItem('famresa_salut_once') === '1') return;
+    const pn = (currentUser?.name || '').trim().split(/\s+/)[0];
+    if (!pn || typeof showToast !== 'function') return;
+    sessionStorage.setItem('famresa_salut_once', '1');
+    setTimeout(() => showToast(`Salut ${pn} 👋`), 250);
+  } catch (_) {}
 }
 
 function renderExperiencePanels() {
@@ -685,14 +779,10 @@ function renderExperiencePanels() {
     }
   }
 
-  if (!isHouse) {
-    const hasSoonTrip = renderTripBanner(selectedResource);
-    if (hasSoonTrip && !state.occupied && mainCard) {
-      mainCard.classList.remove('state-available');
-      mainCard.classList.add('state-soon');
-    }
-  } else if (tripBanner) {
-    tripBanner.style.display = 'none';
+  const hasSoonTrip = renderTripBanner(selectedResource);
+  if (hasSoonTrip && !state.occupied && mainCard) {
+    mainCard.classList.remove('state-available');
+    mainCard.classList.add('state-soon');
   }
 
   // ── Prochaines réservations (si le bloc existe encore) ──
@@ -705,6 +795,8 @@ function renderExperiencePanels() {
   renderXpHeroCard();
   renderHistoryList();
   renderPostTripReminder();
+  maybeShowFamresaSalutOnce();
+  if (typeof famresaRenderCompletionCard === 'function') famresaRenderCompletionCard();
 }
 
 function renderHistoryList() {

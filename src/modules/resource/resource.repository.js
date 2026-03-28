@@ -72,4 +72,10 @@ const resourceRepository = {
   async updateFuelLevel(resourceId, fuelLevel) {
     await ressourcesRef().doc(resourceId).update({ fuelLevel });
   },
+
+  /** Partial update (completion fields, guides, etc.) */
+  async updatePartial(resourceId, data) {
+    if (!resourceId || !data || typeof data !== 'object') return;
+    await ressourcesRef().doc(resourceId).update(data);
+  },
 };

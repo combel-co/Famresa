@@ -89,7 +89,21 @@ async function loadResources(options = {}) {
       resources = [];
       window._myResourceRoles = {};
       selectedResource = null;
-      renderMinimalDashboardWhilePending();
+      const pendingEntry = myAccessEntries.find(
+        (e) => (e.statut ?? e.status) === 'pending'
+      );
+      const pid = pendingEntry?.ressource_id || pendingEntry?.resourceId;
+      let pendingName = '';
+      if (pid) {
+        try {
+          const rd = await ressourcesRef().doc(pid).get();
+          if (rd.exists) {
+            const d = rd.data() || {};
+            pendingName = d.nom || d.name || '';
+          }
+        } catch (_) {}
+      }
+      renderMinimalDashboardWhilePending(pendingName || 'cette maison ou voiture');
       return { needsFirstResourceOnboarding: false };
     }
 
@@ -217,19 +231,46 @@ async function loadResources(options = {}) {
 }
 
 // Empty dashboard while access request is pending (no welcome / create resource card)
-function renderMinimalDashboardWhilePending() {
+function renderMinimalDashboardWhilePending(resourceLabel) {
   const tabsEl = document.getElementById('resource-tabs');
   if (tabsEl) tabsEl.innerHTML = '';
 
+  const rawName = resourceLabel || 'cette maison ou voiture';
+  const name = String(rawName)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/"/g, '&quot;');
   const mainCard = document.getElementById('resource-main-card');
   if (mainCard) {
-    mainCard.innerHTML = '<div style="min-height:120px" aria-hidden="true"></div>';
+    mainCard.innerHTML = `
+      <div style="padding:32px 20px;text-align:center;max-width:340px;margin:0 auto">
+        <div style="font-size: calc(44px * var(--ui-text-scale));margin-bottom:12px">⏳</div>
+        <div style="font-weight:700;font-size: calc(19px * var(--ui-text-scale));margin-bottom:10px">Demande en cours</div>
+        <div style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));line-height:1.55;margin-bottom:8px">
+          L'admin de <strong>${name}</strong> n'a pas encore validé ta demande.
+        </div>
+        <div style="color:var(--text-light);font-size: calc(13px * var(--ui-text-scale));line-height:1.5;margin-bottom:20px">
+          Tu recevras une notification dès que c'est fait.
+        </div>
+        <button type="button" class="btn btn-outline" style="width:100%" onclick="retryLoadResourcesPending()">Réessayer</button>
+      </div>`;
   }
 
   const upcomingLabel = document.getElementById('upcoming-label');
   if (upcomingLabel) upcomingLabel.style.display = 'none';
   const upcomingBookings = document.getElementById('upcoming-bookings');
   if (upcomingBookings) upcomingBookings.innerHTML = '';
+}
+
+async function retryLoadResourcesPending() {
+  showSkeleton();
+  try {
+    await loadResources({ suppressEmptyWelcomeUI: true });
+  } finally {
+    hideSkeleton();
+  }
+  if (typeof renderExperiencePanels === 'function') renderExperiencePanels();
+  if (typeof renderCalendar === 'function') renderCalendar();
 }
 
 // Show waiting state when user has no accessible resources
@@ -240,16 +281,14 @@ function renderNoAccessState() {
   const mainCard = document.getElementById('resource-main-card');
   if (mainCard) {
     mainCard.innerHTML = `
-      <div style="padding:40px 24px;text-align:center">
-        <div style="font-size: calc(52px * var(--ui-text-scale));margin-bottom:16px">⏳</div>
-        <div style="font-weight:700;font-size: calc(20px * var(--ui-text-scale));margin-bottom:8px">En attente d'accès</div>
-        <div style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));line-height:1.6;margin-bottom:24px">
-          Ton compte est actif, mais tu n'as pas encore accès à une ressource.<br>
-          Demande à un admin de t'envoyer un lien d'invitation spécifique.
+      <div style="padding:36px 20px;text-align:center;max-width:340px;margin:0 auto">
+        <div style="font-size: calc(48px * var(--ui-text-scale));margin-bottom:14px">🏠</div>
+        <div style="font-weight:700;font-size: calc(19px * var(--ui-text-scale));margin-bottom:10px">Pas encore de maison ni de voiture</div>
+        <div style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));line-height:1.55;margin-bottom:22px">
+          Demande un lien à un proche, ou crée la tienne pour la famille.
         </div>
-        <div style="background:#f0f4ff;border:1px solid #c7d2fe;border-radius:12px;padding:16px;font-size: calc(13px * var(--ui-text-scale));color:#4338ca;line-height:1.5">
-          🔗 L'admin doit aller dans Profil → ressource → <strong>Inviter</strong>
-        </div>
+        <button type="button" class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="startFirstResourceOnboardingFromEmptyState()">Créer une maison ou une voiture</button>
+        <button type="button" class="btn btn-outline" style="width:100%" onclick="openInviteLinkPromptFromDashboard()">J'ai un lien d'invitation</button>
       </div>`;
   }
 
@@ -259,35 +298,49 @@ function renderNoAccessState() {
   if (upcomingBookings) upcomingBookings.innerHTML = '';
 }
 
-// Show resource choice sheet when a new account has no resources yet
+function startFirstResourceOnboardingFromEmptyState() {
+  if (typeof startFirstResourceOnboarding === 'function') startFirstResourceOnboarding();
+}
+
+async function openInviteLinkPromptFromDashboard() {
+  const raw = window.prompt('Colle le lien ou le code d\'invitation :');
+  if (!raw || !String(raw).trim()) return;
+  let code = String(raw).trim();
+  const m = code.match(/resource_join=([^&?#]+)/i);
+  if (m) {
+    try {
+      code = decodeURIComponent(m[1].trim());
+    } catch (_) {
+      code = m[1].trim();
+    }
+  }
+  if (!code) return;
+  showSkeleton();
+  try {
+    await handleResourceJoinCode(code, { silent: false });
+    await loadResources({ suppressEmptyWelcomeUI: true });
+  } catch (e) {
+    console.error(e);
+    showToast('Impossible de traiter le lien');
+  } finally {
+    hideSkeleton();
+  }
+  if (typeof renderExperiencePanels === 'function') renderExperiencePanels();
+  if (typeof renderCalendar === 'function') renderCalendar();
+}
+
+// Legacy entry: route to full-screen onboarding (v2 — no welcome sheet)
 function showResourceChoiceSheet() {
-  // Render an empty main card state while the sheet is shown
   const tabsEl = document.getElementById('resource-tabs');
   if (tabsEl) tabsEl.innerHTML = '';
-
   const mainCard = document.getElementById('resource-main-card');
   if (mainCard) {
-    mainCard.innerHTML = `
-      <div style="padding:40px 24px;text-align:center">
-        <div style="font-size: calc(52px * var(--ui-text-scale));margin-bottom:16px">🏁</div>
-        <div style="font-weight:700;font-size: calc(20px * var(--ui-text-scale));margin-bottom:8px">Bienvenue !</div>
-        <div style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));line-height:1.6">
-          Pour commencer, crée une première ressource.
-        </div>
-      </div>`;
+    mainCard.innerHTML = '<div style="min-height:80px" aria-hidden="true"></div>';
   }
-
-  document.getElementById('sheet-content').innerHTML = `
-    <div class="login-sheet">
-      <h2>Première ressource</h2>
-      <p style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));margin-bottom:20px">
-        Crée ta première ressource. Une famille sera créée automatiquement.
-      </p>
-      <button class="btn btn-primary" style="width:100%;padding:14px;margin-bottom:12px" onclick="closeSheet();showAddResourceSheet()">
-        Créer une ressource
-      </button>
-    </div>`;
-  document.getElementById('overlay').classList.add('open');
+  document.getElementById('overlay')?.classList.remove('open');
+  if (typeof startFirstResourceOnboarding === 'function' && currentUser?.id) {
+    setTimeout(() => startFirstResourceOnboarding(), 0);
+  }
 }
 
 async function submitResourceChoiceJoin() {
@@ -1100,36 +1153,29 @@ function _rmRenderPage(viewModel) {
 
   const inviteBlockHtml = viewModel.permissions.canInvite && viewModel.invite?.inviteCode
     ? `
-      <div class="rm-section-lbl">Invitation</div>
-      <div class="rm-invite-card rm-invite-card-unified">
-        <div class="rm-invite-unified-title">Inviter quelqu'un</div>
-        <div class="rm-invite-compact-row">
+      <div class="rm-invite-heading">Inviter quelqu'un à rejoindre</div>
+      <div class="rm-invite-line-card">
+        <div class="rm-invite-line-hdr">Lien</div>
+        <div class="rm-invite-line-body rm-invite-line-body--link">
           <span class="rm-invite-url-text">${_rmEscapeHtml(viewModel.invite.displayUrl || '')}</span>
           <button type="button" class="rm-invite-share-icn" onclick='_rmShareResourceInvite(${JSON.stringify(resource.id)})' aria-label="Partager le lien">📤</button>
         </div>
-        <div class="rm-invite-field-block">
-          <div class="rm-invite-field-lbl">Code d'activation</div>
-          <div class="rm-invite-code-row">
-            <span class="rm-invite-code-prefix">Code :</span>
-            <input type="text" id="rm-invite-code-input" class="rm-invite-code-input" value="${_rmEscapeHtml(viewModel.invite.inviteCode)}" maxlength="8" autocomplete="off" spellcheck="false" aria-label="Code d'activation">
-            <button type="button" class="btn btn-primary rm-invite-code-save" onclick='_rmSaveInviteCode(${JSON.stringify(resource.id)})'>Enregistrer</button>
-          </div>
-          <div class="lock-error" id="rm-invite-code-error" role="alert"></div>
+      </div>
+      <div class="rm-invite-line-card">
+        <div class="rm-invite-line-hdr">Code d'activation</div>
+        <div class="rm-invite-line-body rm-invite-line-body--row">
+          <input type="text" id="rm-invite-code-input" class="rm-invite-code-input rm-invite-code-input--inline" value="${_rmEscapeHtml(viewModel.invite.inviteCode)}" maxlength="8" autocomplete="off" spellcheck="false" aria-label="Code d'activation">
+          <button type="button" class="rm-invite-btn-sm" onclick='_rmSaveInviteCode(${JSON.stringify(resource.id)})'>Enregistrer</button>
         </div>
-        <div class="rm-invite-field-block">
-          <div class="rm-invite-field-lbl">Mot de passe pour rejoindre</div>
-          <p class="rm-invite-field-hint">${viewModel.invite.joinPinSet ? 'Un mot de passe à 4 chiffres est défini. Saisissez un nouveau code pour le remplacer, ou laissez vide et enregistrez pour le supprimer.' : 'Optionnel — les invités pourront saisir ce code pour être acceptés sans attendre une validation manuelle.'}</p>
-          <div class="rm-join-pin-row">
-            <div class="pin-input rm-join-pin-input" id="rm-join-pin-input">
-              <input type="tel" id="rm-join-pin-0" maxlength="1" inputmode="numeric" autocomplete="off">
-              <input type="tel" id="rm-join-pin-1" maxlength="1" inputmode="numeric" autocomplete="off">
-              <input type="tel" id="rm-join-pin-2" maxlength="1" inputmode="numeric" autocomplete="off">
-              <input type="tel" id="rm-join-pin-3" maxlength="1" inputmode="numeric" autocomplete="off">
-            </div>
-            <button type="button" class="btn btn-primary rm-invite-code-save" onclick='_rmSaveJoinPin(${JSON.stringify(resource.id)})'>Enregistrer</button>
-          </div>
-          <div class="lock-error" id="rm-join-pin-error" role="alert"></div>
+        <div class="lock-error rm-invite-line-err" id="rm-invite-code-error" role="alert"></div>
+      </div>
+      <div class="rm-invite-line-card">
+        <div class="rm-invite-line-hdr">Mot de passe</div>
+        <div class="rm-invite-line-body rm-invite-line-body--row">
+          <input type="text" id="rm-join-pin-field" class="rm-join-pin-field" value="${_rmEscapeHtml(viewModel.invite.joinPin || '')}" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="Mot de passe à 4 chiffres">
+          <button type="button" class="rm-invite-btn-sm" onclick='_rmSaveJoinPin(${JSON.stringify(resource.id)})'>Enregistrer</button>
         </div>
+        <div class="lock-error rm-invite-line-err" id="rm-join-pin-error" role="alert"></div>
       </div>`
     : '';
 
@@ -1187,6 +1233,16 @@ function _rmRenderPage(viewModel) {
       </div>`
     : '';
 
+  const guidesHouseHtml =
+    viewModel.permissions.isAdmin && resource.type === 'house'
+      ? `
+      <div class="rm-section-lbl">Guides séjour</div>
+      <div class="rm-guides-block" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+        <button type="button" class="btn btn-outline" style="width:100%" onclick="hideResourceManagePage();famresaOpenGuideEditor('checkin', ${JSON.stringify(resource.id)})">Guide d'arrivée</button>
+        <button type="button" class="btn btn-outline" style="width:100%" onclick="hideResourceManagePage();famresaOpenGuideEditor('checkout', ${JSON.stringify(resource.id)})">Guide de départ</button>
+      </div>`
+      : '';
+
   return `
     <div class="rm-page-header">
       <button class="rm-back-btn" onclick="hideResourceManagePage()">‹</button>
@@ -1205,6 +1261,7 @@ function _rmRenderPage(viewModel) {
         </div>
         <div class="rm-resource-role-badge ${_rmEscapeHtml(resource.roleClass)}">${_rmEscapeHtml(resource.roleLabel)}</div>
       </div>
+      ${guidesHouseHtml}
       ${inviteBlockHtml}
       ${pendingHtml}
       <div class="rm-section-lbl">Membres actifs</div>
@@ -1258,16 +1315,11 @@ async function showResourceManagePage(resourceId) {
   }
 }
 
-function _rmSetupJoinPinInputs() {
-  const pins = document.querySelectorAll('#rm-join-pin-input input');
-  if (!pins.length) return;
-  setupPinInputs(pins);
-}
-
 async function _rmSaveJoinPin(resourceId) {
   const errEl = document.getElementById('rm-join-pin-error');
   if (errEl) errEl.textContent = '';
-  const pin = getPinFromInputs('#rm-join-pin-input input');
+  const field = document.getElementById('rm-join-pin-field');
+  const pin = field ? String(field.value || '').replace(/\D/g, '').slice(0, 4) : '';
   const resForFam = resources.find((r) => r.id === resourceId);
   const familyIdForResource = resForFam?.famille_id || resForFam?.familleId || currentUser.familyId;
   if (!familyIdForResource) {
@@ -1492,6 +1544,10 @@ async function _rmConfirmDelete(resourceId) {
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 
+function _resourceHasJoinPin(data) {
+  return String((data && data.joinPin) || '').replace(/\D/g, '').length === 4;
+}
+
 // Called when user visits ?resource_join=CODE (after being logged in)
 async function handleResourceJoinCode(code, options = {}) {
   const opts = options || {};
@@ -1524,7 +1580,12 @@ async function handleResourceJoinCode(code, options = {}) {
     }
     if (statuts.has('pending')) {
       notify('Ta demande est déjà en attente d\'approbation');
-      return { status: 'already_pending', resourceId, resourceName };
+      return {
+        status: 'already_pending',
+        resourceId,
+        resourceName,
+        hasJoinPin: _resourceHasJoinPin(resourceData),
+      };
     }
 
     // Previously rejected (or unknown status): re-submit by updating an existing doc if possible
@@ -1536,7 +1597,12 @@ async function handleResourceJoinCode(code, options = {}) {
         ...(resourceFamilyId ? { famille_id: resourceFamilyId } : {}),
       });
       notify('Demande envoyee — en attente de validation par un admin');
-      return { status: 'pending_created', resourceId, resourceName };
+      return {
+        status: 'pending_created',
+        resourceId,
+        resourceName,
+        hasJoinPin: _resourceHasJoinPin(resourceData),
+      };
     }
 
     await accesRessourceRef().add({
@@ -1546,7 +1612,12 @@ async function handleResourceJoinCode(code, options = {}) {
       invited_at: ts(), accepted_at: null,
     });
     notify('Demande envoyee — en attente de validation par un admin');
-    return { status: 'pending_created', resourceId, resourceName };
+    return {
+      status: 'pending_created',
+      resourceId,
+      resourceName,
+      hasJoinPin: _resourceHasJoinPin(resourceData),
+    };
   } catch(e) {
     console.error(e);
     notify('Erreur — réessayez');

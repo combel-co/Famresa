@@ -4,7 +4,17 @@
 
 window._froState = { type: null, familyId: null, photoHouse: null, photoCar: null };
 
+function _froSetProgress(step) {
+  for (let i = 1; i <= 3; i++) {
+    const dot = document.getElementById(`fro-dot-${i}`);
+    if (dot) dot.classList.toggle('active', i === step);
+  }
+}
+
 function _froShowOnly(stepId) {
+  const map = { 'fro-step-intro': 1, 'fro-step-family': 2, 'fro-step-house': 3, 'fro-step-car': 3 };
+  const step = map[stepId] || 1;
+  _froSetProgress(step);
   ['fro-step-intro', 'fro-step-family', 'fro-step-house', 'fro-step-car'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.classList.toggle('hidden', id !== stepId);
@@ -16,6 +26,15 @@ function _froResetTypeButtons() {
   const c = document.getElementById('fro-pick-car');
   if (h) h.className = 'btn btn-outline fro-type-btn';
   if (c) c.className = 'btn btn-outline fro-type-btn';
+  const cont = document.getElementById('fro-intro-continue');
+  if (cont) cont.disabled = true;
+}
+
+function _froSyncIntroContinue() {
+  const cont = document.getElementById('fro-intro-continue');
+  if (!cont) return;
+  const ok = !!window._froState.type;
+  cont.disabled = !ok;
 }
 
 function startFirstResourceOnboarding() {
@@ -45,23 +64,15 @@ function startFirstResourceOnboarding() {
   _froClearResourceInputs();
 
   _froShowOnly('fro-step-intro');
+  _froSyncIntroContinue();
   document.getElementById('first-resource-onboarding')?.classList.remove('hidden');
 }
 
 function _froClearResourceInputs() {
-  const ids = [
-    'fro-house-name', 'fro-house-capacity', 'fro-house-rooms',
-    'fro-house-street', 'fro-house-city', 'fro-house-postal', 'fro-house-country',
-    'fro-car-name', 'fro-car-seats', 'fro-car-mileage', 'fro-car-lieu'
-  ];
-  ids.forEach((id) => {
+  ['fro-house-name', 'fro-car-name'].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
-  const fuel = document.getElementById('fro-car-fuel');
-  if (fuel) fuel.value = '';
-  const bt = document.getElementById('fro-car-bluetooth');
-  if (bt) bt.value = '';
   const phPrev = document.getElementById('fro-house-photo-preview');
   const pcPrev = document.getElementById('fro-car-photo-preview');
   if (phPrev) {
@@ -84,14 +95,12 @@ function froPickType(type) {
   if (c) c.className = `btn fro-type-btn ${type === 'car' ? 'btn-primary' : 'btn-outline'}`;
   const err = document.getElementById('fro-intro-error');
   if (err) err.textContent = '';
+  _froSyncIntroContinue();
 }
 
 function froIntroNext() {
+  if (!window._froState.type) return;
   const err = document.getElementById('fro-intro-error');
-  if (!window._froState.type) {
-    if (err) err.textContent = 'Choisis maison ou voiture';
-    return;
-  }
   if (err) err.textContent = '';
   _froShowOnly('fro-step-family');
 }
@@ -100,13 +109,14 @@ function froBackToIntro() {
   const err = document.getElementById('fro-family-error');
   if (err) err.textContent = '';
   _froShowOnly('fro-step-intro');
+  _froSyncIntroContinue();
 }
 
 async function froFamilyNext() {
   const err = document.getElementById('fro-family-error');
   const name = (document.getElementById('fro-family-name')?.value || '').trim();
   if (!name) {
-    if (err) err.textContent = 'Indique le nom de l’espace';
+    if (err) err.textContent = 'Donne un nom à ton groupe';
     return;
   }
   if (err) err.textContent = '';
@@ -185,12 +195,6 @@ async function froSubmitHouse() {
       type: 'house',
       name,
       photoUrl: window._froState.photoHouse || null,
-      capacity: document.getElementById('fro-house-capacity')?.value,
-      rooms: document.getElementById('fro-house-rooms')?.value,
-      address_street: document.getElementById('fro-house-street')?.value,
-      address_city: document.getElementById('fro-house-city')?.value,
-      address_postal_code: document.getElementById('fro-house-postal')?.value,
-      address_country: document.getElementById('fro-house-country')?.value,
     };
     const resourceId = await createResourceFromOnboarding(payload);
     await loadResources({ suppressEmptyWelcomeUI: true });
@@ -225,10 +229,6 @@ async function froSubmitCar() {
     if (errEl) errEl.textContent = 'Étape famille manquante — recharge la page';
     return;
   }
-  const btRaw = document.getElementById('fro-car-bluetooth')?.value;
-  let carBluetooth = null;
-  if (btRaw === 'true') carBluetooth = true;
-  else if (btRaw === 'false') carBluetooth = false;
 
   try {
     const payload = {
@@ -236,11 +236,6 @@ async function froSubmitCar() {
       type: 'car',
       name,
       photoUrl: window._froState.photoCar || null,
-      seats: document.getElementById('fro-car-seats')?.value,
-      fuelType: document.getElementById('fro-car-fuel')?.value,
-      mileageKm: document.getElementById('fro-car-mileage')?.value,
-      carBluetooth,
-      lieu: document.getElementById('fro-car-lieu')?.value,
     };
     const resourceId = await createResourceFromOnboarding(payload);
     await loadResources({ suppressEmptyWelcomeUI: true });
@@ -294,7 +289,7 @@ window._onboardingNativeShareResource = async function _onboardingNativeShareRes
     if (navigator.share) {
       await navigator.share({
         title: title || 'FamResa',
-        text: 'Rejoins cette ressource sur FamResa',
+        text: 'Rejoins-nous sur FamResa',
         url: inv.shareUrl,
       });
     } else {

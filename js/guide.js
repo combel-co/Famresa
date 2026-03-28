@@ -1,5 +1,6 @@
 // ==========================================
-// GUIDE — HOUSE GUIDE CARDS
+// GUIDE — HOUSE GUIDE CARDS (legacy collection guides_maison)
+// Nouveau flux : checkinGuide sur le doc ressource — voir famresa-guides.js
 // ==========================================
 
 async function showGuideSheet() {

@@ -152,13 +152,17 @@ function celebrateInviteWelcome({ resourceName, resourceId, isHouse }) {
   if (!celEl) return;
 
   document.getElementById('cel-emoji').textContent = '🎉';
-  document.getElementById('cel-title').textContent = `Bienvenue dans ${resourceName || 'la ressource'} !`;
+  document.getElementById('cel-title').textContent = `Bienvenue dans ${resourceName || 'la maison ou voiture'} !`;
   const xpEl = document.getElementById('cel-xp');
   if (xpEl) {
     xpEl.textContent = '';
     xpEl.style.display = 'none';
   }
-  document.getElementById('cel-sub').textContent = 'Vous pouvez maintenant utiliser FamResa avec cette ressource.';
+  const celSubInvite = document.getElementById('cel-sub');
+  if (celSubInvite) {
+    celSubInvite.textContent = 'Tu peux maintenant réserver.';
+    celSubInvite.style.display = '';
+  }
 
   const recapCard = document.getElementById('cel-recap-card');
   if (recapCard) recapCard.style.display = 'none';
@@ -168,6 +172,7 @@ function celebrateInviteWelcome({ resourceName, resourceId, isHouse }) {
   const cta = document.getElementById('cel-invite-cta');
   if (inviteFoot) inviteFoot.style.display = 'block';
   if (cta) {
+    cta.textContent = 'Voir le planning →';
     cta.onclick = () => {
       finishInviteWelcomeCelebration(resourceId, !!isHouse);
     };
@@ -179,7 +184,7 @@ function celebrateInviteWelcome({ resourceName, resourceId, isHouse }) {
 }
 
 /**
- * After first resource onboarding — persistent CTA: share + book + dashboard.
+ * After first resource onboarding — share / copy link / accueil (v2, no booking CTA).
  */
 function celebrateOnboardingResourceCreated({ resourceId, resourceName, isHouse }) {
   _clearCelebrateCloseTimer();
@@ -206,14 +211,17 @@ function celebrateOnboardingResourceCreated({ resourceId, resourceName, isHouse 
   if (!celEl) return;
 
   document.getElementById('cel-emoji').textContent = isHouse ? '🏠' : '🚗';
-  document.getElementById('cel-title').textContent = `${resourceName || 'Ta ressource'} est prête !`;
+  document.getElementById('cel-title').textContent = `${resourceName || 'Ta maison ou voiture'} est prête !`;
   const xpEl = document.getElementById('cel-xp');
   if (xpEl) {
     xpEl.textContent = '';
     xpEl.style.display = 'none';
   }
   const celSub = document.getElementById('cel-sub');
-  if (celSub) celSub.textContent = '';
+  if (celSub) {
+    celSub.textContent = 'Invite ta famille pour qu\'ils puissent réserver.';
+    celSub.style.display = '';
+  }
 
   const recapCard = document.getElementById('cel-recap-card');
   if (recapCard) recapCard.style.display = 'none';
@@ -223,38 +231,23 @@ function celebrateOnboardingResourceCreated({ resourceId, resourceName, isHouse 
   if (inviteFoot) inviteFoot.style.display = 'none';
 
   const obCard = document.getElementById('cel-onboarding-card');
-  const shareLabel = document.getElementById('cel-onboarding-share-label');
-  const nameEsc = resourceName || 'cette ressource';
-  if (shareLabel) {
-    shareLabel.innerHTML = `Partager <strong>${_celEscapeHtml(nameEsc)}</strong> avec tes proches`;
-  }
+  const inviteFamilyBtn = document.getElementById('cel-onboarding-invite-family');
+  const copyLinkBtn = document.getElementById('cel-onboarding-copy-link');
+  const dashBtn = document.getElementById('cel-onboarding-dashboard');
 
   if (obCard) {
     obCard.style.display = 'block';
-    if (celSub) celSub.style.display = 'none';
-    const copyBtn = document.getElementById('cel-onboarding-copy');
-    const shareBtn = document.getElementById('cel-onboarding-native-share');
-    const bookBtn = document.getElementById('cel-onboarding-book');
-    const dashBtn = document.getElementById('cel-onboarding-dashboard');
-
-    if (copyBtn) {
-      copyBtn.onclick = () => {
-        if (typeof window._onboardingCopyInviteLink === 'function') {
-          window._onboardingCopyInviteLink(resourceId);
-        }
-      };
-    }
-    if (shareBtn) {
-      shareBtn.onclick = () => {
+    if (inviteFamilyBtn) {
+      inviteFamilyBtn.onclick = () => {
         if (typeof window._onboardingNativeShareResource === 'function') {
           window._onboardingNativeShareResource(resourceId, resourceName);
         }
       };
     }
-    if (bookBtn) {
-      bookBtn.onclick = () => {
-        if (typeof finishOnboardingResourceCelebration === 'function') {
-          finishOnboardingResourceCelebration(resourceId, !!isHouse, { openBooking: true });
+    if (copyLinkBtn) {
+      copyLinkBtn.onclick = () => {
+        if (typeof window._onboardingCopyInviteLink === 'function') {
+          window._onboardingCopyInviteLink(resourceId);
         }
       };
     }
@@ -288,8 +281,6 @@ function finishOnboardingResourceCelebration(resourceId, isHouse, opts) {
     enterApp('dashboard').then(() => {
       if (opts && opts.openBooking && typeof openBookingModal === 'function') {
         openBookingModal();
-      } else if (typeof maybeShowBookingTipAfterInvite === 'function') {
-        maybeShowBookingTipAfterInvite(resourceId, isHouse);
       }
     });
   }
@@ -297,10 +288,10 @@ function finishOnboardingResourceCelebration(resourceId, isHouse, opts) {
 
 function finishInviteWelcomeCelebration(resourceId, isHouse) {
   _closeCelebrationCommon();
-  if (typeof switchTab === 'function') switchTab('dashboard');
-  if (typeof renderExperiencePanels === 'function') renderExperiencePanels();
-  if (typeof renderCalendar === 'function') renderCalendar();
-  maybeShowBookingTipAfterInvite(resourceId, isHouse);
+  if (resourceId && typeof selectResource === 'function') selectResource(resourceId);
+  if (typeof enterApp === 'function') {
+    enterApp('calendar');
+  }
 }
 
 function maybeShowBookingTipAfterInvite(resourceId, isHouse) {

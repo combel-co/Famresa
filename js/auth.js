@@ -1,9 +1,9 @@
 // ==========================================
 // AUTH — WELCOME / LOGIN / SIGNUP / PROFILE
 // ==========================================
-const AUTH_BUILD = 'auth-v14-20260324';
-const LOGIN_DEFAULT_TITLE = 'Connexion';
-const LOGIN_DEFAULT_SUBTITLE = 'Entrez votre email et votre code secret.';
+const AUTH_BUILD = 'auth-v15-onboarding-v2';
+const LOGIN_DEFAULT_TITLE = 'Content de te revoir';
+const LOGIN_DEFAULT_SUBTITLE = 'Entre ton email et ton code.';
 let _pendingInviteResourceMeta = null;
 /** Ressource concernée quand l’écran « demande en attente » est affiché (saisie mot de passe invitation). */
 let _pendingJoinResourceId = null;
@@ -31,22 +31,56 @@ function _renderSplashInviteMode() {
   const loading = document.getElementById('splash-loading');
   const guestFlow = document.getElementById('splash-guest-flow');
   const inviteFlow = document.getElementById('splash-invite-flow');
+  const validBlock = document.getElementById('splash-invite-valid');
+  const invalidBlock = document.getElementById('splash-invite-invalid');
   if (brand) brand.style.marginBottom = '24px';
   if (loading) loading.style.display = 'none';
   if (guestFlow) guestFlow.style.display = 'none';
   if (!inviteFlow) return;
 
   const meta = _pendingInviteResourceMeta || {};
+  if (meta.invalid) {
+    if (validBlock) validBlock.style.display = 'none';
+    if (invalidBlock) invalidBlock.style.display = 'block';
+    inviteFlow.style.display = 'block';
+    return;
+  }
+  if (validBlock) validBlock.style.display = 'block';
+  if (invalidBlock) invalidBlock.style.display = 'none';
+
   const resourceName = meta.resourceName || 'Ressource';
-  const familyName = meta.familyName || 'Espace partagé';
+  const familyName = meta.familyName || 'Groupe';
   const location = meta.location || 'Lieu non renseigné';
+  const headlineEl = document.getElementById('splash-invite-headline');
   const resourceEl = document.getElementById('splash-invite-resource-name');
   const familyEl = document.getElementById('splash-invite-family-name');
   const locationEl = document.getElementById('splash-invite-location');
+  const emojiEl = document.getElementById('splash-invite-emoji');
+  if (headlineEl) {
+    headlineEl.textContent = meta.adminFirstName
+      ? `${meta.adminFirstName} t'invite à rejoindre`
+      : 'Tu as été invité à rejoindre';
+  }
   if (resourceEl) resourceEl.textContent = resourceName;
   if (familyEl) familyEl.textContent = familyName;
   if (locationEl) locationEl.textContent = location;
+  if (emojiEl) emojiEl.textContent = meta.resourceType === 'house' ? '🏠' : '🚗';
   inviteFlow.style.display = 'block';
+}
+
+function dismissInvalidInviteSplash() {
+  try {
+    _pendingResourceJoinCode = null;
+    _pendingInviteResourceMeta = null;
+    const u = new URL(window.location.href);
+    u.searchParams.delete('resource_join');
+    window.history.replaceState({}, '', u.pathname + u.search);
+  } catch (_) {
+    _pendingResourceJoinCode = null;
+    _pendingInviteResourceMeta = null;
+  }
+  showSplash({ resetTimer: true });
+  _renderSplashGuestMode();
 }
 
 function _renderSplashGuestMode() {
@@ -76,25 +110,50 @@ async function _resolvePendingInviteResourceMeta() {
   if (!_pendingResourceJoinCode) return;
   try {
     const snap = await ressourcesRef().where('inviteCode', '==', _pendingResourceJoinCode).limit(1).get();
-    if (!snap.empty) {
-      const data = snap.docs[0].data() || {};
-      const resourceName = data.nom || data.name || 'Ressource';
-      const familyId = data.famille_id || data.familyId || null;
-      let familyName = 'Espace partagé';
-      if (familyId) {
-        try {
-          const famDoc = await familleRef(familyId).get();
-          if (famDoc.exists) {
-            const famData = famDoc.data() || {};
-            familyName = famData.nom || famData.name || familyName;
-          }
-        } catch (_) {}
-      }
-      const location = getResourceAddressDisplay(data, data.plaque || 'Lieu non renseigné');
-      _pendingInviteResourceMeta = { resourceName, familyName, location, familyId };
+    if (snap.empty) {
+      _pendingInviteResourceMeta = { invalid: true };
+      return;
     }
+    const data = snap.docs[0].data() || {};
+    const resourceId = snap.docs[0].id;
+    const resourceName = data.nom || data.name || 'Ressource';
+    const familyId = data.famille_id || data.familyId || null;
+    let familyName = 'Groupe';
+    if (familyId) {
+      try {
+        const famDoc = await familleRef(familyId).get();
+        if (famDoc.exists) {
+          const famData = famDoc.data() || {};
+          familyName = famData.nom || famData.name || familyName;
+        }
+      } catch (_) {}
+    }
+    const location = getResourceAddressDisplay(data, data.plaque || 'Lieu non renseigné');
+    let adminFirstName = '';
+    try {
+      const accSnap = await accesRessourceRef().where('ressource_id', '==', resourceId).get();
+      let adminPid = null;
+      accSnap.forEach((d) => {
+        const x = d.data() || {};
+        const st = x.statut ?? x.status;
+        if (x.role === 'admin' && st === 'accepted' && !adminPid) {
+          adminPid = x.profil_id || x.profileId;
+        }
+      });
+      if (adminPid) {
+        const p = await profilRef(adminPid).get();
+        if (p.exists) {
+          const nm = String(p.data().nom || p.data().name || '').trim();
+          adminFirstName = nm.split(/\s+/)[0] || '';
+        }
+      }
+    } catch (_) {}
+    const resourceType = data.type === 'house' ? 'house' : 'car';
+    _pendingInviteResourceMeta = {
+      resourceName, familyName, location, familyId, adminFirstName, resourceId, resourceType,
+    };
   } catch (_) {
-    _pendingInviteResourceMeta = { resourceName: 'Ressource', familyName: 'Espace partagé', location: 'Lieu non renseigné', familyId: null };
+    _pendingInviteResourceMeta = { invalid: true };
   }
 }
 
@@ -137,13 +196,26 @@ function backFromLogin() {
   _renderSplashGuestMode();
 }
 
-function showInvitePendingScreen(resourceName, resourceId) {
+function showInvitePendingScreen(resourceName, resourceId, opts = {}) {
   const screen = document.getElementById('invite-pending-screen');
   const copy = document.getElementById('invite-pending-copy');
+  const pinBlock = document.getElementById('invite-pending-pin-block');
+  const orEl = document.getElementById('invite-pending-or');
+  const errEl = document.getElementById('invite-pending-pin-error');
   if (!screen || !copy) return;
-  const name = resourceName || 'cette ressource';
+  const name = resourceName || 'cette maison ou voiture';
   _pendingJoinResourceId = resourceId || null;
-  copy.textContent = `Votre demande d'accès à ${name} est en attente. Un administrateur de la ressource doit la valider.`;
+  copy.textContent = `L'admin de ${name} doit valider ta demande.`;
+  const showPin = !!opts.hasJoinPin;
+  if (pinBlock) pinBlock.style.display = showPin ? 'block' : 'none';
+  if (orEl) orEl.style.display = showPin ? 'block' : 'none';
+  if (errEl) errEl.textContent = '';
+  clearPinInputs('#invite-pending-pin input');
+  if (showPin) {
+    const pins = document.querySelectorAll('#invite-pending-pin input');
+    setupPinInputs(pins, submitInvitePendingEmbeddedPin);
+    setTimeout(() => pins[0]?.focus(), 150);
+  }
   screen.classList.remove('hidden');
 }
 
@@ -153,17 +225,8 @@ function closeInvitePendingScreen() {
 }
 
 function openSecurityFromInvitePending() {
-  const errEl = document.getElementById('join-invite-pin-error');
-  if (errEl) errEl.textContent = '';
-  clearPinInputs('#join-invite-pin input');
-  if (!_pendingJoinResourceId) {
-    showToast('Impossible d\'ouvrir le mot de passe — rechargez la page.');
-    return;
-  }
-  document.getElementById('join-invite-password-overlay')?.classList.remove('hidden');
-  const pins = document.querySelectorAll('#join-invite-pin input');
-  setupPinInputs(pins, submitJoinInvitePassword);
-  setTimeout(() => pins[0]?.focus(), 100);
+  document.getElementById('invite-pending-pin-block')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.querySelector('#invite-pending-pin input')?.focus();
 }
 
 function closeJoinInvitePasswordOverlay() {
@@ -172,12 +235,76 @@ function closeJoinInvitePasswordOverlay() {
   clearPinInputs('#join-invite-pin input');
 }
 
+async function submitInvitePendingEmbeddedPin() {
+  const errEl = document.getElementById('invite-pending-pin-error');
+  if (errEl) errEl.textContent = '';
+  const pin = getPinFromInputs('#invite-pending-pin input');
+  if (pin.length < 4) {
+    if (errEl) errEl.textContent = 'Entre les 4 chiffres';
+    return;
+  }
+  if (!currentUser?.id || !_pendingJoinResourceId) {
+    if (errEl) errEl.textContent = 'Session invalide — recharge la page.';
+    return;
+  }
+  const joinedResourceId = _pendingJoinResourceId;
+  try {
+    await accessService.acceptPendingWithJoinPin({
+      resourceId: joinedResourceId,
+      profileId: currentUser.id,
+      pin,
+    });
+    closeInvitePendingScreen();
+    _pendingJoinResourceId = null;
+    if (typeof loadResources === 'function') await loadResources();
+    try {
+      await loadFamilyName();
+    } catch (_) {}
+    const resJoined = typeof resources !== 'undefined' && resources
+      ? resources.find((r) => r.id === joinedResourceId)
+      : null;
+    if (resJoined && typeof selectResource === 'function') {
+      selectResource(joinedResourceId);
+    }
+    if (typeof renderExperiencePanels === 'function') renderExperiencePanels();
+    if (typeof renderCalendar === 'function') renderCalendar();
+    if (typeof renderProfileTab === 'function') renderProfileTab();
+    if (typeof celebrateInviteWelcome === 'function') {
+      celebrateInviteWelcome({
+        resourceName: resJoined?.name || resJoined?.nom || 'la maison ou voiture',
+        resourceId: joinedResourceId,
+        isHouse: resJoined?.type === 'house',
+      });
+    } else {
+      showToast('Accès accepté ✓');
+    }
+  } catch (e) {
+    const msg = e?.message || '';
+    if (errEl) {
+      errEl.textContent = msg === 'PIN_MISMATCH'
+        ? 'Ce code n\'est pas le bon'
+        : msg === 'NO_JOIN_PIN'
+          ? 'Aucun code d\'accès n\'est défini pour cette maison ou voiture.'
+          : msg === 'NO_PENDING'
+            ? 'Aucune demande en attente'
+            : msg === 'ALREADY_ACCEPTED'
+              ? 'Tu as déjà accès'
+              : 'Erreur — réessaie';
+    }
+  }
+}
+
+function closeInvitePendingAndWait() {
+  closeInvitePendingScreen();
+  showToast('Tu seras notifié quand l’admin valide.');
+}
+
 async function submitJoinInvitePassword() {
   const errEl = document.getElementById('join-invite-pin-error');
   if (errEl) errEl.textContent = '';
   const pin = getPinFromInputs('#join-invite-pin input');
   if (pin.length < 4) {
-    if (errEl) errEl.textContent = 'Entrez 4 chiffres';
+    if (errEl) errEl.textContent = 'Entre les 4 chiffres';
     return;
   }
   if (!currentUser?.id || !_pendingJoinResourceId) {
@@ -220,14 +347,14 @@ async function submitJoinInvitePassword() {
     const msg = e?.message || '';
     if (errEl) {
       errEl.textContent = msg === 'NO_JOIN_PIN'
-        ? 'Aucun mot de passe n\'a été défini pour cette ressource.'
+        ? 'Aucun code d\'accès n\'est défini.'
         : msg === 'PIN_MISMATCH'
-          ? 'Code incorrect'
+          ? 'Ce code n\'est pas le bon'
           : msg === 'NO_PENDING'
             ? 'Aucune demande en attente'
             : msg === 'ALREADY_ACCEPTED'
-              ? 'Vous avez déjà accès à cette ressource'
-              : 'Erreur — réessayez';
+              ? 'Tu as déjà accès'
+              : 'Erreur — réessaie';
     }
   }
 }
@@ -283,7 +410,9 @@ async function _runEntryRouting() {
   if (_isPendingJoinResult(joinResult)) {
     hideSkeleton();
     await enterApp('dashboard');
-    showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId);
+    showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId, {
+      hasJoinPin: !!joinResult.hasJoinPin,
+    });
     return;
   }
   if (loadResult?.needsFirstResourceOnboarding) {
@@ -517,8 +646,9 @@ async function loginUser() {
   const email = (document.getElementById('login-email')?.value || '').trim().toLowerCase();
   const pin = getPinFromInputs('#login-pin input');
   const errEl = document.getElementById('login-error');
-  if (!email || !email.includes('@')) { errEl.textContent = 'Email invalide'; return; }
-  if (pin.length < 4) { errEl.textContent = 'Entrez votre code à 4 chiffres'; return; }
+  if (!email) { errEl.textContent = 'Entre ton email'; return; }
+  if (!email.includes('@')) { errEl.textContent = 'Cet email n\'est pas valide'; return; }
+  if (pin.length < 4) { errEl.textContent = 'Entre 4 chiffres'; return; }
   errEl.textContent = '';
   showSkeleton();
   let stage = 'start';
@@ -561,7 +691,7 @@ async function loginUser() {
       // Legacy path — users collection
       stage = 'query_users_by_email'; diag.stage = stage;
       const oldSnap = await db.collection('users').where('email', '==', email).get();
-      if (oldSnap.empty) { hideSkeleton(); errEl.textContent = 'Email introuvable'; return; }
+      if (oldSnap.empty) { hideSkeleton(); errEl.textContent = 'Aucun compte avec cet email'; return; }
       const d = oldSnap.docs[0].data();
       if (String(d.pin) !== pin) { hideSkeleton(); errEl.textContent = 'Code incorrect'; return; }
       doc = oldSnap.docs[0]; data = d;
@@ -584,7 +714,7 @@ async function loginUser() {
       } catch (_) { /* non-blocking */ }
     }
 
-    if (!doc) { hideSkeleton(); errEl.textContent = 'Email introuvable'; return; }
+    if (!doc) { hideSkeleton(); errEl.textContent = 'Aucun compte avec cet email'; return; }
 
     const familyId = data.familyId || data.famille_id || null;
     let name = data.nom || data.name || '';
@@ -634,7 +764,6 @@ async function loginUser() {
     }
     stage = 'enter_app'; diag.stage = stage;
     await enterApp('dashboard');
-    showToast(`Bonjour ${currentUser.name} !`);
   } catch(e) {
     hideSkeleton();
     diag.stage = stage;
@@ -660,6 +789,17 @@ async function loginUser() {
 // ---- SIGNUP ----
 let suTempPhoto = null;
 
+function _setSignupInviteSubtitle() {
+  const sub = document.getElementById('su-auth-subtitle');
+  if (!sub) return;
+  if (_isInvitePreAuthFlow() && _pendingInviteResourceMeta?.resourceName && !_pendingInviteResourceMeta?.invalid) {
+    const rn = _pendingInviteResourceMeta.resourceName;
+    sub.textContent = `Crée ton compte pour rejoindre ${rn}.`;
+  } else {
+    sub.textContent = 'Tu pourras réserver en un clic.';
+  }
+}
+
 function startSignup() {
   _resetSplashInviteMode();
   hideSplash();
@@ -672,13 +812,15 @@ function startSignup() {
   suTempPhoto = null;
   suPendingFamilyId = null;
   document.getElementById('signup-overlay').classList.remove('hidden');
+  _setSignupInviteSubtitle();
   showSignupStep(3);
 }
 
 function showSignupStep(id) {
   document.querySelectorAll('.su-step').forEach(s => s.classList.add('hidden'));
   document.getElementById(`su-step-${id}`)?.classList.remove('hidden');
-  if (id === 3) {
+    if (id === 3) {
+    _setSignupInviteSubtitle();
     suTempPhoto = null;
     const prev = document.getElementById('su-photo-preview');
     if (prev) { prev.innerHTML = '📷'; prev.classList.remove('has-photo'); }
@@ -718,9 +860,10 @@ async function signupProfileAdvance() {
   const pin = getPinFromInputs('#su-user-pin input');
   const pinConfirm = getPinFromInputs('#su-user-pin-confirm input');
   const errEl = document.getElementById('su-profile-error');
-  if (!name) { errEl.textContent = 'Entrez votre prénom'; return; }
-  if (!email || !email.includes('@')) { errEl.textContent = 'Email invalide'; return; }
-  if (pin.length < 4) { errEl.textContent = 'Entrez votre code secret (4 chiffres)'; return; }
+  if (!name) { errEl.textContent = 'Entre ton prénom'; return; }
+  if (!email) { errEl.textContent = 'Entre ton email'; return; }
+  if (!email.includes('@')) { errEl.textContent = 'Cet email n\'est pas valide'; return; }
+  if (pin.length < 4) { errEl.textContent = 'Entre 4 chiffres'; return; }
   if (pin !== pinConfirm) { errEl.textContent = 'Les codes ne correspondent pas'; return; }
   errEl.textContent = '';
   try {
@@ -752,25 +895,20 @@ async function signupProfileAdvance() {
     if (_isPendingJoinResult(joinResult)) {
       hideSkeleton();
       await enterApp('dashboard');
-      showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId);
+      showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId, {
+        hasJoinPin: !!joinResult.hasJoinPin,
+      });
       return;
     }
     if (loadResult?.needsFirstResourceOnboarding) {
       hideSkeleton();
-      celebrate(
-        '🎉',
-        `Bienvenue ${name} !`,
-        '+50 XP',
-        'On crée ta première ressource.',
-        () => {
-          if (typeof startFirstResourceOnboarding === 'function') startFirstResourceOnboarding();
-        },
-        { closeDelayMs: 2500 }
-      );
+      setTimeout(() => {
+        if (typeof startFirstResourceOnboarding === 'function') startFirstResourceOnboarding();
+      }, 400);
       return;
     }
     await enterApp('dashboard');
-    celebrate('🎉', `Bienvenue ${name} !`, '+50 XP', 'Ton espace est prêt !');
+    showToast(`Bienvenue ${name} !`);
   } catch(e) { hideSkeleton(); console.error(e); errEl.textContent = 'Erreur — réessayez'; }
 }
 

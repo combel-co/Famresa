@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v21';
+const CACHE_VERSION = 'v25';
 const CACHE_NAME = 'famresa-' + CACHE_VERSION;
 
 function getBasePath() {

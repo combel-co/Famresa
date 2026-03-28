@@ -198,6 +198,10 @@ const resourceService = {
         enabled: canInvite,
         inviteCode,
         joinPinSet: !!(resource.joinPin && String(resource.joinPin).replace(/\D/g, '').length === 4),
+        /** PIN affiché côté admin (4 chiffres ou chaîne vide) */
+        joinPin: String(resource.joinPin != null ? resource.joinPin : '')
+          .replace(/\D/g, '')
+          .slice(0, 4),
         shareUrl,
         displayUrl,
       },
