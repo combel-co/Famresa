@@ -18,6 +18,8 @@ function _closeCelebrationCommon() {
   if (typeof renderXpHeroCard === 'function') renderXpHeroCard();
   const inviteFoot = document.getElementById('cel-invite-footer');
   if (inviteFoot) inviteFoot.style.display = 'none';
+  const onboardCard = document.getElementById('cel-onboarding-card');
+  if (onboardCard) onboardCard.style.display = 'none';
   const xpEl = document.getElementById('cel-xp');
   if (xpEl) xpEl.style.display = '';
 }
@@ -37,8 +39,10 @@ function _restoreThemeColor() {
   delete meta.dataset.prevColor;
 }
 
-function celebrate(icon, title, xpText, subtitle) {
+function celebrate(icon, title, xpText, subtitle, onClose) {
   _clearCelebrateCloseTimer();
+  const onboardCard = document.getElementById('cel-onboarding-card');
+  if (onboardCard) onboardCard.style.display = 'none';
   const inviteFoot = document.getElementById('cel-invite-footer');
   if (inviteFoot) inviteFoot.style.display = 'none';
   const xpEl = document.getElementById('cel-xp');
@@ -88,6 +92,13 @@ function celebrate(icon, title, xpText, subtitle) {
   celEl.style.display = 'flex';
   _celebrateCloseTimer = setTimeout(() => {
     _closeCelebrationCommon();
+    if (typeof onClose === 'function') {
+      try {
+        onClose();
+      } catch (e) {
+        console.warn('[celebrate onClose]', e);
+      }
+    }
   }, 2500);
 }
 
@@ -96,6 +107,8 @@ function celebrate(icon, title, xpText, subtitle) {
  */
 function celebrateInviteWelcome({ resourceName, resourceId, isHouse }) {
   _clearCelebrateCloseTimer();
+  const obCard0 = document.getElementById('cel-onboarding-card');
+  if (obCard0) obCard0.style.display = 'none';
   const colors = ['rgba(255,255,255,0.85)', '#f59e0b', 'rgba(255,255,255,0.5)', '#10b981', '#a5b4fc', '#fde68a'];
   const container = document.getElementById('confetti-container');
   if (container) {
@@ -143,6 +156,121 @@ function celebrateInviteWelcome({ resourceName, resourceId, isHouse }) {
   document.body?.classList.add('celebration-active');
   _setThemeColor('#2f7759');
   celEl.style.display = 'flex';
+}
+
+/**
+ * After first resource onboarding — persistent CTA: share + book + dashboard.
+ */
+function celebrateOnboardingResourceCreated({ resourceId, resourceName, isHouse }) {
+  _clearCelebrateCloseTimer();
+  const colors = ['rgba(255,255,255,0.85)', '#f59e0b', 'rgba(255,255,255,0.5)', '#10b981', '#a5b4fc', '#fde68a'];
+  const container = document.getElementById('confetti-container');
+  if (container) {
+    container.innerHTML = '';
+    for (let i = 0; i < 22; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      const size = Math.round(6 + Math.random() * 7);
+      piece.style.width = size + 'px';
+      piece.style.height = size + 'px';
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.borderRadius = Math.random() > 0.4 ? '50%' : '2px';
+      piece.style.left = Math.random() * 100 + 'vw';
+      piece.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
+      piece.style.animationDelay = Math.random() * 0.8 + 's';
+      container.appendChild(piece);
+    }
+  }
+
+  const celEl = document.getElementById('celebration');
+  if (!celEl) return;
+
+  document.getElementById('cel-emoji').textContent = isHouse ? '🏠' : '🚗';
+  document.getElementById('cel-title').textContent = `${resourceName || 'Ta ressource'} est prête !`;
+  const xpEl = document.getElementById('cel-xp');
+  if (xpEl) {
+    xpEl.textContent = '';
+    xpEl.style.display = 'none';
+  }
+  document.getElementById('cel-sub').textContent = 'Partage le lien avec tes proches, puis fais ta première réservation.';
+
+  const recapCard = document.getElementById('cel-recap-card');
+  if (recapCard) recapCard.style.display = 'none';
+  window.__lastCelebrationRecap = null;
+
+  const inviteFoot = document.getElementById('cel-invite-footer');
+  if (inviteFoot) inviteFoot.style.display = 'none';
+
+  const obCard = document.getElementById('cel-onboarding-card');
+  const shareLabel = document.getElementById('cel-onboarding-share-label');
+  const nameEsc = resourceName || 'cette ressource';
+  if (shareLabel) {
+    shareLabel.innerHTML = `Partager <strong>${_celEscapeHtml(nameEsc)}</strong> avec tes proches`;
+  }
+
+  if (obCard) {
+    obCard.style.display = 'block';
+    const copyBtn = document.getElementById('cel-onboarding-copy');
+    const shareBtn = document.getElementById('cel-onboarding-native-share');
+    const bookBtn = document.getElementById('cel-onboarding-book');
+    const dashBtn = document.getElementById('cel-onboarding-dashboard');
+
+    if (copyBtn) {
+      copyBtn.onclick = () => {
+        if (typeof window._onboardingCopyInviteLink === 'function') {
+          window._onboardingCopyInviteLink(resourceId);
+        }
+      };
+    }
+    if (shareBtn) {
+      shareBtn.onclick = () => {
+        if (typeof window._onboardingNativeShareResource === 'function') {
+          window._onboardingNativeShareResource(resourceId, resourceName);
+        }
+      };
+    }
+    if (bookBtn) {
+      bookBtn.onclick = () => {
+        if (typeof finishOnboardingResourceCelebration === 'function') {
+          finishOnboardingResourceCelebration(resourceId, !!isHouse, { openBooking: true });
+        }
+      };
+    }
+    if (dashBtn) {
+      dashBtn.onclick = () => {
+        if (typeof finishOnboardingResourceCelebration === 'function') {
+          finishOnboardingResourceCelebration(resourceId, !!isHouse, { openBooking: false });
+        }
+      };
+    }
+  }
+
+  document.body?.classList.add('celebration-active');
+  _setThemeColor('#2f7759');
+  celEl.style.display = 'flex';
+}
+
+function _celEscapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function finishOnboardingResourceCelebration(resourceId, isHouse, opts) {
+  _closeCelebrationCommon();
+  document.body.classList.remove('auth-mode');
+  if (resourceId && typeof selectResource === 'function') selectResource(resourceId);
+  if (typeof enterApp === 'function') {
+    enterApp('dashboard').then(() => {
+      if (opts && opts.openBooking && typeof openBookingModal === 'function') {
+        openBookingModal();
+      } else if (typeof maybeShowBookingTipAfterInvite === 'function') {
+        maybeShowBookingTipAfterInvite(resourceId, isHouse);
+      }
+    });
+  }
 }
 
 function finishInviteWelcomeCelebration(resourceId, isHouse) {

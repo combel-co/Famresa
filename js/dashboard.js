@@ -483,6 +483,16 @@ function applyDashHeroLayoutPreference() {
 function renderExperiencePanels() {
   applyDashHeroLayoutPreference();
 
+  if (!resources || resources.length === 0) {
+    const houseInfoCard = document.getElementById('house-info-card');
+    const carInfoCard = document.getElementById('car-info-card');
+    const tripBanner = document.getElementById('trip-banner');
+    if (houseInfoCard) houseInfoCard.style.display = 'none';
+    if (carInfoCard) carInfoCard.style.display = 'none';
+    if (tripBanner) tripBanner.style.display = 'none';
+    return;
+  }
+
   const monthEntries = getMonthBookingEntries();
   const res = resources.find(r => r.id === selectedResource);
   const isHouse = res && res.type === 'house';

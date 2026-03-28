@@ -258,10 +258,40 @@ async function _runEntryRouting() {
 
   showSkeleton();
   await runV2MigrationIfNeeded();
+
+  try {
+    const profSnap = await profilRef(currentUser.id).get();
+    if (!profSnap.exists) {
+      currentUser = null;
+      localStorage.removeItem('famcar_user');
+      hideSkeleton();
+      showSplash({ resetTimer: true });
+      if (_pendingResourceJoinCode) {
+        await _resolvePendingInviteResourceMeta();
+        _renderSplashInviteMode();
+      } else {
+        _renderSplashGuestMode();
+      }
+      return;
+    }
+  } catch (_) {
+    /* si Firestore indisponible, on laisse la session locale pour ne pas déconnecter par erreur */
+  }
+
   const joinResult = await _consumePendingResourceJoin({ silent: true });
-  await loadResources();
+  const loadResult = await loadResources({ suppressEmptyWelcomeUI: true });
+  if (_isPendingJoinResult(joinResult)) {
+    hideSkeleton();
+    await enterApp('dashboard');
+    showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId);
+    return;
+  }
+  if (loadResult?.needsFirstResourceOnboarding) {
+    hideSkeleton();
+    if (typeof startFirstResourceOnboarding === 'function') startFirstResourceOnboarding();
+    return;
+  }
   await enterApp('dashboard');
-  if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId);
 }
 
 // ---- LOGIN ----
@@ -588,11 +618,23 @@ async function loginUser() {
     await runV2MigrationIfNeeded();
     const joinResult = await _consumePendingResourceJoin({ silent: true });
     stage = 'load_resources'; diag.stage = stage;
-    await loadResources();
+    const loadResult = await loadResources({ suppressEmptyWelcomeUI: true });
+    if (_isPendingJoinResult(joinResult)) {
+      hideSkeleton();
+      stage = 'enter_app'; diag.stage = stage;
+      await enterApp('dashboard');
+      showToast(`Bonjour ${currentUser.name} !`);
+      showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId);
+      return;
+    }
+    if (loadResult?.needsFirstResourceOnboarding) {
+      hideSkeleton();
+      if (typeof startFirstResourceOnboarding === 'function') startFirstResourceOnboarding();
+      return;
+    }
     stage = 'enter_app'; diag.stage = stage;
     await enterApp('dashboard');
     showToast(`Bonjour ${currentUser.name} !`);
-    if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId);
   } catch(e) {
     hideSkeleton();
     diag.stage = stage;
@@ -701,9 +743,21 @@ async function signupProfileAdvance() {
     document.getElementById('signup-overlay').classList.add('hidden');
     showSkeleton();
     const joinResult = await _consumePendingResourceJoin({ silent: true });
-    await loadResources();
+    const loadResult = await loadResources({ suppressEmptyWelcomeUI: true });
+    if (_isPendingJoinResult(joinResult)) {
+      hideSkeleton();
+      await enterApp('dashboard');
+      showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId);
+      return;
+    }
+    if (loadResult?.needsFirstResourceOnboarding) {
+      hideSkeleton();
+      celebrate('🎉', `Bienvenue ${name} !`, '+50 XP', 'Créons ta première ressource.', () => {
+        if (typeof startFirstResourceOnboarding === 'function') startFirstResourceOnboarding();
+      });
+      return;
+    }
     await enterApp('dashboard');
-    if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId);
     celebrate('🎉', `Bienvenue ${name} !`, '+50 XP', 'Ton espace est prêt !');
   } catch(e) { hideSkeleton(); console.error(e); errEl.textContent = 'Erreur — réessayez'; }
 }

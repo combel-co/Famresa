@@ -6,7 +6,10 @@
 window._myResourceRoles = {};
 
 // Load resources — reads from new 'ressources' collection with fallback to legacy
-async function loadResources() {
+// options.suppressEmptyWelcomeUI: do not open welcome sheet / empty main card (first-resource onboarding handles UX)
+// Returns { needsFirstResourceOnboarding } — true only when suppressEmptyWelcomeUI and user has no resource to use yet
+async function loadResources(options = {}) {
+  const suppressEmptyWelcomeUI = options.suppressEmptyWelcomeUI === true;
   try {
     const familyId = currentUser.familyId || null;
     let allowLegacyFallback = (typeof isLegacyFallbackAllowed === 'function')
@@ -67,7 +70,7 @@ async function loadResources() {
 
       if (resources.length === 0) {
         renderNoAccessState();
-        return;
+        return { needsFirstResourceOnboarding: false };
       }
 
       selectedResource = resources.some((r) => r.id === selectedResource)
@@ -76,7 +79,7 @@ async function loadResources() {
       renderResourceTabs();
       subscribeBookings();
       fuelReportsByBooking = {};
-      return;
+      return { needsFirstResourceOnboarding: false };
     }
 
     const hasPendingResourceAccess = myAccessEntries.some(
@@ -85,16 +88,18 @@ async function loadResources() {
     if (hasPendingResourceAccess) {
       resources = [];
       window._myResourceRoles = {};
+      selectedResource = null;
       renderMinimalDashboardWhilePending();
-      return;
+      return { needsFirstResourceOnboarding: false };
     }
 
     // Fallback when no accepted access: keep family-based behavior for first setup / pending users
     if (!familyId) {
       resources = [];
       window._myResourceRoles = {};
-      showResourceChoiceSheet();
-      return;
+      selectedResource = null;
+      if (!suppressEmptyWelcomeUI) showResourceChoiceSheet();
+      return { needsFirstResourceOnboarding: suppressEmptyWelcomeUI };
     }
 
     let allResources = [];
@@ -120,8 +125,8 @@ async function loadResources() {
       type: r.type || 'car'
     }));
     if (allResources.length === 0) {
-      showResourceChoiceSheet();
-      return;
+      if (!suppressEmptyWelcomeUI) showResourceChoiceSheet();
+      return { needsFirstResourceOnboarding: suppressEmptyWelcomeUI };
     }
 
     const myAccessEntriesForFamily = myAccessEntries.filter(
@@ -195,17 +200,19 @@ async function loadResources() {
 
     if (resources.length === 0) {
       renderNoAccessState();
-      return;
+      return { needsFirstResourceOnboarding: false };
     }
 
     selectedResource = resources[0].id;
     renderResourceTabs();
     subscribeBookings();
     fuelReportsByBooking = {};
+    return { needsFirstResourceOnboarding: false };
   } catch (e) {
     console.error('Firebase error (loadResources):', e);
     document.getElementById('cal-grid').innerHTML =
       '<div class="loading" style="flex-direction:column;gap:8px;color:var(--danger)">⚠️ Connexion impossible<br><small style="color:var(--text-light)">Vérifiez votre connexion ou Firebase.</small></div>';
+    return { needsFirstResourceOnboarding: false };
   }
 }
 
@@ -497,14 +504,11 @@ function _slugifyDefaultFamilyName(resourceName) {
   return `Espace ${base}`;
 }
 
-async function _ensureFamilyForNewResource(resourceName) {
-  const selectedFamily = document.getElementById('add-res-family-select')?.value || '';
-  if (selectedFamily && selectedFamily !== '__new__') return selectedFamily;
-
-  const manualNewFamilyName = (document.getElementById('add-res-new-family-name')?.value || '').trim();
-  const familyName = manualNewFamilyName || _slugifyDefaultFamilyName(resourceName);
+/** Creates famille + famille_membres (admin) and sets currentUser.familyId. */
+async function persistNewFamilyWithAdminMembership(familyName) {
+  const name = (familyName || '').trim() || 'Mon espace';
   const familyRef = await famillesRef().add({
-    nom: familyName,
+    nom: name,
     inviteCode: generateInviteCode(),
     created_by: currentUser.id,
     createdAt: ts()
@@ -523,6 +527,22 @@ async function _ensureFamilyForNewResource(resourceName) {
   currentUser.familyId = familyRef.id;
   localStorage.setItem('famcar_user', JSON.stringify(currentUser));
   return familyRef.id;
+}
+
+/** Onboarding: user-provided family / space name (non-empty — validate in UI). */
+async function createFamilyForOnboarding(familyName) {
+  const name = (familyName || '').trim();
+  if (!name) throw new Error('MISSING_FAMILY_NAME');
+  return persistNewFamilyWithAdminMembership(name);
+}
+
+async function _ensureFamilyForNewResource(resourceName) {
+  const selectedFamily = document.getElementById('add-res-family-select')?.value || '';
+  if (selectedFamily && selectedFamily !== '__new__') return selectedFamily;
+
+  const manualNewFamilyName = (document.getElementById('add-res-new-family-name')?.value || '').trim();
+  const familyName = manualNewFamilyName || _slugifyDefaultFamilyName(resourceName);
+  return persistNewFamilyWithAdminMembership(familyName);
 }
 
 async function showAddResourceSheet() {
@@ -612,7 +632,90 @@ async function confirmAddResource() {
     closeSheet();
     selectResource(ref.id);
     showToast(`${emoji} ${name} ajouté(e)`);
-  } catch(e) { if (errEl) errEl.textContent = 'Erreur — réessayez'; }
+  } catch(e) {     if (errEl) errEl.textContent = 'Erreur — réessayez'; }
+}
+
+/**
+ * Create first resource during onboarding (family must already exist).
+ * @param {object} p
+ * @param {string} p.familyId
+ * @param {'car'|'house'} p.type
+ * @param {string} p.name
+ * @param {string|null} [p.photoUrl]
+ */
+async function createResourceFromOnboarding(p) {
+  const familyId = p.familyId;
+  const type = p.type === 'house' ? 'house' : 'car';
+  const name = (p.name || '').trim();
+  if (!familyId || !name) throw new Error('INVALID_RESOURCE');
+
+  const emoji = type === 'house' ? '🏠' : '🚗';
+  const doc = {
+    famille_id: familyId,
+    nom: name,
+    name,
+    type,
+    emoji,
+    createdAt: ts()
+  };
+
+  if (p.photoUrl) doc.photoUrl = p.photoUrl;
+
+  if (type === 'house') {
+    const cap = parseInt(String(p.capacity || ''), 10);
+    if (Number.isFinite(cap) && cap > 0) doc.capacity = cap;
+    const rooms = parseInt(String(p.rooms || ''), 10);
+    if (Number.isFinite(rooms) && rooms > 0) doc.rooms = rooms;
+    const ci = (p.checkIn || '').trim();
+    const co = (p.checkOut || '').trim();
+    if (ci) doc.checkIn = ci;
+    if (co) doc.checkOut = co;
+    const st = (p.address_street || '').trim();
+    const city = (p.address_city || '').trim();
+    const pc = (p.address_postal_code || '').trim();
+    const country = (p.address_country || '').trim();
+    if (st) doc.address_street = st;
+    if (city) doc.address_city = city;
+    if (pc) doc.address_postal_code = pc;
+    if (country) doc.address_country = country;
+  } else {
+    const seats = parseInt(String(p.seats || ''), 10);
+    if (Number.isFinite(seats) && seats > 0) doc.seatCount = seats;
+    const ft = (p.fuelType || '').trim();
+    if (ft) doc.fuelType = ft;
+    const km = (p.mileageKm || '').trim();
+    if (km !== '') doc.mileageKm = km;
+    if (p.carBluetooth === true || p.carBluetooth === false) doc.carBluetooth = p.carBluetooth;
+    const lieu = (p.lieu || '').trim();
+    if (lieu) doc.lieu = lieu;
+  }
+
+  const ref = await ressourcesRef().add(doc);
+  resources.push({ id: ref.id, name, type, emoji });
+
+  const existingDocs = await findResourceAccessDocs(ref.id, currentUser.id);
+  if (existingDocs.length > 0) {
+    await accesRessourceRef().doc(existingDocs[0].id).update({
+      role: 'admin',
+      statut: 'accepted',
+      invited_at: ts(),
+      accepted_at: ts(),
+    });
+  } else {
+    await accesRessourceRef().add({
+      ressource_id: ref.id,
+      profil_id: currentUser.id,
+      famille_id: familyId,
+      role: 'admin',
+      statut: 'accepted',
+      invited_at: ts(),
+      accepted_at: ts(),
+    });
+  }
+  if (!window._myResourceRoles) window._myResourceRoles = {};
+  window._myResourceRoles[ref.id] = 'admin';
+
+  return ref.id;
 }
 
 // ==========================================

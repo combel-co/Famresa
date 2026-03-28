@@ -574,6 +574,15 @@
     <div class="celebration-title" id="cel-title">Réservation confirmée !</div>
     <div class="celebration-xp" id="cel-xp">+20 XP</div>
     <div class="celebration-sub" id="cel-sub">La voiture est à toi</div>
+    <div class="cel-onboarding-card" id="cel-onboarding-card" style="display:none">
+      <p class="cel-onboarding-share-label" id="cel-onboarding-share-label"></p>
+      <div class="cel-onboarding-btns">
+        <button type="button" class="btn btn-outline" id="cel-onboarding-copy">Copier le lien d’invitation</button>
+        <button type="button" class="btn btn-outline" id="cel-onboarding-native-share">Partager…</button>
+        <button type="button" class="btn btn-primary" id="cel-onboarding-book">Réserver cette ressource</button>
+        <button type="button" class="btn cel-onboarding-secondary" id="cel-onboarding-dashboard">Accéder au tableau de bord</button>
+      </div>
+    </div>
     <div class="celebration-invite-footer" id="cel-invite-footer" style="display:none">
       <button type="button" class="btn btn-primary celebration-invite-cta" id="cel-invite-cta">Découvrir l'accueil</button>
     </div>
@@ -630,6 +639,132 @@
         <div class="lock-error" id="join-invite-pin-error"></div>
         <button type="button" class="btn btn-primary" style="width:100%;margin-top:6px" onclick="submitJoinInvitePassword()">Valider</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- First resource onboarding (full screen, no bottom nav) -->
+<div id="first-resource-onboarding" class="ob-overlay fro-onboarding hidden">
+  <div class="ob-card fro-onboarding-card">
+    <div id="fro-step-intro" class="fro-step">
+      <h2 class="ob-auth-title" style="text-align:center;margin-top:4px">Crée ton espace</h2>
+      <p class="ob-auth-lead">FamResa te permet de partager une ressource avec ta famille : réservations, planning et infos au même endroit.</p>
+      <p class="ob-auth-section-lbl">Que veux-tu partager en premier ?</p>
+      <div class="fro-type-pick">
+        <button type="button" id="fro-pick-house" class="btn btn-outline fro-type-btn" onclick="froPickType('house')">🏠 Maison</button>
+        <button type="button" id="fro-pick-car" class="btn btn-outline fro-type-btn" onclick="froPickType('car')">🚗 Voiture</button>
+      </div>
+      <div class="lock-error" id="fro-intro-error"></div>
+      <button type="button" class="btn btn-primary fro-onboarding-primary" onclick="froIntroNext()">Continuer</button>
+    </div>
+
+    <div id="fro-step-family" class="fro-step hidden">
+      <button type="button" class="ob-back" onclick="froBackToIntro()">←</button>
+      <h2 class="ob-auth-title" style="text-align:center;margin-top:8px">Ton espace famille</h2>
+      <p class="ob-auth-lead">C’est le groupe dans lequel tu partageras cette ressource avec tes proches. Tu pourras inviter d’autres membres plus tard.</p>
+      <div class="input-group">
+        <label for="fro-family-name">Nom de l’espace</label>
+        <input type="text" id="fro-family-name" placeholder="Ex : Famille Martin" autocomplete="organization">
+      </div>
+      <div class="lock-error" id="fro-family-error"></div>
+      <button type="button" class="btn btn-primary fro-onboarding-primary" onclick="froFamilyNext()">Continuer</button>
+    </div>
+
+    <div id="fro-step-house" class="fro-step hidden">
+      <button type="button" class="ob-back" onclick="froBackToFamily()">←</button>
+      <h2 class="ob-auth-title" style="text-align:center;margin-top:8px">Ta maison</h2>
+      <p class="ob-auth-lead">Les infos apparaîtront sur le tableau de bord (comme « Mes informations »).</p>
+      <div class="ob-photo-row">
+        <label class="photo-preview" id="fro-house-photo-preview" onclick="document.getElementById('fro-house-photo-input').click()">📷</label>
+        <input type="file" id="fro-house-photo-input" accept="image/*" class="hidden" onchange="froHousePhoto(this)">
+      </div>
+      <div class="ob-fields">
+        <div class="input-group">
+          <label for="fro-house-name">Nom</label>
+          <input type="text" id="fro-house-name" placeholder="Ex : Maison du lac" autocomplete="off">
+        </div>
+        <div class="input-group">
+          <label for="fro-house-capacity">Capacité (personnes)</label>
+          <input type="number" id="fro-house-capacity" min="1" placeholder="8" inputmode="numeric">
+        </div>
+        <div class="input-group">
+          <label for="fro-house-rooms">Chambres</label>
+          <input type="number" id="fro-house-rooms" min="0" placeholder="3" inputmode="numeric">
+        </div>
+        <div class="input-group">
+          <label for="fro-house-checkin">Check-in</label>
+          <input type="text" id="fro-house-checkin" placeholder="Ex : 15h">
+        </div>
+        <div class="input-group">
+          <label for="fro-house-checkout">Check-out</label>
+          <input type="text" id="fro-house-checkout" placeholder="Ex : 11h">
+        </div>
+        <div class="input-group">
+          <label for="fro-house-street">Adresse — rue</label>
+          <input type="text" id="fro-house-street" placeholder="Numéro et rue" autocomplete="street-address">
+        </div>
+        <div class="input-group">
+          <label for="fro-house-city">Ville</label>
+          <input type="text" id="fro-house-city" placeholder="Ville" autocomplete="address-level2">
+        </div>
+        <div class="input-group">
+          <label for="fro-house-postal">Code postal</label>
+          <input type="text" id="fro-house-postal" placeholder="75001" autocomplete="postal-code">
+        </div>
+        <div class="input-group">
+          <label for="fro-house-country">Pays</label>
+          <input type="text" id="fro-house-country" placeholder="France" autocomplete="country-name">
+        </div>
+      </div>
+      <div class="lock-error" id="fro-house-error"></div>
+      <button type="button" class="btn btn-primary fro-onboarding-primary" onclick="froSubmitHouse()">Créer la ressource</button>
+    </div>
+
+    <div id="fro-step-car" class="fro-step hidden">
+      <button type="button" class="ob-back" onclick="froBackToFamily()">←</button>
+      <h2 class="ob-auth-title" style="text-align:center;margin-top:8px">Ta voiture</h2>
+      <p class="ob-auth-lead">Les infos apparaîtront sur le tableau de bord (comme « Mes informations »).</p>
+      <div class="ob-photo-row">
+        <label class="photo-preview" id="fro-car-photo-preview" onclick="document.getElementById('fro-car-photo-input').click()">📷</label>
+        <input type="file" id="fro-car-photo-input" accept="image/*" class="hidden" onchange="froCarPhoto(this)">
+      </div>
+      <div class="ob-fields">
+        <div class="input-group">
+          <label for="fro-car-name">Nom</label>
+          <input type="text" id="fro-car-name" placeholder="Ex : Clio" autocomplete="off">
+        </div>
+        <div class="input-group">
+          <label for="fro-car-seats">Places (sièges)</label>
+          <input type="number" id="fro-car-seats" min="1" placeholder="5" inputmode="numeric">
+        </div>
+        <div class="input-group">
+          <label for="fro-car-fuel">Énergie</label>
+          <select id="fro-car-fuel">
+            <option value="">—</option>
+            <option value="essence">Essence</option>
+            <option value="diesel">Diesel</option>
+            <option value="electrique">Électrique</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="fro-car-mileage">Kilométrage</label>
+          <input type="text" id="fro-car-mileage" placeholder="Ex : 45200" inputmode="numeric" autocomplete="off">
+        </div>
+        <div class="input-group">
+          <label for="fro-car-bluetooth">Bluetooth</label>
+          <select id="fro-car-bluetooth">
+            <option value="">—</option>
+            <option value="true">Oui</option>
+            <option value="false">Non</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="fro-car-lieu">Lieu habituel</label>
+          <input type="text" id="fro-car-lieu" placeholder="Ex : Parking sous-sol" autocomplete="off">
+        </div>
+      </div>
+      <div class="lock-error" id="fro-car-error"></div>
+      <button type="button" class="btn btn-primary fro-onboarding-primary" onclick="froSubmitCar()">Créer la ressource</button>
     </div>
   </div>
 </div>
@@ -907,6 +1042,7 @@
 <script src="src/modules/profile/profile.service.js?v=2" defer></script>
 <script src="js/profile.js?v=7" defer></script>
 <script src="js/resources.js?v=12" defer></script>
+<script src="js/onboarding-resource.js?v=1" defer></script>
 <script src="js/dashboard.js?v=15" defer></script>
 <script src="js/stay.js?v=4" defer></script>
 <script src="js/checklist.js?v=4" defer></script>
