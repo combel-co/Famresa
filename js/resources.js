@@ -1270,6 +1270,15 @@ function _rmRenderPage(viewModel) {
     </div>`;
 }
 
+function _rmSetupJoinPinInputs() {
+  const field = document.getElementById('rm-join-pin-field');
+  if (!field) return;
+  field.addEventListener('input', () => {
+    const cleaned = String(field.value || '').replace(/\D/g, '').slice(0, 4);
+    if (field.value !== cleaned) field.value = cleaned;
+  });
+}
+
 function _rmCurrentInvite(resourceId) {
   if (_resourceManageState.resourceId === resourceId && _resourceManageState.viewModel?.invite?.shareUrl) {
     return _resourceManageState.viewModel.invite;
