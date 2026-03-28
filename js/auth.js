@@ -744,6 +744,11 @@ async function signupProfileAdvance() {
     showSkeleton();
     const joinResult = await _consumePendingResourceJoin({ silent: true });
     const loadResult = await loadResources({ suppressEmptyWelcomeUI: true });
+    try {
+      if (localStorage.getItem('famresa_debug') === '1') {
+        console.log('[famresa signup] loadResources', loadResult);
+      }
+    } catch (_) {}
     if (_isPendingJoinResult(joinResult)) {
       hideSkeleton();
       await enterApp('dashboard');
@@ -752,9 +757,16 @@ async function signupProfileAdvance() {
     }
     if (loadResult?.needsFirstResourceOnboarding) {
       hideSkeleton();
-      celebrate('🎉', `Bienvenue ${name} !`, '+50 XP', 'Créons ta première ressource.', () => {
-        if (typeof startFirstResourceOnboarding === 'function') startFirstResourceOnboarding();
-      });
+      celebrate(
+        '🎉',
+        `Bienvenue ${name} !`,
+        '+50 XP',
+        'Créons ta première ressource.',
+        () => {
+          if (typeof startFirstResourceOnboarding === 'function') startFirstResourceOnboarding();
+        },
+        { closeDelayMs: 800 }
+      );
       return;
     }
     await enterApp('dashboard');
