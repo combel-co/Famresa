@@ -41,7 +41,7 @@
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <!-- Non-blocking font loading (swap prevents FOIT) -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/style.css?v=18">
+<link rel="stylesheet" href="css/style.css?v=19">
 <!-- Firebase SDK (defer = non-blocking parse, keeps order) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
@@ -321,6 +321,17 @@
       <div class="pf-promo-chevron">›</div>
     </div>
 
+    <div class="pf-section-lbl pf-section-lbl-muted">Installer l'app</div>
+    <div class="pf-install-card">
+      <div class="pf-install-icon" aria-hidden="true">📲</div>
+      <div class="pf-install-body">
+        <div class="pf-install-title">Raccourci sur l'écran d'accueil</div>
+        <p class="pf-install-line"><strong>iPhone (Safari)</strong> : touchez <strong>Partager</strong>, puis « Sur l'écran d'accueil ».</p>
+        <p class="pf-install-line"><strong>Android (Chrome)</strong> : menu <strong>⋮</strong> → « Ajouter à l'écran d'accueil » ou « Installer l'application ».</p>
+        <p class="pf-install-note">En navigation privée, le stockage local peut être limité : reconnectez-vous si une session disparaît.</p>
+      </div>
+    </div>
+
     <!-- Compte -->
     <div class="pf-section-lbl">Compte</div>
     <div class="pf-settings-group">
@@ -563,6 +574,9 @@
     <div class="celebration-title" id="cel-title">Réservation confirmée !</div>
     <div class="celebration-xp" id="cel-xp">+20 XP</div>
     <div class="celebration-sub" id="cel-sub">La voiture est à toi</div>
+    <div class="celebration-invite-footer" id="cel-invite-footer" style="display:none">
+      <button type="button" class="btn btn-primary celebration-invite-cta" id="cel-invite-cta">Découvrir l'accueil</button>
+    </div>
     <div class="celebration-recap-card" id="cel-recap-card" style="display:none">
       <div class="cel-recap-header">
         <div class="cel-recap-icon" id="cel-recap-icon">🏠</div>
@@ -581,36 +595,49 @@
 </div>
 
 <div id="invite-pending-screen" class="ob-overlay hidden">
-  <div class="ob-card">
-    <div class="ob-emoji">⏳</div>
-    <h2 style="margin-bottom:6px">Demande en attente</h2>
-    <p id="invite-pending-copy" style="color:var(--text-light);margin-bottom:20px;font-size: calc(14px * var(--ui-text-scale));line-height:1.5">
-      Votre demande d'accès a été envoyée. Un administrateur de la ressource doit la valider.
-    </p>
-    <p style="font-weight:600;font-size: calc(14px * var(--ui-text-scale));margin-bottom:10px;color:var(--text)">Mot de passe d'invitation</p>
-    <button type="button" class="btn" style="background:#f5f5f5;color:var(--text);width:100%;margin-bottom:16px" onclick="openSecurityFromInvitePending()">Saisir le mot de passe</button>
-    <button class="btn btn-primary" style="width:100%" onclick="closeInvitePendingScreen()">Continuer</button>
+  <div class="ob-card ob-card--auth">
+    <div class="ob-auth-panel">
+      <div class="ob-emoji">⏳</div>
+      <h2 class="ob-auth-title">Demande en attente</h2>
+      <p id="invite-pending-copy" class="ob-auth-lead">
+        Votre demande d'accès a été envoyée. Un administrateur de la ressource doit la valider.
+      </p>
+      <p class="ob-auth-section-lbl">Mot de passe d'invitation</p>
+      <button type="button" class="btn ob-auth-btn-secondary" onclick="openSecurityFromInvitePending()">Saisir le mot de passe</button>
+      <button type="button" class="btn btn-primary ob-auth-btn-primary" onclick="closeInvitePendingScreen()">Continuer</button>
+    </div>
   </div>
 </div>
 
 <div id="join-invite-password-overlay" class="ob-overlay hidden">
-  <div class="ob-card">
+  <div class="ob-card ob-card--auth">
     <button type="button" class="ob-back" onclick="closeJoinInvitePasswordOverlay()">←</button>
-    <h2 style="margin-bottom:6px">Mot de passe</h2>
-    <p style="color:var(--text-light);margin-bottom:16px;font-size: calc(14px * var(--ui-text-scale));line-height:1.5">
-      Entrez le code à 4 chiffres défini par l'administrateur de la ressource pour rejoindre sans attendre la validation manuelle.
-    </p>
-    <fieldset class="pin-fieldset">
-      <legend class="pin-fieldset-legend pin-fieldset-legend--compact">Code à 4 chiffres</legend>
-      <div class="pin-input" id="join-invite-pin" style="justify-content:center">
-        <input type="tel" id="join-invite-pin-0" name="join-invite-pin-0" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input type="tel" id="join-invite-pin-1" name="join-invite-pin-1" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input type="tel" id="join-invite-pin-2" name="join-invite-pin-2" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input type="tel" id="join-invite-pin-3" name="join-invite-pin-3" maxlength="1" inputmode="numeric" autocomplete="off">
+    <div class="ob-auth-panel">
+      <h2 class="ob-auth-title" style="margin-top:8px">Mot de passe</h2>
+      <p class="ob-auth-lead" style="text-align:center;margin-bottom:0">
+        Entrez le code à 4 chiffres défini par l'administrateur de la ressource pour rejoindre sans attendre la validation manuelle.
+      </p>
+      <div class="ob-auth-fields-wrap">
+        <fieldset class="pin-fieldset">
+          <legend class="pin-fieldset-legend pin-fieldset-legend--compact">Code à 4 chiffres</legend>
+          <div class="pin-input" id="join-invite-pin" style="justify-content:center">
+            <input type="tel" id="join-invite-pin-0" name="join-invite-pin-0" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="join-invite-pin-1" name="join-invite-pin-1" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="join-invite-pin-2" name="join-invite-pin-2" maxlength="1" inputmode="numeric" autocomplete="off">
+            <input type="tel" id="join-invite-pin-3" name="join-invite-pin-3" maxlength="1" inputmode="numeric" autocomplete="off">
+          </div>
+        </fieldset>
+        <div class="lock-error" id="join-invite-pin-error"></div>
+        <button type="button" class="btn btn-primary" style="width:100%;margin-top:6px" onclick="submitJoinInvitePassword()">Valider</button>
       </div>
-    </fieldset>
-    <div class="lock-error" id="join-invite-pin-error"></div>
-    <button type="button" class="btn btn-primary" style="width:100%;margin-top:14px" onclick="submitJoinInvitePassword()">Valider</button>
+    </div>
+  </div>
+</div>
+
+<div id="booking-tip-overlay" class="ob-overlay booking-tip-overlay hidden" aria-hidden="true">
+  <div class="ob-card ob-card--narrow">
+    <p id="booking-tip-copy" class="ob-auth-lead" style="text-align:left;margin-bottom:16px"></p>
+    <button type="button" class="btn btn-primary" style="width:100%" onclick="dismissBookingTipOverlay()">OK</button>
   </div>
 </div>
 
@@ -859,15 +886,15 @@
 <script src="src/infra/firebase/firebase.mapper.js?v=5" defer></script>
 <script src="js/firebase.js?v=9" defer></script>
 <script src="js/app.js?v=6" defer></script>
-<script src="js/ui.js?v=6" defer></script>
+<script src="js/ui.js?v=7" defer></script>
 <script src="js/xp.js?v=4" defer></script>
 <script src="js/celebration.js?v=5" defer></script>
 <script src="js/auth.js?v=18" defer></script>
 <script src="js/fuel.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.repository.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.service.js?v=4" defer></script>
-<script src="src/modules/access/access.repository.js?v=4" defer></script>
-<script src="src/modules/access/access.service.js?v=5" defer></script>
+<script src="src/modules/access/access.repository.js?v=5" defer></script>
+<script src="src/modules/access/access.service.js?v=6" defer></script>
 <script src="src/modules/family/family.repository.js?v=4" defer></script>
 <script src="src/modules/family/family.service.js?v=4" defer></script>
 <script src="src/modules/user/user.repository.js?v=4" defer></script>
@@ -877,9 +904,9 @@
 <script src="js/booking.js?v=5" defer></script>
 <script src="js/calendar.js?v=5" defer></script>
 <script src="js/history.js?v=4" defer></script>
-<script src="src/modules/profile/profile.service.js?v=1" defer></script>
+<script src="src/modules/profile/profile.service.js?v=2" defer></script>
 <script src="js/profile.js?v=7" defer></script>
-<script src="js/resources.js?v=11" defer></script>
+<script src="js/resources.js?v=12" defer></script>
 <script src="js/dashboard.js?v=15" defer></script>
 <script src="js/stay.js?v=4" defer></script>
 <script src="js/checklist.js?v=4" defer></script>

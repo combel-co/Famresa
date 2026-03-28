@@ -184,9 +184,10 @@ async function submitJoinInvitePassword() {
     if (errEl) errEl.textContent = 'Session invalide — rechargez la page.';
     return;
   }
+  const joinedResourceId = _pendingJoinResourceId;
   try {
     await accessService.acceptPendingWithJoinPin({
-      resourceId: _pendingJoinResourceId,
+      resourceId: joinedResourceId,
       profileId: currentUser.id,
       pin,
     });
@@ -194,7 +195,27 @@ async function submitJoinInvitePassword() {
     closeInvitePendingScreen();
     _pendingJoinResourceId = null;
     if (typeof loadResources === 'function') await loadResources();
-    showToast('Accès accepté ✓');
+    try {
+      await loadFamilyName();
+    } catch (_) {}
+    const resJoined = typeof resources !== 'undefined' && resources
+      ? resources.find((r) => r.id === joinedResourceId)
+      : null;
+    if (resJoined && typeof selectResource === 'function') {
+      selectResource(joinedResourceId);
+    }
+    if (typeof renderExperiencePanels === 'function') renderExperiencePanels();
+    if (typeof renderCalendar === 'function') renderCalendar();
+    if (typeof renderProfileTab === 'function') renderProfileTab();
+    if (typeof celebrateInviteWelcome === 'function') {
+      celebrateInviteWelcome({
+        resourceName: resJoined?.name || resJoined?.nom || 'la ressource',
+        resourceId: joinedResourceId,
+        isHouse: resJoined?.type === 'house',
+      });
+    } else {
+      showToast('Accès accepté ✓');
+    }
   } catch (e) {
     const msg = e?.message || '';
     if (errEl) {
@@ -239,7 +260,7 @@ async function _runEntryRouting() {
   await runV2MigrationIfNeeded();
   const joinResult = await _consumePendingResourceJoin({ silent: true });
   await loadResources();
-  enterApp('dashboard');
+  await enterApp('dashboard');
   if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId);
 }
 
@@ -569,7 +590,7 @@ async function loginUser() {
     stage = 'load_resources'; diag.stage = stage;
     await loadResources();
     stage = 'enter_app'; diag.stage = stage;
-    enterApp('dashboard');
+    await enterApp('dashboard');
     showToast(`Bonjour ${currentUser.name} !`);
     if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId);
   } catch(e) {
@@ -681,7 +702,7 @@ async function signupProfileAdvance() {
     showSkeleton();
     const joinResult = await _consumePendingResourceJoin({ silent: true });
     await loadResources();
-    enterApp('dashboard');
+    await enterApp('dashboard');
     if (_isPendingJoinResult(joinResult)) showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId);
     celebrate('🎉', `Bienvenue ${name} !`, '+50 XP', 'Ton espace est prêt !');
   } catch(e) { hideSkeleton(); console.error(e); errEl.textContent = 'Erreur — réessayez'; }
@@ -861,7 +882,7 @@ async function runMigrationIfNeeded() {
     // Run v2 schema migration after v1 family migration
     await runV2MigrationIfNeeded();
     await loadResources();
-    enterApp('dashboard');
+    await enterApp('dashboard');
     showToast('Migration terminée — bienvenue dans la nouvelle version !');
   } catch (e) {
     hideMigrationBanner(banner);

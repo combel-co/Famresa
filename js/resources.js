@@ -1414,6 +1414,7 @@ async function handleResourceJoinCode(code, options = {}) {
     const resourceId = snap.docs[0].id;
     const resourceData = snap.docs[0].data() || {};
     const resourceName = resourceData.nom || resourceData.name || 'Ressource';
+    const resourceFamilyId = resourceData.famille_id || resourceData.familyId || null;
 
     const existingDocs = await findResourceAccessDocs(resourceId, currentUser.id);
     const existingEntries = existingDocs.map((d) => accesRessourceToJS(d.data(), d.id));
@@ -1434,6 +1435,7 @@ async function handleResourceJoinCode(code, options = {}) {
         statut: 'pending',
         invited_at: ts(),
         accepted_at: null,
+        ...(resourceFamilyId ? { famille_id: resourceFamilyId } : {}),
       });
       notify('Demande envoyee — en attente de validation par un admin');
       return { status: 'pending_created', resourceId, resourceName };
@@ -1441,7 +1443,7 @@ async function handleResourceJoinCode(code, options = {}) {
 
     await accesRessourceRef().add({
       ressource_id: resourceId, profil_id: currentUser.id,
-      famille_id: currentUser.familyId || null,
+      famille_id: resourceFamilyId || currentUser.familyId || null,
       role: 'member', statut: 'pending',
       invited_at: ts(), accepted_at: null,
     });

@@ -27,8 +27,8 @@ const accessRepository = {
       .map((doc) => accesRessourceToJS(doc.data(), doc.id));
   },
 
-  async updateStatus(accessId, status) {
-    const update = { statut: status };
+  async updateStatus(accessId, status, extraFields = {}) {
+    const update = { statut: status, ...extraFields };
     if (status === 'accepted') update.accepted_at = ts();
     await accesRessourceRef().doc(accessId).update(update);
   },

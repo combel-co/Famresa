@@ -414,7 +414,7 @@ window.addEventListener('resize', () => {
   requestAnimationFrame(_syncSheetBottomOffset);
 }, { passive: true });
 
-function enterApp(targetTab) {
+async function enterApp(targetTab) {
   hideSplash();
   hideSkeleton();
   document.body.classList.remove('auth-mode');
@@ -428,7 +428,9 @@ function enterApp(targetTab) {
   // Sync CSS variable to actual rendered header height (fixes sticky gap on all screen sizes)
   requestAnimationFrame(_syncHeaderHeight);
   updateUserPill();
-  loadFamilyName();
+  try {
+    await loadFamilyName();
+  } catch (_) {}
   switchTab(targetTab || activeTab || 'dashboard');
   renderCalendar();
   _initPullToRefresh();

@@ -11,12 +11,20 @@ const profileService = {
    * @returns {Array<{familyId:string, familyName:string, resources:Array}>}
    */
   getResourcesByFamily(families, resources) {
-    return families
+    const list = resources || [];
+    const grouped = (families || [])
       .map(f => ({
         familyId: f.id,
         familyName: f.name,
-        resources: resources.filter(r => (r.famille_id || r.familleId) === f.id),
+        resources: list.filter(r => (r.famille_id || r.familleId) === f.id),
       }))
       .filter(group => group.resources.length > 0);
+    if (grouped.length > 0 || list.length === 0) return grouped;
+    // Filet : familles pas encore chargées ou membre invité sans entrée famille_membres
+    return [{
+      familyId: '__shared__',
+      familyName: 'Ressources partagées',
+      resources: list.slice(),
+    }];
   },
 };

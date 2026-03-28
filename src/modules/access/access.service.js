@@ -79,6 +79,8 @@ const accessService = {
       if (accepted) throw new Error('ALREADY_ACCEPTED');
       throw new Error('NO_PENDING');
     }
-    await accessRepository.updateStatus(pending.id, 'accepted');
+    const familyId = resource.famille_id || resource.familyId || null;
+    const extra = familyId ? { famille_id: familyId } : {};
+    await accessRepository.updateStatus(pending.id, 'accepted', extra);
   },
 };
