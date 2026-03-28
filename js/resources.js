@@ -272,7 +272,7 @@ function showResourceChoiceSheet() {
         <div style="font-size: calc(52px * var(--ui-text-scale));margin-bottom:16px">🏁</div>
         <div style="font-weight:700;font-size: calc(20px * var(--ui-text-scale));margin-bottom:8px">Bienvenue !</div>
         <div style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));line-height:1.6">
-          Pour commencer, cree une premiere ressource.
+          Pour commencer, crée une première ressource.
         </div>
       </div>`;
   }
