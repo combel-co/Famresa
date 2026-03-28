@@ -648,7 +648,7 @@
   <div class="ob-card fro-onboarding-card">
     <div id="fro-step-intro" class="fro-step">
       <h2 class="ob-auth-title" style="text-align:center;margin-top:4px">Crée ton espace</h2>
-      <p class="ob-auth-lead">FamResa te permet de partager une ressource avec ta famille : réservations, planning et infos au même endroit.</p>
+      <p class="ob-auth-lead">Tu vas partager une ressource avec ta famille : tout le monde voit les réservations, le planning et les infos au même endroit.</p>
       <p class="ob-auth-section-lbl">Que veux-tu partager en premier ?</p>
       <div class="fro-type-pick">
         <button type="button" id="fro-pick-house" class="btn btn-outline fro-type-btn" onclick="froPickType('house')">🏠 Maison</button>
@@ -661,9 +661,9 @@
     <div id="fro-step-family" class="fro-step hidden">
       <button type="button" class="ob-back" onclick="froBackToIntro()">←</button>
       <h2 class="ob-auth-title" style="text-align:center;margin-top:8px">Ton espace famille</h2>
-      <p class="ob-auth-lead">C’est le groupe dans lequel tu partageras cette ressource avec tes proches. Tu pourras inviter d’autres membres plus tard.</p>
+      <p class="ob-auth-lead">C’est l’espace où tu partageras cette ressource avec tes proches. Choisis un nom clair (tu pourras inviter d’autres membres plus tard).</p>
       <div class="input-group">
-        <label for="fro-family-name">Nom de l’espace</label>
+        <label for="fro-family-name">Nom de l’espace (obligatoire)</label>
         <input type="text" id="fro-family-name" placeholder="Ex : Famille Martin" autocomplete="organization">
       </div>
       <div class="lock-error" id="fro-family-error"></div>
@@ -673,7 +673,7 @@
     <div id="fro-step-house" class="fro-step hidden">
       <button type="button" class="ob-back" onclick="froBackToFamily()">←</button>
       <h2 class="ob-auth-title" style="text-align:center;margin-top:8px">Ta maison</h2>
-      <p class="ob-auth-lead">Les infos apparaîtront sur le tableau de bord (comme « Mes informations »).</p>
+      <p class="ob-auth-lead">Ces infos s’afficheront sur le tableau de bord, dans la carte « Mes informations maison ».</p>
       <div class="ob-photo-row">
         <label class="photo-preview" id="fro-house-photo-preview" onclick="document.getElementById('fro-house-photo-input').click()">📷</label>
         <input type="file" id="fro-house-photo-input" accept="image/*" class="hidden" onchange="froHousePhoto(this)">
@@ -723,7 +723,7 @@
     <div id="fro-step-car" class="fro-step hidden">
       <button type="button" class="ob-back" onclick="froBackToFamily()">←</button>
       <h2 class="ob-auth-title" style="text-align:center;margin-top:8px">Ta voiture</h2>
-      <p class="ob-auth-lead">Les infos apparaîtront sur le tableau de bord (comme « Mes informations »).</p>
+      <p class="ob-auth-lead">Ces infos s’afficheront sur le tableau de bord, dans la carte « Mes informations voiture ».</p>
       <div class="ob-photo-row">
         <label class="photo-preview" id="fro-car-photo-preview" onclick="document.getElementById('fro-car-photo-input').click()">📷</label>
         <input type="file" id="fro-car-photo-input" accept="image/*" class="hidden" onchange="froCarPhoto(this)">
@@ -1024,7 +1024,7 @@
 <script src="js/ui.js?v=7" defer></script>
 <script src="js/xp.js?v=4" defer></script>
 <script src="js/celebration.js?v=5" defer></script>
-<script src="js/auth.js?v=18" defer></script>
+<script src="js/auth.js?v=20" defer></script>
 <script src="js/fuel.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.repository.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.service.js?v=4" defer></script>
@@ -1041,8 +1041,8 @@
 <script src="js/history.js?v=4" defer></script>
 <script src="src/modules/profile/profile.service.js?v=2" defer></script>
 <script src="js/profile.js?v=7" defer></script>
-<script src="js/resources.js?v=13" defer></script>
-<script src="js/onboarding-resource.js?v=2" defer></script>
+<script src="js/resources.js?v=14" defer></script>
+<script src="js/onboarding-resource.js?v=3" defer></script>
 <script src="js/dashboard.js?v=16" defer></script>
 <script src="js/stay.js?v=4" defer></script>
 <script src="js/checklist.js?v=4" defer></script>
@@ -1074,7 +1074,7 @@ window.__startupHideSplashRequested = false;
     return;
   }
 
-  const APP_BUILD = 'famresa-build-20260328-2';
+  const APP_BUILD = 'famresa-build-20260328-3';
 
   async function purgeAppRuntime() {
     const regs = await navigator.serviceWorker.getRegistrations();

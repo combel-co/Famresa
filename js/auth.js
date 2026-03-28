@@ -765,7 +765,7 @@ async function signupProfileAdvance() {
         () => {
           if (typeof startFirstResourceOnboarding === 'function') startFirstResourceOnboarding();
         },
-        { closeDelayMs: 800 }
+        { closeDelayMs: 2500 }
       );
       return;
     }
