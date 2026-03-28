@@ -761,7 +761,7 @@ async function signupProfileAdvance() {
         '🎉',
         `Bienvenue ${name} !`,
         '+50 XP',
-        'Créons ta première ressource.',
+        'On crée ta première ressource.',
         () => {
           if (typeof startFirstResourceOnboarding === 'function') startFirstResourceOnboarding();
         },

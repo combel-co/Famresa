@@ -665,10 +665,6 @@ async function createResourceFromOnboarding(p) {
     if (Number.isFinite(cap) && cap > 0) doc.capacity = cap;
     const rooms = parseInt(String(p.rooms || ''), 10);
     if (Number.isFinite(rooms) && rooms > 0) doc.rooms = rooms;
-    const ci = (p.checkIn || '').trim();
-    const co = (p.checkOut || '').trim();
-    if (ci) doc.checkIn = ci;
-    if (co) doc.checkOut = co;
     const st = (p.address_street || '').trim();
     const city = (p.address_city || '').trim();
     const pc = (p.address_postal_code || '').trim();

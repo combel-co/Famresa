@@ -22,6 +22,8 @@ function _closeCelebrationCommon() {
   if (onboardCard) onboardCard.style.display = 'none';
   const xpEl = document.getElementById('cel-xp');
   if (xpEl) xpEl.style.display = '';
+  const celSub = document.getElementById('cel-sub');
+  if (celSub) celSub.style.display = '';
 }
 
 function _setThemeColor(color) {
@@ -77,7 +79,11 @@ function celebrate(icon, title, xpText, subtitle, onClose, opts) {
   document.getElementById('cel-emoji').textContent = icon || '✓';
   document.getElementById('cel-title').textContent = title || 'Super !';
   document.getElementById('cel-xp').textContent = xpText || '';
-  document.getElementById('cel-sub').textContent = subtitle || '';
+  const celSubEl = document.getElementById('cel-sub');
+  if (celSubEl) {
+    celSubEl.textContent = subtitle || '';
+    celSubEl.style.display = '';
+  }
   const recapCard = document.getElementById('cel-recap-card');
   const recap = window.__lastCelebrationRecap;
   if (recapCard && recap) {
@@ -206,7 +212,8 @@ function celebrateOnboardingResourceCreated({ resourceId, resourceName, isHouse 
     xpEl.textContent = '';
     xpEl.style.display = 'none';
   }
-  document.getElementById('cel-sub').textContent = 'Partage le lien avec tes proches, puis fais ta première réservation.';
+  const celSub = document.getElementById('cel-sub');
+  if (celSub) celSub.textContent = '';
 
   const recapCard = document.getElementById('cel-recap-card');
   if (recapCard) recapCard.style.display = 'none';
@@ -224,6 +231,7 @@ function celebrateOnboardingResourceCreated({ resourceId, resourceName, isHouse 
 
   if (obCard) {
     obCard.style.display = 'block';
+    if (celSub) celSub.style.display = 'none';
     const copyBtn = document.getElementById('cel-onboarding-copy');
     const shareBtn = document.getElementById('cel-onboarding-native-share');
     const bookBtn = document.getElementById('cel-onboarding-book');

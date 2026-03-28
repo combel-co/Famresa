@@ -50,7 +50,7 @@ function startFirstResourceOnboarding() {
 
 function _froClearResourceInputs() {
   const ids = [
-    'fro-house-name', 'fro-house-capacity', 'fro-house-rooms', 'fro-house-checkin', 'fro-house-checkout',
+    'fro-house-name', 'fro-house-capacity', 'fro-house-rooms',
     'fro-house-street', 'fro-house-city', 'fro-house-postal', 'fro-house-country',
     'fro-car-name', 'fro-car-seats', 'fro-car-mileage', 'fro-car-lieu'
   ];
@@ -89,7 +89,7 @@ function froPickType(type) {
 function froIntroNext() {
   const err = document.getElementById('fro-intro-error');
   if (!window._froState.type) {
-    if (err) err.textContent = 'Choisis un type de ressource';
+    if (err) err.textContent = 'Choisis maison ou voiture';
     return;
   }
   if (err) err.textContent = '';
@@ -106,7 +106,7 @@ async function froFamilyNext() {
   const err = document.getElementById('fro-family-error');
   const name = (document.getElementById('fro-family-name')?.value || '').trim();
   if (!name) {
-    if (err) err.textContent = 'Entrez le nom de votre espace famille';
+    if (err) err.textContent = 'Indique le nom de l’espace';
     return;
   }
   if (err) err.textContent = '';
@@ -119,7 +119,7 @@ async function froFamilyNext() {
       _froShowOnly('fro-step-car');
     }
   } catch (e) {
-    if (err) err.textContent = 'Erreur — réessayez';
+    if (err) err.textContent = 'Erreur — réessaie';
     console.error(e);
   }
 }
@@ -171,12 +171,12 @@ async function froSubmitHouse() {
   if (errEl) errEl.textContent = '';
   const name = (document.getElementById('fro-house-name')?.value || '').trim();
   if (!name) {
-    if (errEl) errEl.textContent = 'Donnez un nom à la maison';
+    if (errEl) errEl.textContent = 'Donne un nom à ta maison';
     return;
   }
   const fid = window._froState.familyId;
   if (!fid) {
-    if (errEl) errEl.textContent = 'Étape famille manquante — rechargez la page';
+    if (errEl) errEl.textContent = 'Étape famille manquante — recharge la page';
     return;
   }
   try {
@@ -187,8 +187,6 @@ async function froSubmitHouse() {
       photoUrl: window._froState.photoHouse || null,
       capacity: document.getElementById('fro-house-capacity')?.value,
       rooms: document.getElementById('fro-house-rooms')?.value,
-      checkIn: document.getElementById('fro-house-checkin')?.value,
-      checkOut: document.getElementById('fro-house-checkout')?.value,
       address_street: document.getElementById('fro-house-street')?.value,
       address_city: document.getElementById('fro-house-city')?.value,
       address_postal_code: document.getElementById('fro-house-postal')?.value,
@@ -210,7 +208,7 @@ async function froSubmitHouse() {
     }
   } catch (e) {
     console.error(e);
-    if (errEl) errEl.textContent = 'Erreur — réessayez';
+    if (errEl) errEl.textContent = 'Erreur — réessaie';
   }
 }
 
@@ -219,12 +217,12 @@ async function froSubmitCar() {
   if (errEl) errEl.textContent = '';
   const name = (document.getElementById('fro-car-name')?.value || '').trim();
   if (!name) {
-    if (errEl) errEl.textContent = 'Donnez un nom au véhicule';
+    if (errEl) errEl.textContent = 'Donne un nom à ta voiture';
     return;
   }
   const fid = window._froState.familyId;
   if (!fid) {
-    if (errEl) errEl.textContent = 'Étape famille manquante — rechargez la page';
+    if (errEl) errEl.textContent = 'Étape famille manquante — recharge la page';
     return;
   }
   const btRaw = document.getElementById('fro-car-bluetooth')?.value;
@@ -260,7 +258,7 @@ async function froSubmitCar() {
     }
   } catch (e) {
     console.error(e);
-    if (errEl) errEl.textContent = 'Erreur — réessayez';
+    if (errEl) errEl.textContent = 'Erreur — réessaie';
   }
 }
 

@@ -41,7 +41,7 @@
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <!-- Non-blocking font loading (swap prevents FOIT) -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/style.css?v=20">
+<link rel="stylesheet" href="css/style.css?v=21">
 <!-- Firebase SDK (defer = non-blocking parse, keeps order) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
@@ -648,8 +648,8 @@
   <div class="ob-card fro-onboarding-card">
     <div id="fro-step-intro" class="fro-step">
       <h2 class="ob-auth-title" style="text-align:center;margin-top:4px">Crée ton espace</h2>
-      <p class="ob-auth-lead">Tu vas partager une ressource avec ta famille : tout le monde voit les réservations, le planning et les infos au même endroit.</p>
-      <p class="ob-auth-section-lbl">Que veux-tu partager en premier ?</p>
+      <p class="ob-auth-lead">Partage une ressource avec les tiens : réservations et planning au même endroit.</p>
+      <p class="ob-auth-section-lbl">Par quoi on commence ?</p>
       <div class="fro-type-pick">
         <button type="button" id="fro-pick-house" class="btn btn-outline fro-type-btn" onclick="froPickType('house')">🏠 Maison</button>
         <button type="button" id="fro-pick-car" class="btn btn-outline fro-type-btn" onclick="froPickType('car')">🚗 Voiture</button>
@@ -661,10 +661,10 @@
     <div id="fro-step-family" class="fro-step hidden">
       <button type="button" class="ob-back" onclick="froBackToIntro()">←</button>
       <h2 class="ob-auth-title" style="text-align:center;margin-top:8px">Ton espace famille</h2>
-      <p class="ob-auth-lead">C’est l’espace où tu partageras cette ressource avec tes proches. Choisis un nom clair (tu pourras inviter d’autres membres plus tard).</p>
+      <p class="ob-auth-lead">C’est le nom de ton groupe : tu pourras y inviter d’autres personnes plus tard.</p>
       <div class="input-group">
         <label for="fro-family-name">Nom de l’espace (obligatoire)</label>
-        <input type="text" id="fro-family-name" placeholder="Ex : Famille Martin" autocomplete="organization">
+        <input type="text" id="fro-family-name" placeholder="Ex : Les Martin" autocomplete="organization">
       </div>
       <div class="lock-error" id="fro-family-error"></div>
       <button type="button" class="btn btn-primary fro-onboarding-primary" onclick="froFamilyNext()">Continuer</button>
@@ -673,31 +673,25 @@
     <div id="fro-step-house" class="fro-step hidden">
       <button type="button" class="ob-back" onclick="froBackToFamily()">←</button>
       <h2 class="ob-auth-title" style="text-align:center;margin-top:8px">Ta maison</h2>
-      <p class="ob-auth-lead">Ces infos s’afficheront sur le tableau de bord, dans la carte « Mes informations maison ».</p>
+      <p class="ob-auth-lead">Quelques infos suffisent pour l’instant ; tu compléteras le reste (horaires, etc.) plus tard.</p>
       <div class="ob-photo-row">
         <label class="photo-preview" id="fro-house-photo-preview" onclick="document.getElementById('fro-house-photo-input').click()">📷</label>
         <input type="file" id="fro-house-photo-input" accept="image/*" class="hidden" onchange="froHousePhoto(this)">
       </div>
-      <div class="ob-fields">
+      <div class="ob-fields fro-house-fields">
         <div class="input-group">
           <label for="fro-house-name">Nom</label>
           <input type="text" id="fro-house-name" placeholder="Ex : Maison du lac" autocomplete="off">
         </div>
-        <div class="input-group">
-          <label for="fro-house-capacity">Capacité (personnes)</label>
-          <input type="number" id="fro-house-capacity" min="1" placeholder="8" inputmode="numeric">
-        </div>
-        <div class="input-group">
-          <label for="fro-house-rooms">Chambres</label>
-          <input type="number" id="fro-house-rooms" min="0" placeholder="3" inputmode="numeric">
-        </div>
-        <div class="input-group">
-          <label for="fro-house-checkin">Check-in</label>
-          <input type="text" id="fro-house-checkin" placeholder="Ex : 15h">
-        </div>
-        <div class="input-group">
-          <label for="fro-house-checkout">Check-out</label>
-          <input type="text" id="fro-house-checkout" placeholder="Ex : 11h">
+        <div class="fro-house-inline-row">
+          <div class="input-group">
+            <label for="fro-house-capacity">Capacité (personnes)</label>
+            <input type="number" id="fro-house-capacity" min="1" placeholder="8" inputmode="numeric">
+          </div>
+          <div class="input-group">
+            <label for="fro-house-rooms">Chambres</label>
+            <input type="number" id="fro-house-rooms" min="0" placeholder="3" inputmode="numeric">
+          </div>
         </div>
         <div class="input-group">
           <label for="fro-house-street">Adresse — rue</label>
@@ -723,7 +717,7 @@
     <div id="fro-step-car" class="fro-step hidden">
       <button type="button" class="ob-back" onclick="froBackToFamily()">←</button>
       <h2 class="ob-auth-title" style="text-align:center;margin-top:8px">Ta voiture</h2>
-      <p class="ob-auth-lead">Ces infos s’afficheront sur le tableau de bord, dans la carte « Mes informations voiture ».</p>
+      <p class="ob-auth-lead">Indique l’essentiel ; tu pourras affiner les détails depuis le tableau de bord.</p>
       <div class="ob-photo-row">
         <label class="photo-preview" id="fro-car-photo-preview" onclick="document.getElementById('fro-car-photo-input').click()">📷</label>
         <input type="file" id="fro-car-photo-input" accept="image/*" class="hidden" onchange="froCarPhoto(this)">
@@ -1023,8 +1017,8 @@
 <script src="js/app.js?v=6" defer></script>
 <script src="js/ui.js?v=7" defer></script>
 <script src="js/xp.js?v=4" defer></script>
-<script src="js/celebration.js?v=5" defer></script>
-<script src="js/auth.js?v=20" defer></script>
+<script src="js/celebration.js?v=6" defer></script>
+<script src="js/auth.js?v=21" defer></script>
 <script src="js/fuel.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.repository.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.service.js?v=4" defer></script>
@@ -1041,8 +1035,8 @@
 <script src="js/history.js?v=4" defer></script>
 <script src="src/modules/profile/profile.service.js?v=2" defer></script>
 <script src="js/profile.js?v=7" defer></script>
-<script src="js/resources.js?v=14" defer></script>
-<script src="js/onboarding-resource.js?v=3" defer></script>
+<script src="js/resources.js?v=15" defer></script>
+<script src="js/onboarding-resource.js?v=4" defer></script>
 <script src="js/dashboard.js?v=16" defer></script>
 <script src="js/stay.js?v=4" defer></script>
 <script src="js/checklist.js?v=4" defer></script>
@@ -1074,7 +1068,7 @@ window.__startupHideSplashRequested = false;
     return;
   }
 
-  const APP_BUILD = 'famresa-build-20260328-3';
+  const APP_BUILD = 'famresa-build-20260328-4';
 
   async function purgeAppRuntime() {
     const regs = await navigator.serviceWorker.getRegistrations();

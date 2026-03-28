@@ -1979,6 +1979,26 @@ html.ui-large {
     margin-top: 14px;
     padding: 14px 16px !important;
   }
+  #fro-step-house .ob-auth-lead {
+    margin-bottom: 10px;
+  }
+  #fro-step-house .ob-photo-row {
+    margin: 4px 0 6px;
+  }
+  #fro-step-house .fro-house-fields.ob-fields {
+    margin: 12px 0 16px;
+    gap: 10px;
+  }
+  .fro-house-inline-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+  }
+  @media (max-width: 340px) {
+    .fro-house-inline-row {
+      grid-template-columns: 1fr;
+    }
+  }
   .su-step.hidden { display: none; }
   .ob-card { max-width: 400px; width: 100%; text-align: center; position: relative; }
   .ob-card--auth { text-align: center; }
