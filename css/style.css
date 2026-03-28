@@ -1017,20 +1017,25 @@ html.ui-large {
   .dash-hero-media {
     height: clamp(220px, 58vw, 360px);
     flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(68px * var(--ui-text-scale));
     background: linear-gradient(160deg, #dbeafe 0%, #bfdbfe 50%, #93c5fd 100%);
     border-radius: 20px 20px 0 0;
     overflow: hidden;
     position: relative;
   }
+  .dash-hero-media-fill {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(68px * var(--ui-text-scale));
+    z-index: 1;
+  }
   /* Photo : absolute inset évite le flou fréquent flex+img (WebKit / mobile) */
-  .dash-hero-media:has(> img) {
+  .dash-hero-media-fill:has(> img) {
     display: block;
   }
-  .dash-hero-media img {
+  .dash-hero-media-fill img {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -2683,6 +2688,18 @@ html.ui-large {
   /* ── FamResa completion (E) + guides (F/G) ── */
   .dash-completion-wrap {
     padding: 0 16px 10px;
+  }
+  .dash-completion-wrap--on-hero {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    padding: 10px 12px 0;
+    pointer-events: none;
+  }
+  .dash-completion-wrap--on-hero .famresa-completion-card {
+    pointer-events: auto;
   }
   .famresa-completion-card {
     position: relative;

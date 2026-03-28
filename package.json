@@ -1,0 +1,12 @@
+{
+  "name": "famresa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cleanup:acces": "node scripts/cleanup-acces-ressource.mjs",
+    "cleanup:acces:apply": "node scripts/cleanup-acces-ressource.mjs --apply"
+  },
+  "devDependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}

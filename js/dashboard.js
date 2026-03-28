@@ -596,16 +596,16 @@ function renderExperiencePanels() {
 
   // ── Nom, media, sous-titre ──
   const cardEmoji = document.getElementById('resource-card-emoji');
-  const cardPhoto = document.getElementById('resource-card-photo');
+  const cardPhotoFill = document.getElementById('resource-card-photo-fill');
   const cardTitle = document.getElementById('resource-card-title');
   const cardSubtitle = document.getElementById('resource-card-subtitle');
   if (cardEmoji) cardEmoji.textContent = res?.emoji || (isHouse ? '🏠' : '🚗');
-  if (cardPhoto) {
+  if (cardPhotoFill) {
     if (res?.photoUrl) {
-      cardPhoto.innerHTML = `<img class="dash-hero-photo-img" src="${res.photoUrl}" alt="" fetchpriority="high" decoding="async">`;
+      cardPhotoFill.innerHTML = `<img class="dash-hero-photo-img" src="${res.photoUrl}" alt="" fetchpriority="high" decoding="async">`;
     }
-    else if (isHouse) cardPhoto.innerHTML = '';
-    else cardPhoto.innerHTML = `<span id="resource-card-emoji">${res?.emoji || '🚗'}</span>`;
+    else if (isHouse) cardPhotoFill.innerHTML = '';
+    else cardPhotoFill.innerHTML = `<span id="resource-card-emoji">${res?.emoji || '🚗'}</span>`;
   }
   if (cardTitle) cardTitle.textContent = res?.name || (isHouse ? 'Maison' : 'Voiture');
   if (cardSubtitle) {
