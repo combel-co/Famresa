@@ -345,21 +345,9 @@ function famresaCloseReadOverlay() {
 }
 
 function _famresaGetCheckoutTargetBooking(resourceId) {
-  if (!currentUser || typeof getUniqueBookingsSorted !== 'function') return null;
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const mine = getUniqueBookingsSorted()
-    .filter((b) => {
-      const bRes = b.ressource_id || b.resourceId || resourceId;
-      return b.userId === currentUser.id && bRes === resourceId && (b.startDate || b.date);
-    })
-    .sort((a, b) => (a.startDate || a.date || '').localeCompare(b.startDate || b.date || ''));
-  const currentMine = mine.find((b) => {
-    const start = b.startDate || b.date || '';
-    const end = b.endDate || start;
-    return start <= todayStr && end >= todayStr;
-  });
-  const upcomingMine = mine.find((b) => (b.startDate || b.date || '') >= todayStr);
-  return currentMine || upcomingMine || null;
+  if (!currentUser || typeof resolveTripTargetBooking !== 'function') return null;
+  const { targetBooking } = resolveTripTargetBooking(resourceId);
+  return targetBooking || null;
 }
 
 function famresaOpenCheckoutChecklist(resourceId, bookingId) {
@@ -459,23 +447,40 @@ function famresaOnTripBannerTap(resourceId) {
   }
 }
 
-function famresaCheckoutKpiHtml(res, booking) {
-  const list = _famresaSortedGuides(res?.checkoutGuide);
-  if (!list.length) {
-    return `<div class="famresa-kpi-co"><span class="famresa-kpi-co-label">Guide de sortie</span>
-      <button type="button" class="ccv2-btn-manage-link" onclick="famresaOpenGuideEditor('checkout','${res?.id || ''}')">Créer</button></div>`;
-  }
-  if (!booking || !booking.id) {
-    return `<div class="famresa-kpi-co"><span class="famresa-kpi-dot famresa-kpi-dot--grey"></span><span>Non fait</span></div>`;
-  }
-  const st = booking.checkoutStatus && typeof booking.checkoutStatus === 'object' ? booking.checkoutStatus : {};
-  const n = list.length;
-  const done = list.filter((it) => st[it.id]).length;
-  if (done === 0) {
-    return `<div class="famresa-kpi-co"><span class="famresa-kpi-dot famresa-kpi-dot--grey"></span><span>Non fait</span></div>`;
-  }
-  if (done === n) {
-    return `<div class="famresa-kpi-co"><span class="famresa-kpi-dot famresa-kpi-dot--ok"></span><span>Fait</span></div>`;
-  }
-  return `<div class="famresa-kpi-co"><span class="famresa-kpi-dot famresa-kpi-dot--warn"></span><span>${done}/${n}</span></div>`;
+/** Deux cellules grille maison : libellés house-raw-label, Créer / Consulter alignés à droite (comme l'itinéraire). */
+function famresaHouseGuideRowsHtml(res) {
+  if (!res || res.type !== 'house') return '';
+  const id = res.id;
+  const idJs = JSON.stringify(id);
+  const cinList = _famresaSortedGuides(res.checkinGuide);
+  const coutList = _famresaSortedGuides(res.checkoutGuide);
+  const isAdmin = typeof _famresaRole === 'function' && _famresaRole(id) === 'admin';
+
+  const hideRm = typeof hideResourceManagePage === 'function' ? 'hideResourceManagePage();' : '';
+
+  const tripCtx = typeof getDashboardTripContext === 'function' ? getDashboardTripContext(id) : null;
+  const checkoutBookingId = tripCtx?.targetBooking?.id;
+  const checkoutBookingArg = checkoutBookingId != null ? JSON.stringify(checkoutBookingId) : 'null';
+
+  const checkinRight = cinList.length
+    ? `<button type="button" class="house-raw-guide-action" onclick="${hideRm}famresaOpenCheckinGuideRead(${idJs})">Consulter</button>`
+    : isAdmin
+      ? `<button type="button" class="house-raw-guide-action" onclick="${hideRm}famresaOpenGuideEditor('checkin',${idJs})">Créer</button>`
+      : '<span class="house-raw-value">—</span>';
+
+  const checkoutRight = coutList.length
+    ? `<button type="button" class="house-raw-guide-action" onclick="${hideRm}famresaOpenCheckoutChecklist(${idJs},${checkoutBookingArg})">Consulter</button>`
+    : isAdmin
+      ? `<button type="button" class="house-raw-guide-action" onclick="${hideRm}famresaOpenGuideEditor('checkout',${idJs})">Créer</button>`
+      : '<span class="house-raw-value">—</span>';
+
+  return `
+    <div class="house-raw-cell house-raw-cell-full">
+      <div class="house-raw-label">Guide d'entrée</div>
+      <div class="house-raw-guide-row">${checkinRight}</div>
+    </div>
+    <div class="house-raw-cell house-raw-cell-full">
+      <div class="house-raw-label">Guide de sortie</div>
+      <div class="house-raw-guide-row">${checkoutRight}</div>
+    </div>`;
 }

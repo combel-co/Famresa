@@ -73,11 +73,14 @@ const reservationService = {
    * Create a house stay (one doc per day, batch write).
    * @returns {{ success: true } | { error, date }}
    */
-  async createStayReservation({ resourceId, userId, userName, photo, startDate, endDate, motif, bookings, createdBy }) {
+  async createStayReservation({ resourceId, userId, userName, photo, startDate, endDate, motif, bookings, createdBy, peopleCount }) {
     const dates = getDateRange(startDate, endDate);
     for (const ds of dates) {
       if (bookings[ds]) return { error: 'conflict', date: ds };
     }
+
+    const pc = peopleCount != null && peopleCount !== '' ? Number(peopleCount) : null;
+    const peopleOk = Number.isFinite(pc) && pc > 0 ? pc : null;
 
     const groupId = reservationRepository.generateGroupId();
     const docsData = dates.map(date => {
@@ -90,6 +93,10 @@ const reservationService = {
         reservationGroupId: groupId,
         motif: motif || null
       };
+      if (peopleOk != null) {
+        doc.peopleCount = peopleOk;
+        doc.guestCount = Math.max(0, peopleOk - 1);
+      }
       if (createdBy) doc.createdBy = createdBy;
       return doc;
     });
@@ -230,6 +237,46 @@ const reservationService = {
       const initials = String(name).trim().split(/\s+/).map(p => p[0] || '').join('').toUpperCase().slice(0, 2) || '?';
       return { id: m.profil_id || m.id, name, photo: m.photo || null, initials };
     });
+  },
+
+  /**
+   * Membres avec accès accepté à la ressource (profils enrichis).
+   * Repli : famille via getEligibleBookers si aucune entrée d’accès.
+   * @returns {Array<{ id, name, photo, initials }>}
+   */
+  async getBookersForResource(resourceId, familyIdFallback) {
+    const seen = new Set();
+    const out = [];
+    const pushFromProfile = (prof) => {
+      if (!prof) return;
+      const id = prof.id;
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      const name = prof.nom || prof.name || 'Membre';
+      const initials = String(name).trim().split(/\s+/).map((p) => p[0] || '').join('').toUpperCase().slice(0, 2) || '?';
+      out.push({ id, name, photo: prof.photo || null, initials });
+    };
+
+    try {
+      const entries = await accessRepository.listByResourceId(resourceId);
+      const accepted = entries.filter((e) => {
+        const st = String(e.status || e.statut || '').toLowerCase();
+        return st === 'accepted' || st === 'accepté';
+      });
+      for (const e of accepted) {
+        const pid = e.profileId || e.profil_id;
+        if (!pid) continue;
+        const prof = await userRepository.getProfileById(pid);
+        if (prof) pushFromProfile(prof);
+      }
+    } catch (_) {}
+
+    if (out.length === 0 && familyIdFallback) {
+      return this.getEligibleBookers(familyIdFallback);
+    }
+
+    out.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    return out;
   },
 
   /**

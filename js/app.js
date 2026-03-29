@@ -180,6 +180,20 @@ function switchTab(tab) {
   if (normalizedTab === 'profile') renderProfileTab();
 }
 
+/**
+ * Recharge les données sans écran de chargement ni rechargement de page.
+ * Conserve l’onglet actif et la ressource sélectionnée lorsque possible.
+ */
+async function refreshAppDataSilently() {
+  const tab = activeTab;
+  if (typeof loadResources !== 'function') return;
+  await loadResources({ suppressEmptyWelcomeUI: true });
+  if (typeof switchTab === 'function') switchTab(tab);
+  if (typeof loadFamilyName === 'function') await loadFamilyName().catch(() => {});
+  if (typeof renderCalendar === 'function') renderCalendar();
+  if (typeof renderExperiencePanels === 'function') renderExperiencePanels();
+}
+
 // ==========================================
 // BOOKING HELPERS
 // ==========================================
@@ -204,6 +218,73 @@ function getUniqueBookingsSorted() {
     unique.push(b);
   });
   return unique.sort((a, b) => ((b.startDate || b.date || '')).localeCompare(a.startDate || a.date || ''));
+}
+
+/** Heure locale sur une date YYYY-MM-DD (réservations, bandeau trajet). */
+function _parseTimeOnDate(dateStr, hm) {
+  if (!dateStr || typeof dateStr !== 'string') return NaN;
+  const p = dateStr.split('-').map(Number);
+  if (p.length < 3 || !p.every((x) => Number.isFinite(x))) return NaN;
+  const parts = String(hm || '09:00').trim().split(':');
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1] || '0', 10);
+  return new Date(p[0], p[1] - 1, p[2], Number.isFinite(h) ? h : 9, Number.isFinite(m) ? m : 0, 0, 0).getTime();
+}
+
+function bookingStartMs(b) {
+  const sd = b.startDate || b.date || '';
+  if (!sd) return NaN;
+  return _parseTimeOnDate(sd, b.startHour || '09:00');
+}
+
+function bookingEndMs(b) {
+  const sd = b.startDate || b.date || '';
+  const ed = b.endDate || b.date_fin || sd;
+  if (!ed) return NaN;
+  const eh = b.endHour != null && String(b.endHour).trim() !== '' ? b.endHour : '23:59';
+  return _parseTimeOnDate(ed, eh);
+}
+
+function bookingIsActiveNow(b) {
+  const t = Date.now();
+  const s = bookingStartMs(b);
+  const e = bookingEndMs(b);
+  return Number.isFinite(s) && Number.isFinite(e) && t >= s && t <= e;
+}
+
+function resolveTripTargetBooking(resourceId) {
+  if (!currentUser) return { currentMine: null, upcomingMine: null, targetBooking: null };
+  const mineBookings = getUniqueBookingsSorted()
+    .filter((b) => {
+      const bRes = b.ressource_id || b.resourceId || selectedResource;
+      const start = b.startDate || b.date || '';
+      return b.userId === currentUser.id && bRes === resourceId && !!start;
+    })
+    .sort((a, b) => bookingStartMs(a) - bookingStartMs(b));
+  const now = Date.now();
+  const currentMine = mineBookings.find((b) => bookingIsActiveNow(b));
+  const upcomingMine = mineBookings.find((b) => bookingStartMs(b) > now);
+  const targetBooking = currentMine || upcomingMine || null;
+  return { currentMine, upcomingMine, targetBooking, mineBookings };
+}
+
+/** Étincelant / Propre / Sale ; ancien `average` et valeur absente → affichage Propre. */
+function carCleanlinessLabel(raw) {
+  const c = raw || '';
+  if (c === 'sparkling') return 'Étincelant';
+  if (c === 'dirty') return 'Sale';
+  return 'Propre';
+}
+
+/**
+ * Nuits entre jour d’arrivée et jour de départ (jour de départ = départ le matin, exclu des nuits).
+ * Ex. 7 mai → 10 mai = 3 nuits. Midi local évite les décalages DST.
+ */
+function countStayNights(startStr, endStr) {
+  if (!startStr || !endStr) return 0;
+  const s = new Date(startStr + 'T12:00:00');
+  const e = new Date(endStr + 'T12:00:00');
+  return Math.max(0, Math.round((e.getTime() - s.getTime()) / 86400000));
 }
 
 function formatBookingDateRange(booking) {

@@ -195,7 +195,7 @@ function onDayClick(dateStr, isPast) {
     const activeResource = resources.find(r => r.id === selectedResource);
     const fuelRow = (!res || res.type === 'car') ? `<div class="fuel-info-row"><span>Essence disponible</span>${getFuelBar(activeResource?.fuelLevel)}</div>` : '';
     const clean = activeResource?.carCleanliness || '';
-    const cleanLabel = clean === 'clean' ? 'Propre' : clean === 'average' ? 'Moyenne' : clean === 'dirty' ? 'Sale' : 'Non renseigné';
+    const cleanLabel = typeof carCleanlinessLabel === 'function' ? carCleanlinessLabel(clean) : 'Propre';
     const cleanRow = (!res || res.type === 'car') ? `<div class="fuel-info-row"><span>État du véhicule</span><span>${cleanLabel}</span></div>` : '';
     html = `
       ${fuelRow}
