@@ -9,7 +9,7 @@ function famresaCompletionDismissKey(resourceId) {
 
 function famresaIsCompletionDismissed(resourceId) {
   try {
-    return localStorage.getItem(famresaCompletionDismissKey(resourceId)) === '1';
+    return sessionStorage.getItem(famresaCompletionDismissKey(resourceId)) === '1';
   } catch (_) {
     return false;
   }
@@ -17,7 +17,7 @@ function famresaIsCompletionDismissed(resourceId) {
 
 function famresaDismissCompletionCard(resourceId) {
   try {
-    localStorage.setItem(famresaCompletionDismissKey(resourceId), '1');
+    sessionStorage.setItem(famresaCompletionDismissKey(resourceId), '1');
   } catch (_) {}
   famresaRenderCompletionCard();
 }
@@ -47,10 +47,8 @@ function famresaResourceDetailGaps(res) {
     const capOk = Number.isFinite(capNum) && capNum > 0;
     const rooms = Number(res.rooms || res.bedrooms || res.chambres || 0);
     const roomsOk = rooms > 0;
-    const ci = String(res.checkIn || res.checkin || '').trim();
-    const co = String(res.checkOut || res.checkout || '').trim();
     const addrOk = typeof hasUsableResourceAddress === 'function' && hasUsableResourceAddress(res);
-    const checks = [capOk, roomsOk, !!ci, !!co, addrOk];
+    const checks = [capOk, roomsOk, addrOk];
     const total = checks.length;
     const empty = checks.filter((x) => !x).length;
     return { empty, total };
@@ -276,8 +274,6 @@ function famresaOpenCompletionDetailsForm() {
   if (isHouse) {
     const cap = res.capacity != null ? String(res.capacity) : '';
     const rooms = res.rooms != null ? String(res.rooms) : '';
-    const ci = _famresaAttr(res.checkIn || res.checkin || '');
-    const co = _famresaAttr(res.checkOut || res.checkout || '');
     const st = _famresaAttr(res.address_street || '');
     const city = _famresaAttr(res.address_city || '');
     const pc = _famresaAttr(res.address_postal_code || '');
@@ -300,14 +296,6 @@ function famresaOpenCompletionDetailsForm() {
         <div class="input-group">
           <label>Chambres</label>
           <input type="number" id="fcg-det-rooms" min="0" placeholder="Ex : 3" value="${_famresaAttr(rooms)}" />
-        </div>
-        <div class="input-group">
-          <label>Heure d'arrivée</label>
-          <input type="text" id="fcg-det-ci" placeholder="Ex : 16:00" value="${ci}" />
-        </div>
-        <div class="input-group">
-          <label>Heure de départ</label>
-          <input type="text" id="fcg-det-co" placeholder="Ex : 11:00" value="${co}" />
         </div>
         <div class="input-group">
           <label>Rue</label>
@@ -395,13 +383,9 @@ async function famresaSaveCompletionDetails() {
     if (isHouse) {
       const cap = parseInt(String(document.getElementById('fcg-det-cap')?.value || ''), 10);
       const rooms = parseInt(String(document.getElementById('fcg-det-rooms')?.value || ''), 10);
-      const ci = (document.getElementById('fcg-det-ci')?.value || '').trim();
-      const co = (document.getElementById('fcg-det-co')?.value || '').trim();
       const patch = {
         nom: nm,
         name: nm,
-        checkIn: ci,
-        checkOut: co,
         address_street: (document.getElementById('fcg-det-street')?.value || '').trim(),
         address_city: (document.getElementById('fcg-det-city')?.value || '').trim(),
         address_postal_code: (document.getElementById('fcg-det-pc')?.value || '').trim(),
@@ -415,8 +399,6 @@ async function famresaSaveCompletionDetails() {
         nom: nm,
         capacity: patch.capacity ?? res.capacity,
         rooms: patch.rooms ?? res.rooms,
-        checkIn: document.getElementById('fcg-det-ci')?.value || '',
-        checkOut: document.getElementById('fcg-det-co')?.value || '',
         address_street: patch.address_street,
         address_city: patch.address_city,
         address_postal_code: patch.address_postal_code,

@@ -24,7 +24,7 @@ function bmGetContext() {
 function bmBuildStepConfig() {
   const { isHouse, isAdmin, isEditing } = bmGetContext();
   if (isEditing) return ['destination'];
-  if (isHouse) return isAdmin ? ['dates', 'booker', 'destination'] : ['dates', 'destination'];
+  if (isHouse) return ['dates', 'booker', 'destination'];
   return isAdmin ? ['dates', 'hours', 'booker', 'destination'] : ['dates', 'hours', 'destination'];
 }
 
@@ -41,10 +41,18 @@ function bmCanProceedFromStep(step) {
 function bmBuildCelebrationRecap(resource, iconFallback) {
   const startDate = bm.startDate ? new Date(bm.startDate + 'T00:00:00') : null;
   const endDate = (bm.endDate || bm.startDate) ? new Date((bm.endDate || bm.startDate) + 'T00:00:00') : null;
-  const nights = (startDate && endDate)
-    ? Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 86400000))
-    : 1;
-  const participant = bm.booker?.name || currentUser?.name || 'Moi-même';
+  const endStr = bm.endDate || bm.startDate;
+  const nights =
+    bm.startDate && endStr && typeof countStayNights === 'function'
+      ? Math.max(1, countStayNights(bm.startDate, endStr))
+      : startDate && endDate
+        ? Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 86400000))
+        : 1;
+  let participant = bm.booker?.name || currentUser?.name || 'Moi-même';
+  if (bmGetContext().isHouse && bm.bookerTab === 'member') {
+    const tot = bmComputeStayTotal();
+    participant = `${tot} pers.`;
+  }
   return {
     icon: resource?.emoji || iconFallback || '🏠',
     name: resource?.name || 'Ressource',
@@ -86,7 +94,16 @@ function renderBmSteps() {
   });
 
   const bookerVal = document.getElementById('bm-mini-booker-val');
-  if (bookerVal) bookerVal.textContent = bm.booker ? bm.booker.name : 'Moi-même';
+  if (bookerVal) {
+    if (isHouse && bm.bookerTab === 'member') {
+      const tot = bmComputeStayTotal();
+      const prim = bmMembers.find((x) => x.id === (bm.primaryProfileId || currentUser.id));
+      const pn = bmFirstName(prim?.name || currentUser?.name);
+      bookerVal.textContent = `${tot} pers. · ${pn}`;
+    } else {
+      bookerVal.textContent = bm.booker ? bm.booker.name : bmFirstName(currentUser?.name);
+    }
+  }
 
   const destVal = document.getElementById('bm-mini-dest-val');
   if (destVal) {
@@ -159,13 +176,26 @@ function goToStep(step) {
 
 function openBookingModal() {
   if (!currentUser) { showWelcomeScreen(); return; }
-  bm = { startDate: null, endDate: null, startHour: '09:00', endHour: '20:00', destinations: [], step: 'start', booker: null, bookerTab: 'member' };
+  bm = {
+    startDate: null,
+    endDate: null,
+    startHour: '09:00',
+    endHour: '20:00',
+    destinations: [],
+    step: 'start',
+    booker: null,
+    bookerTab: 'member',
+    participatesByMemberId: {},
+    guestsByMemberId: {},
+    primaryProfileId: null
+  };
   bmIsEditing = false;
   bmCalendarSignature = '';
   bmIsAdmin = window._myResourceRoles && window._myResourceRoles[selectedResource] === 'admin';
   bmMembers = [];
   bmCurrentStep = 'dates';
-  if (bmIsAdmin) loadBookerMembers();
+  const _resOpen = resources.find((r) => r.id === selectedResource);
+  if (_resOpen?.type === 'house' || bmIsAdmin) void loadBookerMembers();
 
   document.getElementById('booking-modal').classList.add('open');
   const sh = document.getElementById('bm-start-hour'); if (sh) sh.value = '09:00';
@@ -318,31 +348,193 @@ function resetBookingModal() {
   const mi = document.getElementById('bm-motif-input'); if (mi) mi.value = '';
   const ni = document.getElementById('bm-external-name'); if (ni) ni.value = '';
   const kmEl = document.getElementById('bm-dest-km'); if (kmEl) kmEl.textContent = '';
-  if (bmIsAdmin) renderBookerMemberList();
+  const _resReset = resources.find((r) => r.id === selectedResource);
+  if (_resReset?.type === 'house') bmInitHouseParticipation();
+  if (_resReset?.type === 'house' || bmIsAdmin) renderBookerMemberList();
   renderDestSuggestions('');
   renderBmCalendar();
   renderBmSteps();
 }
 
 // ==========================================
-// ADMIN BOOKER — "Pour qui ?" step (admin only)
+// BOOKER — "Pour qui ?" (maison : composition + capacité)
 // ==========================================
 
-async function loadBookerMembers() {
-  if (!currentUser?.familyId) return;
+function bmFirstName(fullName) {
+  const s = String(fullName || '').trim();
+  if (!s) return '—';
+  return s.split(/\s+/)[0];
+}
+
+function bmGetHouseCapacity() {
+  const res = resources.find((r) => r.id === selectedResource);
+  const c = res?.capacity != null ? Number(res.capacity) : NaN;
+  return Number.isFinite(c) && c > 0 ? c : null;
+}
+
+function bmComputeStayTotal() {
+  let t = 0;
+  for (const m of bmMembers) {
+    if (bm.participatesByMemberId[m.id] === false) continue;
+    t += 1 + Math.max(0, Number(bm.guestsByMemberId[m.id] || 0));
+  }
+  return t;
+}
+
+function bmMaxGuestsForMember(memberId) {
+  const cap = bmGetHouseCapacity();
+  if (cap == null) return 999;
+  const others = bmComputeStayTotal() - (bm.participatesByMemberId[memberId] === false ? 0 : 1 + Math.max(0, Number(bm.guestsByMemberId[memberId] || 0)));
+  return Math.max(0, cap - others - 1);
+}
+
+function bmInitHouseParticipation() {
+  bm.participatesByMemberId = {};
+  bm.guestsByMemberId = {};
+  for (const m of bmMembers) {
+    bm.participatesByMemberId[m.id] = true;
+    bm.guestsByMemberId[m.id] = 0;
+  }
+  bm.primaryProfileId = currentUser?.id || bmMembers[0]?.id || null;
+  bmEnsurePrimaryParticipant();
+}
+
+function bmEnsurePrimaryParticipant() {
+  const part = bmMembers.filter((m) => bm.participatesByMemberId[m.id] !== false);
+  if (!part.length) return;
+  if (!part.some((m) => m.id === bm.primaryProfileId)) {
+    bm.primaryProfileId = part[0].id;
+  }
+}
+
+function bmToggleParticipate(memberId, checked) {
+  bm.participatesByMemberId[memberId] = !!checked;
+  if (!checked) bm.guestsByMemberId[memberId] = 0;
+  bmEnsurePrimaryParticipant();
+  renderBookerMemberList();
+  renderBmSteps();
+}
+
+function bmSetPrimaryProfile(profileId) {
   try {
-    bmMembers = await reservationService.getEligibleBookers(currentUser.familyId);
-  } catch (_) { bmMembers = []; }
+    bm.primaryProfileId = decodeURIComponent(String(profileId || ''));
+  } catch (_) {
+    bm.primaryProfileId = String(profileId || '');
+  }
+  bmEnsurePrimaryParticipant();
+  renderBookerMemberList();
+  renderBmSteps();
+}
+
+function bmGuestDelta(memberId, delta) {
+  if (bm.participatesByMemberId[memberId] === false) return;
+  const cur = Math.max(0, Number(bm.guestsByMemberId[memberId] || 0));
+  const next = cur + delta;
+  if (next < 0) return;
+  const maxG = bmMaxGuestsForMember(memberId);
+  if (next > maxG) {
+    const cap = bmGetHouseCapacity();
+    if (cap != null && typeof showToast === 'function') showToast(`Capacité max. : ${cap} personne${cap > 1 ? 's' : ''}`);
+    return;
+  }
+  bm.guestsByMemberId[memberId] = next;
+  renderBookerMemberList();
+  renderBmSteps();
+}
+
+async function loadBookerMembers() {
+  const res = resources.find((r) => r.id === selectedResource);
+  if (!res) return;
+  try {
+    if (res.type === 'house') {
+      bmMembers = await reservationService.getBookersForResource(selectedResource, currentUser?.familyId);
+      if (currentUser?.id && !bmMembers.some((m) => m.id === currentUser.id)) {
+        try {
+          const prof = await userRepository.getProfileById(currentUser.id);
+          if (prof) {
+            const name = prof.nom || prof.name || currentUser.name || 'Moi';
+            const initials =
+              String(name)
+                .trim()
+                .split(/\s+/)
+                .map((p) => p[0] || '')
+                .join('')
+                .toUpperCase()
+                .slice(0, 2) || '?';
+            bmMembers.push({ id: currentUser.id, name, photo: prof.photo || currentUser.photo || null, initials });
+            bmMembers.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+          }
+        } catch (_) {}
+      }
+      bmInitHouseParticipation();
+    } else {
+      if (!currentUser?.familyId) return;
+      bmMembers = await reservationService.getEligibleBookers(currentUser.familyId);
+    }
+  } catch (_) {
+    bmMembers = [];
+  }
   renderBookerMemberList();
 }
 
 function renderBookerMemberList() {
   const container = document.getElementById('bm-booker-member-list');
   if (!container) return;
-  // "Moi-même" option + all members
+  const { isHouse } = bmGetContext();
+
+  if (isHouse) {
+    if (!bmMembers.length) {
+      container.innerHTML =
+        '<div class="bm-booker-empty" style="padding:14px;font-size: calc(13px * var(--ui-text-scale));color:var(--text-light)">Aucun membre avec accès à cette ressource.</div>';
+      return;
+    }
+    const cap = bmGetHouseCapacity();
+    const total = bmComputeStayTotal();
+    const capHint = cap != null ? ` / ${cap}` : '';
+    let html = '';
+    for (const m of bmMembers) {
+      const part = bm.participatesByMemberId[m.id] !== false;
+      const g = Math.max(0, Number(bm.guestsByMemberId[m.id] || 0));
+      const displayName = m.id === currentUser.id ? bmFirstName(currentUser.name || m.name) : bmFirstName(m.name);
+      const avatar = m.photo ? '<img src="' + m.photo + '" alt="">' : (m.initials || getInitials(m.name || '?'));
+      const maxG = bmMaxGuestsForMember(m.id);
+      const plusDis = !part || g >= maxG;
+      const minusDis = !part || g <= 0;
+      const idEsc = String(m.id).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      html += `<div class="bm-member-row${part ? '' : ' bm-member-row--off'}">
+        <label class="bm-member-participate"><input type="checkbox" ${part ? 'checked' : ''} onchange="bmToggleParticipate('${idEsc}', this.checked)" aria-label="Participe : ${displayName.replace(/"/g, '&quot;')}"></label>
+        <div class="bm-member-avatar">${avatar}</div>
+        <div class="bm-member-name">${displayName}</div>
+        <div class="bm-guest-stepper">
+          <button type="button" class="bm-guest-btn" ${minusDis ? 'disabled' : ''} onclick="bmGuestDelta('${idEsc}',-1)" aria-label="Retirer un invité">−</button>
+          <span class="bm-guest-val" aria-live="polite">${g}</span>
+          <button type="button" class="bm-guest-btn" ${plusDis ? 'disabled' : ''} onclick="bmGuestDelta('${idEsc}',1)" aria-label="Ajouter un invité">+</button>
+        </div>
+      </div>`;
+    }
+    const partOptions = bmMembers.filter((m) => bm.participatesByMemberId[m.id] !== false);
+    let selOpts = partOptions
+      .map((m) => {
+        const label = m.id === currentUser.id ? bmFirstName(currentUser.name || m.name) : bmFirstName(m.name);
+        const sel = (bm.primaryProfileId || currentUser.id) === m.id ? ' selected' : '';
+        const valueEnc = encodeURIComponent(String(m.id));
+        return `<option value="${valueEnc}"${sel}>${label.replace(/</g, '&lt;')}</option>`;
+      })
+      .join('');
+    html += `<div class="bm-primary-field">
+      <label for="bm-primary-select">Séjour au nom de</label>
+      <select id="bm-primary-select" class="bm-primary-select" onchange="bmSetPrimaryProfile(this.value)">${selOpts}</select>
+    </div>
+    <div class="bm-booker-total-line" aria-live="polite">Total : <strong>${total}</strong> personne${total > 1 ? 's' : ''}${cap != null ? ` (capacité ${cap})` : ''}${cap != null && total > cap ? ' <span class="bm-booker-cap-warn">— dépasse la capacité</span>' : ''}</div>`;
+    container.innerHTML = html;
+    const sel = document.getElementById('bm-primary-select');
+    if (sel && bm.primaryProfileId) sel.value = encodeURIComponent(String(bm.primaryProfileId));
+    return;
+  }
+
   let html = `<div class="bm-member-item${!bm.booker ? ' selected' : ''}" onclick="selectBooker(null)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectBooker(null)}" tabindex="0" role="button" aria-pressed="${!bm.booker ? 'true' : 'false'}">
     <div class="bm-member-avatar">${currentUser.photo ? '<img src="' + currentUser.photo + '" alt="">' : getInitials(currentUser.name || '?')}</div>
-    <div class="bm-member-name">Moi-même</div>
+    <div class="bm-member-name">${bmFirstName(currentUser.name)}</div>
   </div>`;
   for (const m of bmMembers) {
     if (m.id === currentUser.id) continue;
@@ -360,7 +552,7 @@ function selectBooker(memberId) {
   if (!memberId) {
     bm.booker = null;
   } else {
-    const m = bmMembers.find(x => x.id === memberId);
+    const m = bmMembers.find((x) => x.id === memberId);
     if (m) bm.booker = { id: m.id, name: m.name, photo: m.photo, type: 'member' };
   }
   renderBookerMemberList();
@@ -410,6 +602,16 @@ function _resolveBooker() {
     };
   }
   return { id: currentUser.id, name: currentUser.name, photo: currentUser.photo, createdBy: null };
+}
+
+/** Séjour maison : hôte principal (profil sur les documents) + créé par si besoin. */
+function _resolveHouseStayBooker() {
+  const primaryId = bm.primaryProfileId || currentUser.id;
+  const m = bmMembers.find((x) => x.id === primaryId);
+  const name = m?.name || currentUser.name;
+  const photo = m?.photo ?? currentUser.photo;
+  const createdBy = primaryId !== currentUser.id ? { id: currentUser.id, name: currentUser.name } : null;
+  return { id: primaryId, name, photo, createdBy };
 }
 
 // ==========================================
@@ -471,7 +673,9 @@ async function createStay() {
   const motif = document.getElementById('bm-motif-input')?.value.trim() || '';
 
   try {
-    const booker = _resolveBooker();
+    const external = bm.bookerTab === 'external';
+    const booker = external ? _resolveBooker() : _resolveHouseStayBooker();
+    const peopleCount = external ? 1 : bmComputeStayTotal();
     // Keep photo snapshot in booking payload for legacy history,
     // while UI rendering always prioritizes live profil photo.
     window.__lastCelebrationRecap = bmBuildCelebrationRecap(resources.find(r => r.id === selectedResource), '🏠');
@@ -484,7 +688,8 @@ async function createStay() {
       endDate,
       motif,
       bookings,
-      createdBy: booker.createdBy
+      createdBy: booker.createdBy,
+      peopleCount
     });
 
     if (result.error === 'conflict') {
@@ -610,11 +815,10 @@ function showEarlyReturnSheet(bookingId) {
         <input type="text" id="early-return-notes" placeholder="Ex: pneu avant droit à vérifier" autocomplete="off">
       </div>
       <div class="input-group" style="margin-bottom:14px">
-        <label>Proprete au retour</label>
+        <label>Propreté au retour</label>
         <select id="early-return-cleanliness">
-          <option value="">Non renseigne</option>
           <option value="clean">Propre</option>
-          <option value="average">Moyenne</option>
+          <option value="sparkling">Étincelant</option>
           <option value="dirty">Sale</option>
         </select>
       </div>
@@ -628,6 +832,12 @@ function showEarlyReturnSheet(bookingId) {
     </div>`;
 
   document.getElementById('sheet-content').innerHTML = html;
+  const resEarly = resources.find((r) => r.id === resourceId);
+  const rawClean = resEarly?.carCleanliness || '';
+  const cleanSel =
+    rawClean === 'sparkling' ? 'sparkling' : rawClean === 'dirty' ? 'dirty' : 'clean';
+  const cleanEl = document.getElementById('early-return-cleanliness');
+  if (cleanEl) cleanEl.value = cleanSel;
   document.getElementById('overlay').classList.add('open');
 }
 

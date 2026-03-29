@@ -1234,13 +1234,8 @@ function _rmRenderPage(viewModel) {
     : '';
 
   const guidesHouseHtml =
-    viewModel.permissions.isAdmin && resource.type === 'house'
-      ? `
-      <div class="rm-section-lbl">Guides séjour</div>
-      <div class="rm-guides-block" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
-        <button type="button" class="btn btn-outline" style="width:100%" onclick="hideResourceManagePage();famresaOpenGuideEditor('checkin', ${JSON.stringify(resource.id)})">Guide d'arrivée</button>
-        <button type="button" class="btn btn-outline" style="width:100%" onclick="hideResourceManagePage();famresaOpenGuideEditor('checkout', ${JSON.stringify(resource.id)})">Guide de départ</button>
-      </div>`
+    viewModel.permissions.isAdmin && resource.type === 'house' && typeof famresaHouseGuideRowsHtml === 'function'
+      ? `<div class="rm-section-lbl">Guides séjour</div><div class="rm-guides-block"><div class="house-raw-grid">${famresaHouseGuideRowsHtml(resources.find((r) => r.id === resource.id) || resource)}</div></div>`
       : '';
 
   return `

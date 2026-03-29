@@ -296,7 +296,7 @@ function _syncHeaderHeight() {
 
 if (!window.__splashController) {
   window.__splashController = {
-    minMs: 2000,
+    minMs: 1400,
     startedAt: Date.now(),
     hideTimerId: null,
     hiding: false,
@@ -329,7 +329,7 @@ function showSplash(options) {
     bar.style.animation = 'none';
     // Force reflow before re-applying animation.
     void bar.offsetWidth;
-    bar.style.animation = 'splashFill 1.8s cubic-bezier(0.4,0,0.2,1) forwards';
+    bar.style.animation = 'splashFill 1.4s cubic-bezier(0.4,0,0.2,1) forwards';
   }
 }
 
@@ -428,11 +428,13 @@ async function enterApp(targetTab) {
   // Sync CSS variable to actual rendered header height (fixes sticky gap on all screen sizes)
   requestAnimationFrame(_syncHeaderHeight);
   updateUserPill();
-  try {
-    await loadFamilyName();
-  } catch (_) {}
   switchTab(targetTab || activeTab || 'dashboard');
-  renderCalendar();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      loadFamilyName().catch(() => {});
+      renderCalendar();
+    });
+  });
   _initPullToRefresh();
   setTimeout(() => maybePromptPendingFuel(), 350);
 }
@@ -448,6 +450,31 @@ function _isAppVisible() {
   return !!appMain && appMain.style.display !== 'none';
 }
 
+/** Pull-to-refresh uniquement sur Accueil (dashboard) et Planning (calendar), pas Profil ni écran « Gérer la ressource ». */
+function _ptrAllowed() {
+  if (typeof activeTab === 'undefined') return false;
+  if (activeTab !== 'dashboard' && activeTab !== 'calendar') return false;
+  const rm = document.getElementById('resource-manage-overlay');
+  if (rm && !rm.classList.contains('hidden')) return false;
+  return true;
+}
+
+let _ptrSilentRefreshing = false;
+
+async function _runPtrSilentRefresh() {
+  if (_ptrSilentRefreshing) return;
+  _ptrSilentRefreshing = true;
+  try {
+    if (typeof refreshAppDataSilently === 'function') {
+      await refreshAppDataSilently();
+    }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    _ptrSilentRefreshing = false;
+  }
+}
+
 function _initPullToRefresh() {
   if (_pullToRefreshBound) return;
   _pullToRefreshBound = true;
@@ -458,6 +485,7 @@ function _initPullToRefresh() {
   window.addEventListener('touchstart', (e) => {
     if (!_isAppVisible()) { _ptrArmed = false; return; }
     if (document.querySelector('#overlay.open, #booking-modal.open')) { _ptrArmed = false; return; }
+    if (!_ptrAllowed()) { _ptrArmed = false; return; }
     const main = document.getElementById('app-main');
     const atTop = main ? main.scrollTop <= 0 : (window.scrollY || 0) <= 0;
     if (!atTop) { _ptrArmed = false; return; }
@@ -467,6 +495,13 @@ function _initPullToRefresh() {
 
   window.addEventListener('touchmove', (e) => {
     if (!_ptrArmed || !indicator || !fillCircle) return;
+    if (!_ptrAllowed()) {
+      indicator.style.height = '0';
+      indicator.classList.remove('active');
+      _ptrArmed = false;
+      fillCircle.style.strokeDashoffset = _PTR_CIRCUMFERENCE;
+      return;
+    }
     const currentY = e.touches?.[0]?.clientY || 0;
     const delta = currentY - _ptrStartY;
     if (delta <= 0) {
@@ -488,15 +523,14 @@ function _initPullToRefresh() {
     if (progress >= 1) {
       _ptrArmed = false;
       indicator.classList.remove('active');
-      indicator.classList.add('refreshing');
-      indicator.style.height = '';
-      showToast('Actualisation…');
-      setTimeout(() => location.reload(), 400);
+      indicator.classList.remove('refreshing');
+      indicator.style.height = '0';
+      if (fillCircle) fillCircle.style.strokeDashoffset = _PTR_CIRCUMFERENCE;
+      _runPtrSilentRefresh();
     }
   }, { passive: false });
 
   function _ptrReset() {
-    if (!_ptrArmed && indicator?.classList.contains('refreshing')) return;
     _ptrArmed = false;
     if (indicator) {
       indicator.classList.remove('active');

@@ -62,35 +62,15 @@ function getNextFreeDate() {
 function renderTripBanner(resourceId) {
   const banner = document.getElementById('trip-banner');
   if (!banner || !currentUser) return;
-  const kickerEl = banner.querySelector('.dash-trip-kicker');
-  const titleEl = document.getElementById('trip-banner-title');
-  const subEl = document.getElementById('trip-banner-sub');
-  const iconEl = document.getElementById('trip-banner-icon');
-  const res = resources.find(r => r.id === resourceId);
+  const badgeEl = document.getElementById('trip-banner-badge');
+  const datelineEl = document.getElementById('trip-banner-dateline');
+  const res = resources.find((r) => r.id === resourceId);
   const isHouse = res?.type === 'house';
-  const approachingLabel = isHouse ? 'Votre sejour approche' : 'Votre trajet approche';
-  const inProgressLabel = isHouse ? 'Sejour en cours' : 'Trajet en cours';
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
   const todayMidnightMs = new Date(todayStr + 'T00:00:00').getTime();
-  const mineBookings = getUniqueBookingsSorted()
-    .filter((b) => {
-      const bRes = b.ressource_id || b.resourceId || selectedResource;
-      const start = b.startDate || b.date || '';
-      return b.userId === currentUser.id && bRes === resourceId && !!start;
-    })
-    .sort((a, b) => (a.startDate || a.date || '').localeCompare(b.startDate || b.date || ''));
 
-  const currentMine = mineBookings.find((b) => {
-    const start = b.startDate || b.date || '';
-    const end = b.endDate || start;
-    return start <= todayStr && end >= todayStr;
-  });
-  const upcomingMine = mineBookings.find((b) => {
-    const start = b.startDate || b.date || '';
-    return start >= todayStr;
-  });
-  const targetBooking = currentMine || upcomingMine;
+  const { currentMine, targetBooking } = resolveTripTargetBooking(resourceId);
 
   if (!targetBooking) {
     banner.style.display = 'none';
@@ -107,10 +87,18 @@ function renderTripBanner(resourceId) {
 
   if (!isInProgress && (diffDays < 0 || diffDays > 7)) {
     banner.style.display = 'none';
+    banner.onclick = null;
+    banner.onkeydown = null;
+    banner.style.cursor = '';
     return false;
   }
 
-  const nights = Math.max(1, Math.round((new Date(endDate + 'T00:00:00') - new Date(startDateStr + 'T00:00:00')) / 86400000));
+  const nights = Math.max(
+    1,
+    typeof countStayNights === 'function'
+      ? countStayNights(startDateStr, endDate)
+      : Math.round((new Date(endDate + 'T12:00:00') - new Date(startDateStr + 'T12:00:00')) / 86400000)
+  );
   const startH = targetBooking.startHour || '09:00';
   const endH = targetBooking.endHour || '20:00';
   let tripSubLine;
@@ -120,33 +108,40 @@ function renderTripBanner(resourceId) {
     const d0 = new Date(startDateStr + 'T00:00:00');
     const dayLong = d0.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
     const dayPart = dayLong.charAt(0).toUpperCase() + dayLong.slice(1);
+    const sep = ' · ';
+    const range = `${startH} – ${endH}`;
     if (startDateStr === endDate) {
-      tripSubLine = `${dayPart} · ${startH} - ${endH}`;
+      tripSubLine = `${dayPart}${sep}${range}`;
     } else {
-      tripSubLine = `${formatRelativeDate(startDateStr)} → ${formatRelativeDate(endDate)} · ${startH} - ${endH}`;
+      tripSubLine = `${formatRelativeDate(startDateStr)} → ${formatRelativeDate(endDate)}${sep}${range}`;
     }
   }
-  if (kickerEl) kickerEl.textContent = isInProgress ? inProgressLabel : approachingLabel;
-  if (titleEl) {
-    titleEl.textContent = isInProgress
-      ? `${res?.name || 'Ressource'} · en cours`
-      : `${res?.name || 'Ressource'} · dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+
+  let badgeText;
+  if (isInProgress) {
+    badgeText = 'En cours';
+  } else if (diffDays === 0) {
+    badgeText = "Aujourd'hui";
+  } else if (diffDays === 1) {
+    badgeText = 'Demain';
+  } else {
+    badgeText = `Dans ${diffDays} j`;
   }
-  if (subEl) subEl.textContent = tripSubLine;
-  if (iconEl) iconEl.textContent = res?.emoji || (res?.type === 'house' ? '🏠' : '🚗');
+  if (badgeEl) badgeEl.textContent = badgeText;
+  if (datelineEl) datelineEl.textContent = tripSubLine;
+
   banner.style.display = '';
-  banner.style.cursor = res?.type === 'house' ? 'pointer' : '';
-  banner.onclick = res?.type === 'house' && typeof famresaOnTripBannerTap === 'function'
-    ? () => famresaOnTripBannerTap(resourceId)
-    : null;
-  banner.onkeydown = res?.type === 'house' && typeof famresaOnTripBannerTap === 'function'
-    ? (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          famresaOnTripBannerTap(resourceId);
+  banner.style.cursor = isHouse ? 'pointer' : '';
+  banner.onclick = isHouse && typeof famresaOnTripBannerTap === 'function' ? () => famresaOnTripBannerTap(resourceId) : null;
+  banner.onkeydown =
+    isHouse && typeof famresaOnTripBannerTap === 'function'
+      ? (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            famresaOnTripBannerTap(resourceId);
+          }
         }
-      }
-    : null;
+      : null;
   return true;
 }
 
@@ -158,24 +153,8 @@ function getDashboardTripContext(resourceId) {
   const today = new Date();
   const todayStr = today.toISOString().slice(0, 10);
   const todayMidnightMs = new Date(todayStr + 'T00:00:00').getTime();
-  const mineBookings = getUniqueBookingsSorted()
-    .filter((b) => {
-      const bRes = b.ressource_id || b.resourceId || selectedResource;
-      const start = b.startDate || b.date || '';
-      return b.userId === currentUser.id && bRes === resourceId && !!start;
-    })
-    .sort((a, b) => (a.startDate || a.date || '').localeCompare(b.startDate || b.date || ''));
 
-  const currentMine = mineBookings.find((b) => {
-    const start = b.startDate || b.date || '';
-    const end = b.endDate || start;
-    return start <= todayStr && end >= todayStr;
-  });
-  const upcomingMine = mineBookings.find((b) => {
-    const start = b.startDate || b.date || '';
-    return start >= todayStr;
-  });
-  const targetBooking = currentMine || upcomingMine;
+  const { currentMine, upcomingMine, targetBooking } = resolveTripTargetBooking(resourceId);
   if (!targetBooking) return null;
   const startDateStr = targetBooking.startDate || targetBooking.date;
   const start = new Date(startDateStr + 'T00:00:00');
@@ -263,12 +242,17 @@ function renderWeekStrip(resourceId, decisionState, isHouseResource) {
       const d = formatRelativeDate(ds.state.freeFrom);
       meta.innerHTML = `Libre à partir du <span class="house-week-meta-date">${_escapeHtml(d)}</span>`;
     } else {
-      const fu = ds.state?.freeUntil;
-      if (fu) {
-        const d = formatRelativeDate(fu);
-        meta.innerHTML = `Libre à partir du <span class="house-week-meta-date">${_escapeHtml(d)}</span>`;
-      } else {
+      const weekAllFree = ds.weekDays && ds.weekDays.length && ds.weekDays.every((day) => !day.occupied);
+      if (weekAllFree) {
         meta.textContent = houseRes ? 'Maison libre cette semaine' : 'Voiture libre cette semaine';
+      } else {
+        const fu = ds.state?.freeUntil;
+        if (fu) {
+          const d = formatRelativeDate(fu);
+          meta.innerHTML = `Libre jusqu'au <span class="house-week-meta-date">${_escapeHtml(d)}</span>`;
+        } else {
+          meta.textContent = houseRes ? 'Maison libre cette semaine' : 'Voiture libre cette semaine';
+        }
       }
     }
   }
@@ -372,13 +356,6 @@ function _dashIncompleteHtml() {
   return '<span class="house-raw-incomplete">À compléter</span>';
 }
 
-function _famresaLatestBookingOnResource(resourceId) {
-  const list = getUniqueBookingsSorted().filter((b) => (b.ressource_id || b.resourceId) === resourceId);
-  return list.sort((a, b) =>
-    String(b.endDate || b.startDate || b.date || '').localeCompare(String(a.endDate || a.startDate || a.date || ''))
-  )[0] || null;
-}
-
 function renderHouseRawInfo(resource, decisionState) {
   const wrap = document.getElementById('house-raw-list');
   if (!wrap) return;
@@ -386,10 +363,6 @@ function renderHouseRawInfo(resource, decisionState) {
   const capVal = Number.isFinite(capNum) && capNum > 0 ? `${capNum} pers.` : _dashIncompleteHtml();
   const rooms = Number(resource?.rooms || resource?.bedrooms || resource?.chambres || 0);
   const roomsVal = rooms > 0 ? `${rooms}` : _dashIncompleteHtml();
-  const ci = (resource?.checkIn || resource?.checkin || '').trim();
-  const co = (resource?.checkOut || resource?.checkout || '').trim();
-  const checkInVal = ci ? ci : _dashIncompleteHtml();
-  const checkOutVal = co ? co : _dashIncompleteHtml();
   const addrOk = hasUsableResourceAddress(resource);
   const address = addrOk ? getResourceAddressDisplay(resource, '') : _dashIncompleteHtml();
   const routeBtn = addrOk
@@ -398,6 +371,11 @@ function renderHouseRawInfo(resource, decisionState) {
             <span class="house-route-btn-text">Obtenir l'itinéraire</span>
           </button>`
     : '';
+
+  const guidesHtml =
+    window._myResourceRoles?.[selectedResource] === 'admin' && typeof famresaHouseGuideRowsHtml === 'function'
+      ? famresaHouseGuideRowsHtml(resource)
+      : '';
 
   wrap.innerHTML = `
     <div class="house-raw-grid">
@@ -409,14 +387,6 @@ function renderHouseRawInfo(resource, decisionState) {
         <div class="house-raw-label">Chambres</div>
         <div class="house-raw-value">${roomsVal}</div>
       </div>
-      <div class="house-raw-cell">
-        <div class="house-raw-label">Check-in</div>
-        <div class="house-raw-value">${checkInVal}</div>
-      </div>
-      <div class="house-raw-cell">
-        <div class="house-raw-label">Check-out</div>
-        <div class="house-raw-value">${checkOutVal}</div>
-      </div>
       <div class="house-raw-cell house-raw-cell-full">
         <div class="house-raw-label">Adresse</div>
         <div class="house-raw-address-row">
@@ -426,15 +396,8 @@ function renderHouseRawInfo(resource, decisionState) {
           ${routeBtn}
         </div>
       </div>
+      ${guidesHtml}
     </div>
-    <div class="house-raw-modifier-row">
-      <button type="button" class="ccv2-btn-manage-link" onclick="showResourceManagePage(selectedResource)">Modifier</button>
-    </div>
-    ${
-      window._myResourceRoles?.[selectedResource] === 'admin' && typeof famresaCheckoutKpiHtml === 'function'
-        ? famresaCheckoutKpiHtml(resource, _famresaLatestBookingOnResource(selectedResource))
-        : ''
-    }
   `;
 }
 
@@ -459,6 +422,11 @@ function renderCarRawInfo(resource) {
       : _dashIncompleteHtml();
   const bt =
     resource?.carBluetooth === true ? 'Oui' : resource?.carBluetooth === false ? 'Non' : _dashIncompleteHtml();
+  const assuranceRaw = (resource?.assurance || '').trim();
+  const assuranceVal = assuranceRaw ? _escapeHtml(assuranceRaw) : _dashIncompleteHtml();
+  const ctRaw = (resource?.ct || '').trim();
+  const ctClass = getCtClass(ctRaw);
+  const ctVal = ctRaw ? _escapeHtml(ctRaw) : _dashIncompleteHtml();
 
   wrap.innerHTML = `
     <div class="house-raw-grid">
@@ -478,9 +446,14 @@ function renderCarRawInfo(resource) {
         <div class="house-raw-label">Bluetooth</div>
         <div class="house-raw-value">${bt}</div>
       </div>
-    </div>
-    <div class="house-raw-modifier-row">
-      <button type="button" class="ccv2-btn-manage-link" onclick="showResourceManagePage(selectedResource)">Modifier</button>
+      <div class="house-raw-cell">
+        <div class="house-raw-label">Assurance</div>
+        <div class="house-raw-value">${assuranceVal}</div>
+      </div>
+      <div class="house-raw-cell">
+        <div class="house-raw-label">Contrôle technique</div>
+        <div class="house-raw-value${ctClass ? ` ${ctClass}` : ''}">${ctVal}</div>
+      </div>
     </div>
   `;
 }
@@ -632,7 +605,7 @@ function renderExperiencePanels() {
   if (houseRawInfo) houseRawInfo.style.display = isHouse ? '' : 'none';
   if (houseInfoCard) houseInfoCard.style.display = isHouse ? '' : 'none';
   if (carInfoCard) carInfoCard.style.display = !isHouse ? '' : 'none';
-  if (carInfoGrid) carInfoGrid.style.display = isHouse ? 'none' : '';
+  if (carInfoGrid) carInfoGrid.style.display = 'none';
   if (tripBanner) tripBanner.style.display = isHouse ? 'none' : tripBanner.style.display;
   if (mainCard) {
     mainCard.classList.remove('state-available', 'state-occupied', 'state-soon');
@@ -646,62 +619,6 @@ function renderExperiencePanels() {
       badge.className = 'ccv2-badge available';
       statusText.textContent = 'Libre';
       if (mainCard) mainCard.classList.add('state-available');
-    }
-  }
-
-  // ── Infos details (voiture) ──
-  const infoGrid = carInfoGrid;
-  if (infoGrid && !isHouse) infoGrid.style.display = '';
-  if (infoGrid) infoGrid.onclick = isHouse ? showGuideSheet : showCarInfo;
-
-  const infoAssurance = document.getElementById('info-assurance');
-  const infoCt = document.getElementById('info-ct');
-  if (!isHouse) {
-    if (infoGrid && !document.getElementById('info-assurance')) {
-      infoGrid.innerHTML = `
-      <div class="dash-kpi-item" id="cell-assurance">
-        <div class="ccv2-label">Assurance</div>
-        <div class="ccv2-value" id="info-assurance">—</div>
-      </div>
-      <div class="dash-kpi-item" id="cell-ct">
-        <div class="ccv2-label">CT</div>
-        <div class="ccv2-value" id="info-ct">—</div>
-      </div>
-      <div class="dash-kpi-item" id="car-fuel-row">
-        <div class="ccv2-label">Reservoir</div>
-        <div id="car-fuel-display"></div>
-      </div>`;
-    }
-    const assuranceEl = document.getElementById('info-assurance');
-    const kpiLabel = document.querySelector('#cell-assurance .ccv2-label');
-    const clean = res?.carCleanliness || '';
-    const cleanLabel = clean === 'clean' ? 'Propre' : clean === 'average' ? 'Moyenne' : clean === 'dirty' ? 'Sale' : 'Non renseigne';
-    const ctEl = document.getElementById('info-ct');
-    if (kpiLabel) kpiLabel.textContent = 'Proprete';
-    if (assuranceEl) {
-      assuranceEl.textContent = cleanLabel;
-      assuranceEl.classList.remove('ok', 'warn');
-      if (clean === 'clean') assuranceEl.classList.add('ok');
-      if (clean === 'average' || clean === 'dirty') assuranceEl.classList.add('warn');
-    }
-    if (ctEl) {
-      ctEl.textContent = res?.ct || '—';
-      ctEl.classList.remove('ok', 'warn');
-      const ctClass = getCtClass(res?.ct || '');
-      if (ctClass) ctEl.classList.add(ctClass);
-    }
-  }
-
-  // ── Réservoir voiture ──
-  const fuelDisplay = document.getElementById('car-fuel-display');
-  const fuelCell = document.getElementById('car-fuel-row');
-  if (fuelDisplay) {
-    if (!isHouse) {
-      fuelDisplay.innerHTML = getFuelBarGrid(res?.fuelLevel ?? null);
-      if (fuelCell) fuelCell.style.display = '';
-    } else {
-      fuelDisplay.innerHTML = '';
-      if (fuelCell) fuelCell.style.display = 'none';
     }
   }
 
@@ -725,7 +642,21 @@ function renderExperiencePanels() {
         weekStatus.classList.add('house-week-status--occupied');
       }
     } else if (weekStatus) {
-      weekStatus.innerHTML = '<span class="house-week-status-badge house-week-status-badge--free">Libre</span>';
+      if (!isHouse && res) {
+        const clean = res.carCleanliness || '';
+        const cleanLabel = typeof carCleanlinessLabel === 'function' ? carCleanlinessLabel(clean) : 'Propre';
+        const cleanCls =
+          clean === 'dirty'
+            ? 'house-week-car-clean--warn'
+            : clean === 'sparkling'
+              ? 'house-week-car-clean--sparkle'
+              : 'house-week-car-clean--ok';
+        const fuelHtml =
+          typeof getFuelBarGrid === 'function' ? getFuelBarGrid(res.fuelLevel ?? null) : '';
+        weekStatus.innerHTML = `<span class="house-week-status-badge house-week-status-badge--free">Libre</span><div class="house-week-car-extras"><span class="house-week-car-clean ${cleanCls}">${_escapeHtml(cleanLabel)}</span><div class="house-week-car-fuel">${fuelHtml}</div></div>`;
+      } else {
+        weekStatus.innerHTML = '<span class="house-week-status-badge house-week-status-badge--free">Libre</span>';
+      }
       weekStatus.classList.remove('house-week-status--occupied');
       weekStatus.classList.add('house-week-status--available');
     }

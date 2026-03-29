@@ -33,7 +33,8 @@ async function showStaySheet(groupId, bookingHint) {
     const d = new Date(ds + 'T00:00:00');
     return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
   };
-  const nights = stayBookings.length;
+  const nightsRaw = typeof countStayNights === 'function' ? countStayNights(startDate, endDate) : 0;
+  const nights = Math.max(1, nightsRaw);
 
   // Load checklist progress summary
   let checklistSummary = '';
