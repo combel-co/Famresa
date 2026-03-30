@@ -109,6 +109,158 @@ html.ui-large {
     display: none !important;
   }
 
+  /* Planning — flux réservation unifié : pas de header famille/profil ni pills ressources */
+  body.planning-booking-focus {
+    --resource-tabs-h: 0px;
+  }
+  body.planning-booking-focus #app-header,
+  body.planning-booking-focus #resource-tabs {
+    display: none !important;
+  }
+
+  /* Planning — phase réserve : même flux de scroll que la consult (pas de shell plein écran) */
+  .planning-reserve-shell {
+    display: block;
+    min-height: 0;
+  }
+  .planning-reserve-shell--active {
+    display: block;
+    background: transparent;
+    max-width: none;
+    margin: 0;
+    width: auto;
+    padding-top: 0;
+    box-sizing: border-box;
+  }
+  .planning-reserve-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 4px 0 8px;
+    flex-shrink: 0;
+    background: transparent;
+  }
+  /* Titre Arrivée / Départ + ligne L–M–J : un seul bloc sticky sous les onglets ressources */
+  .planning-calendar-sticky-stack {
+    position: sticky;
+    top: var(--resource-tabs-h);
+    z-index: 95;
+    background: #faf8f4;
+    margin-left: -20px;
+    margin-right: -20px;
+    box-sizing: border-box;
+  }
+  body.planning-reserve-active .planning-calendar-sticky-stack {
+    top: env(safe-area-inset-top, 0px);
+    /* En mode réserve, header + tabs ressources sont masqués :
+       on réserve leur hauteur pour que l'alignement visuel reste identique. */
+    height: calc(var(--header-h) + var(--resource-tabs-h-live));
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+  .planning-calendar-sticky-stack .planning-reserve-header {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .planning-reserve-shell--active .planning-reserve-header {
+    padding-top: 8px;
+  }
+  #tab-calendar .planning-calendar-sticky-stack .cal-sticky-header {
+    position: relative;
+    top: auto;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .planning-reserve-header[hidden] {
+    display: none !important;
+  }
+  .planning-reserve-header-text {
+    flex: 1;
+    min-width: 0;
+    padding-right: 4px;
+  }
+  .planning-reserve-close-btn {
+    flex-shrink: 0;
+    margin-top: 0;
+  }
+  .planning-reserve-title {
+    font-size: calc(22px * var(--ui-text-scale));
+    margin: 0 0 6px;
+    font-weight: 600;
+    color: #2d2a24;
+    letter-spacing: -0.4px;
+    line-height: 1.15;
+  }
+  .planning-reserve-recap {
+    margin: 0 0 6px;
+    font-size: calc(14px * var(--ui-text-scale));
+    font-weight: 500;
+    color: #5c554c;
+    line-height: 1.35;
+  }
+  .planning-reserve-recap[hidden] {
+    display: none !important;
+  }
+  .planning-reserve-subtitle {
+    display: block;
+    margin: 0;
+    font-size: calc(14px * var(--ui-text-scale));
+    color: #8a8075;
+    font-weight: 500;
+    line-height: 1.35;
+    min-height: 1.35em; /* évite un "saut" visuel quand le texte devient vide */
+  }
+  .planning-reserve-subtitle[hidden] {
+    display: none !important;
+  }
+  .planning-reserve-body {
+    display: block;
+    min-height: 0;
+  }
+  /* Calendrier : mêmes règles qu’en consult (#tab-calendar .cal-sticky / .cal-scroll) — pas de surcharges ici */
+  .planning-reserve-shell--active .planning-hint {
+    display: none !important;
+  }
+  .planning-action-bar.planning-action-bar--reserve {
+    background: #fff;
+    border-top: 1px solid #e8e3da;
+    z-index: 610;
+  }
+  .planning-action-bar.planning-action-bar--reserve .planning-action-right.btn-primary {
+    background: #e8dfd4;
+    color: #2d2a24;
+    border-radius: 16px;
+  }
+  .planning-action-bar.planning-action-bar--reserve .planning-action-right.btn-primary.is-disabled {
+    opacity: 0.45;
+    color: #7c7269;
+  }
+  body.planning-reserve-active .bm-day--start .bm-day-num,
+  body.planning-reserve-active .bm-day--end .bm-day-num {
+    background: #e8dfd4 !important;
+    color: #2d2a24 !important;
+    font-weight: 600;
+  }
+  body.planning-reserve-active .bm-day--start::before {
+    left: 50%;
+    background: rgba(232, 223, 212, 0.75);
+  }
+  body.planning-reserve-active .bm-day--end::before {
+    right: 50%;
+    background: rgba(232, 223, 212, 0.75);
+  }
+  body.planning-reserve-active .bm-day--mid::before {
+    background: rgba(232, 223, 212, 0.45);
+  }
+
+  /* Phase réserve : pas de double bordure haute avec le fond #tab-calendar */
+  body.planning-reserve-active .tab-panel.active#tab-calendar.planning-tab {
+    border-top: none;
+    box-shadow: none;
+  }
+
   /* ═══════════════════════════════════════════
      LAYOUT — HEADER / MAIN / NAV
      ═══════════════════════════════════════════ */
@@ -247,8 +399,20 @@ html.ui-large {
   flex-shrink: 0;
   }
 
+  #tab-calendar .cal-sticky-header {
+    background: #faf8f4;
+    border-bottom-color: rgba(224, 216, 200, 0.45);
+  }
+
   .cal-scroll-body {
   padding: 0 16px 16px;
+  }
+
+  /* Même largeur utile que .cal-sticky-header (marges -20px + pad 16px) pour aligner L–D sur la grille */
+  #tab-calendar .cal-scroll-body {
+    margin-left: -20px;
+    margin-right: -20px;
+    padding: 0 16px 10px;
   }
 
   .cal-month-block { margin-bottom: 16px; }
@@ -520,6 +684,12 @@ html.ui-large {
   max-width: 520px;
   margin: 0 auto;
   z-index: 300;
+  transition: transform 0.2s ease;
+}
+
+.bottom-nav.booking-active {
+  transform: translateY(100%);
+  pointer-events: none;
 }
 
 .family-pill {
@@ -824,35 +994,48 @@ html.ui-large {
     box-shadow: 0 4px 20px rgba(0,0,0,0.12);
   }
   .celebration-recap-card {
-    margin: 16px auto 0;
+    margin: 18px auto 0;
     width: min(360px, 100%);
     background: #fff;
     border-radius: 20px;
     overflow: hidden;
     color: #2d2a24;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
   }
   .cel-recap-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
+    gap: 12px;
+    padding: 14px 16px;
     border-bottom: 1px solid #e8e3da;
     text-align: left;
   }
-  .cel-recap-icon { font-size: calc(20px * var(--ui-text-scale)); }
-  .cel-recap-name { font-size: calc(14px * var(--ui-text-scale)); font-weight: 600; color: #2d2a24; }
-  .cel-recap-sub { font-size: calc(12px * var(--ui-text-scale)); color: #7c7269; }
+  .cel-recap-icon { font-size: calc(22px * var(--ui-text-scale)); line-height: 1; }
+  .cel-recap-name { font-size: calc(16px * var(--ui-text-scale)); font-weight: 700; color: #2d2a24; letter-spacing: -0.3px; }
+  .cel-recap-sub { font-size: calc(13px * var(--ui-text-scale)); color: #7c7269; margin-top: 2px; }
   .cel-recap-row {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     gap: 12px;
     text-align: left;
-    padding: 9px 14px;
+    padding: 11px 14px;
     border-bottom: 1px solid #e8e3da;
-    font-size: calc(12px * var(--ui-text-scale));
+    font-size: calc(13px * var(--ui-text-scale));
     color: #7c7269;
   }
   .cel-recap-row:last-child { border-bottom: 0; }
+  .cel-recap-row > div:first-child {
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .cel-recap-row > div:last-child {
+    color: #2d2a24;
+    font-weight: 600;
+    text-align: right;
+    min-width: 0;
+    word-break: break-word;
+  }
   .cel-recap-row > div:last-child {
     color: #2d2a24;
     font-weight: 500;
@@ -1656,7 +1839,287 @@ html.ui-large {
   .improvement-plan-card ul { padding-left: 18px; color: var(--text-secondary); font-size: calc(13px * var(--ui-text-scale)); line-height: 1.5; }
 
   /* ═══════════════════════════════════════════
-     BOOKING MODAL (bm-*)
+     PLANNING TAB — unifié (bm-* dans #tab-calendar)
+     ═══════════════════════════════════════════ */
+  /* Spécificité > .tab-panel.active#tab-calendar { padding: 0 } sinon pas de marge latérale (titre collé au bord) */
+  .tab-panel.active#tab-calendar.planning-tab {
+    background: #faf8f4;
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    min-height: 60vh;
+    border-top: 1px solid #e0d8c8;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  }
+  #tab-calendar.planning-has-action-bar {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom));
+  }
+  .planning-cal-sticky {
+    box-shadow: none;
+  }
+  .planning-cal-sticky .bm-cal-top-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    align-items: end;
+    text-align: center;
+    font-size: 10px;
+    color: #8a7f72;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    line-height: 1;
+    padding: 4px 0 6px;
+    min-height: 22px;
+    box-sizing: border-box;
+    background: transparent;
+    border-bottom: none !important;
+    margin-bottom: 0 !important;
+  }
+  #tab-calendar .planning-hint:empty {
+    display: none;
+  }
+  .planning-hint {
+    font-size: 12px;
+    color: #7c7269;
+    text-align: center;
+    padding: 0;
+    min-height: 0;
+  }
+  #tab-calendar .planning-hint:not(:empty) {
+    padding: 2px 0 4px;
+  }
+  .planning-micro-prompt {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(var(--bottom-nav-h, 84px) + 8px);
+    z-index: 400;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .planning-micro-prompt-text {
+    font-size: 14px;
+    color: #2d2a24;
+    flex: 1;
+    min-width: 140px;
+  }
+  .planning-micro-prompt-actions {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+  .planning-micro-btn {
+    background: none;
+    border: none;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    padding: 4px 0;
+  }
+  .planning-micro-cancel { color: #7c7269; }
+  .planning-micro-ok { color: #2d6a4f; font-weight: 600; }
+  .planning-action-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 350;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #faf8f4;
+    border-top: 1px solid #e8e3da;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .planning-action-left {
+    background: none;
+    border: none;
+    color: #7c7269;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    padding: 8px 0;
+  }
+  .planning-action-right.btn-primary {
+    background: #2d6a4f;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-weight: 600;
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+  }
+  .planning-action-right.is-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+  .planning-wizard-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 0 16px 24px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    box-sizing: border-box;
+    max-width: 100%;
+  }
+  .planning-wizard-chrome {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex-shrink: 0;
+    padding-top: max(6px, env(safe-area-inset-top, 0px));
+    margin-bottom: 14px;
+  }
+  .planning-wizard-close-btn {
+    flex-shrink: 0;
+  }
+  .bm-wizard-card {
+    background: #fff;
+    border: 1px solid #e0d8c8;
+    border-radius: 16px;
+    padding: 16px 14px;
+    box-sizing: border-box;
+  }
+  .planning-mini-dates,
+  .planning-mini-personnes {
+    margin-bottom: 0;
+    cursor: pointer;
+    background: #fff;
+    border: 1px solid #e0d8c8;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  }
+  .planning-wizard-wrap .bm-card-mini.planning-mini-dates,
+  .planning-wizard-wrap .bm-card-mini.planning-mini-personnes {
+    margin-left: 0;
+    margin-right: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  /* Espacement dédié entre la mini-carte DATES et la mini-carte PERSONNES */
+  .planning-wizard-wrap .bm-card-mini.planning-mini-personnes {
+    margin-top: 4px;
+  }
+  .bm-card-mini-text {
+    flex: 1;
+    min-width: 0;
+  }
+  .planning-wizard-wrap .bm-destination-step-inner.bm-destination-house-inner {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+  .planning-wizard-wrap #bm-step-destination .bm-destination-house-inner .bm-section-title {
+    margin-bottom: 12px;
+  }
+  .planning-wizard-wrap .bm-step .bm-section {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .bm-personnes-stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin: 16px 0 8px;
+  }
+  .bm-personnes-val {
+    font-size: 20px;
+    font-weight: 600;
+    min-width: 32px;
+    text-align: center;
+  }
+  .bm-personnes-label {
+    text-align: center;
+    font-size: 14px;
+    color: #7c7269;
+    margin-bottom: 8px;
+  }
+  .bm-personnes-capacity-hint {
+    text-align: center;
+    font-size: 13px;
+    color: #7c7269;
+    margin-top: 8px;
+  }
+  .sheet-handle-bar {
+    width: 36px;
+    height: 4px;
+    border-radius: 4px;
+    background: #ddd;
+    margin: 0 auto 16px;
+  }
+  .h4-card-user {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    background: #f8f8f8;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .h4-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1px solid #e8e3da;
+  }
+  .h4-avatar--img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .h4-avatar--txt {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0ebe2;
+    color: #2d2a24;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .h4-avatar-wrap--me .h4-avatar--txt {
+    background: #2d6a4f;
+    color: #fff;
+  }
+  .h4-cap-bar {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #f0ebe2;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin: 16px 0;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .h4-cap-ico { font-size: 18px; line-height: 1; }
+
+  /* ═══════════════════════════════════════════
+     BOOKING MODAL (bm-*) — legacy modal retiré ; styles bm réutilisés
      ═══════════════════════════════════════════ */
   /* ===================================================
      BOOKING MODAL — visual refonte beige/vert
@@ -1758,8 +2221,43 @@ html.ui-large {
   .bm-dest-chip.selected { background: #2d6a4f; color: white; border-color: #2d6a4f; }
   .bm-dest-km { font-size: calc(12px * var(--ui-text-scale)); color: #7c7269; margin-top: 8px; }
 
+  #bm-step-booker {
+    margin-top: 12px;
+  }
+  .bm-booker-heading {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+  #bm-step-booker .bm-section-title {
+    margin-bottom: 10px;
+  }
   .bm-booker-tabs {
-    display: flex; gap: 8px; margin-bottom: 12px;
+    display: flex;
+    gap: 8px;
+    margin-bottom: 0;
+    margin-top: 0;
+  }
+  .bm-booker-body {
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+  .bm-booker-body .bm-booker-member-list {
+    margin-top: 14px;
+  }
+  .bm-booker-external-wrap {
+    margin-top: 14px;
+    padding: 16px 14px;
+    background: #fff;
+    border: 1px solid #e0d8c8;
+    border-radius: 16px;
+    box-sizing: border-box;
+  }
+  .bm-booker-external-field {
+    margin-top: 0;
   }
   .bm-booker-tab {
     flex: 1;
@@ -1788,6 +2286,7 @@ html.ui-large {
     border: 1px solid #e8e3da;
     border-radius: 16px;
     overflow: hidden;
+    margin-top: 0;
   }
   .bm-member-item {
     display: flex; align-items: center; gap: 12px;
@@ -1875,6 +2374,7 @@ html.ui-large {
     color: #2d2a24;
   }
   .bm-primary-field {
+    margin-top: 4px;
     padding: 12px 14px 14px;
     border-top: 1px solid #e8e3da;
     background: #faf8f4;
@@ -2056,10 +2556,13 @@ html.ui-large {
 
   /* Mini card */
   .bm-card-mini {
+    display: flex;
+    flex-direction: row;
     background: var(--bg); border-radius: 16px; padding: 12px 14px;
     border: 1px solid #e8e3da; cursor: pointer; transition: background 0.15s;
     align-items: center; justify-content: space-between;
     margin: 0 16px;
+    gap: 10px;
   }
   .bm-card-mini:active { background: #f5f1ea; }
   .bm-card-mini-label {
@@ -2070,6 +2573,8 @@ html.ui-large {
   .bm-card-mini-edit {
     font-size: calc(12px * var(--ui-text-scale)); font-weight: 500; color: #2d6a4f;
     text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; flex-shrink: 0;
+    align-self: center;
+    line-height: 1.2;
   }
 
   .bm-footer {
@@ -2127,6 +2632,25 @@ html.ui-large {
     header { padding: 10px 14px; }
     main { padding: 0 14px calc(var(--bottom-nav-h) + 12px + env(safe-area-inset-bottom)); }
     .cal-sticky-header { padding: 2px 14px 0; margin-left: -14px; margin-right: -14px; top: var(--resource-tabs-h); }
+    #tab-calendar .cal-scroll-body {
+      margin-left: -14px;
+      margin-right: -14px;
+      padding: 0 14px 10px;
+    }
+    .planning-calendar-sticky-stack {
+      margin-left: -14px;
+      margin-right: -14px;
+    }
+    .planning-calendar-sticky-stack .planning-reserve-header {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+    .tab-panel.active#tab-calendar.planning-tab {
+      margin-left: -14px;
+      margin-right: -14px;
+      padding-left: 14px;
+      padding-right: 14px;
+    }
     .resource-tabs { margin-left: -14px; margin-right: -14px; padding-left: 14px; padding-right: 14px; }
     :root { --header-h: 77px; }  /* mobile: padding 16+16 + content 44 + border 1 */
     html.ui-large { --header-h: 88px; --bottom-nav-h: 90px; --resource-tabs-h: 60px; }
@@ -2288,7 +2812,7 @@ html.ui-large {
   .resource-tabs {
     display: flex; flex-wrap: nowrap; gap: 6px;
     padding: 8px 0;
-    margin-bottom: var(--gap-md);
+    margin-bottom: 0;
     position: sticky;
     top: 0;
     z-index: 120;

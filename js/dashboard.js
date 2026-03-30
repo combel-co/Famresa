@@ -273,7 +273,7 @@ function openHousePrimaryAction() {
     showStaySheet(groupId || bookingId);
     return;
   }
-  openBookingModal();
+  switchToBookingMode();
 }
 
 function _escapeHtml(value) {
@@ -674,14 +674,14 @@ function renderExperiencePanels() {
   const reserveBtn = document.getElementById('reserve-cta-btn');
   if (reserveBtn) {
     if (isHouse) {
-      reserveBtn.onclick = openBookingModal;
+      reserveBtn.onclick = switchToBookingMode;
       reserveBtn.dataset.bookingId = todayBooking?.id || '';
       reserveBtn.dataset.groupId = todayBooking?.reservationGroupId || '';
       reserveBtn.dataset.occupantName = decisionState.occupantName || '';
       reserveBtn.dataset.action = 'reserve';
       reserveBtn.textContent = 'Réserver la maison';
     } else {
-      reserveBtn.onclick = openBookingModal;
+      reserveBtn.onclick = switchToBookingMode;
       if (state.occupied) reserveBtn.textContent = `Réserver dès le ${formatRelativeDate(state.freeFrom)}`;
       else reserveBtn.textContent = 'Réserver la voiture';
     }

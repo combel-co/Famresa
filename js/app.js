@@ -14,6 +14,21 @@ let fuelReportsByBooking = {};
 let pendingFuelPromptBookingId = null;
 let suPendingFamilyId = null;
 window._legacyFallbackAllowed = true;
+/** Set from dashboard "Réserver" — consumed on first free-day tap in planning (skip micro-prompt). */
+window._planningBookingMode = false;
+
+function switchToBookingMode() {
+  if (!currentUser) {
+    if (typeof showWelcomeScreen === 'function') showWelcomeScreen();
+    return;
+  }
+  window._planningBookingMode = true;
+  switchTab('planning');
+}
+
+function setBottomNavBookingActive(active) {
+  document.querySelector('.bottom-nav')?.classList.toggle('booking-active', !!active);
+}
 
 function isLegacyFallbackAllowed() {
   return window._legacyFallbackAllowed !== false;
@@ -157,7 +172,11 @@ function switchTab(tab) {
   const normalizedTab = (tab === 'resource')
     ? 'dashboard'
     : (tab === 'planning' ? 'calendar' : (tab === 'history' ? 'profile' : tab));
+  const prevTab = activeTab;
   activeTab = normalizedTab;
+  if (prevTab === 'calendar' && normalizedTab !== 'calendar' && typeof window.exitPlanningUnifiedMode === 'function') {
+    window.exitPlanningUnifiedMode();
+  }
   ['dashboard', 'calendar', 'profile'].forEach(name => {
     const isActive = name === normalizedTab;
     const panel = document.getElementById(`tab-${name}`);
@@ -170,14 +189,26 @@ function switchTab(tab) {
     const mapped = t === 'planning' ? 'calendar' : (t === 'history' ? 'profile' : t);
     item.classList.toggle('active', mapped === normalizedTab);
   });
-  // Hide header banner and resource tabs on profile tab
-  const appHeader = document.getElementById('app-header');
-  const resourceTabs = document.getElementById('resource-tabs');
-  if (appHeader) appHeader.style.display = normalizedTab === 'profile' ? 'none' : '';
-  if (resourceTabs) resourceTabs.style.display = normalizedTab === 'profile' ? 'none' : '';
+  if (typeof syncPlanningShellChrome === 'function') {
+    syncPlanningShellChrome();
+  } else {
+    const appHeader = document.getElementById('app-header');
+    const resourceTabs = document.getElementById('resource-tabs');
+    if (appHeader) appHeader.style.display = normalizedTab === 'profile' ? 'none' : '';
+    if (resourceTabs) resourceTabs.style.display = normalizedTab === 'profile' ? 'none' : '';
+  }
 
   if (normalizedTab === 'dashboard') renderExperiencePanels();
   if (normalizedTab === 'profile') renderProfileTab();
+  if (normalizedTab === 'calendar' && typeof renderCalendar === 'function') renderCalendar();
+
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => {
+      if (typeof syncResourceTabsHeight === 'function') syncResourceTabsHeight();
+    });
+  } else if (typeof syncResourceTabsHeight === 'function') {
+    syncResourceTabsHeight();
+  }
 }
 
 /**

@@ -73,7 +73,7 @@ const reservationService = {
    * Create a house stay (one doc per day, batch write).
    * @returns {{ success: true } | { error, date }}
    */
-  async createStayReservation({ resourceId, userId, userName, photo, startDate, endDate, motif, bookings, createdBy, peopleCount }) {
+  async createStayReservation({ resourceId, userId, userName, photo, startDate, endDate, motif, bookings, createdBy, peopleCount, reservationGroupId: existingGroupId }) {
     const dates = getDateRange(startDate, endDate);
     for (const ds of dates) {
       if (bookings[ds]) return { error: 'conflict', date: ds };
@@ -81,8 +81,9 @@ const reservationService = {
 
     const pc = peopleCount != null && peopleCount !== '' ? Number(peopleCount) : null;
     const peopleOk = Number.isFinite(pc) && pc > 0 ? pc : null;
+    const companions = peopleOk != null ? Math.max(0, peopleOk - 1) : null;
 
-    const groupId = reservationRepository.generateGroupId();
+    const groupId = existingGroupId || reservationRepository.generateGroupId();
     const docsData = dates.map(date => {
       const doc = {
         ressource_id: resourceId,
@@ -95,13 +96,53 @@ const reservationService = {
       };
       if (peopleOk != null) {
         doc.peopleCount = peopleOk;
-        doc.guestCount = Math.max(0, peopleOk - 1);
+        doc.guestCount = companions;
+        doc.companions = companions;
       }
       if (createdBy) doc.createdBy = createdBy;
       return doc;
     });
 
     await reservationRepository.createBatch(docsData);
+    return { success: true, reservationGroupId: groupId };
+  },
+
+  /**
+   * Replace a house stay (same group id) with new dates / motif / occupancy.
+   * @param {{ groupId: string, resourceId: string, userId: string, userName: string, photo: any, startDate: string, endDate: string, motif: string, bookings: object, createdBy: any, peopleCount: number, familyId?: string }} params
+   */
+  async updateStayReservation({ groupId, resourceId, userId, userName, photo, startDate, endDate, motif, bookings, createdBy, peopleCount, familyId }) {
+    const snap = await reservationsRef()
+      .where('reservationGroupId', '==', groupId)
+      .get();
+    if (snap.empty) return { error: 'not_found' };
+
+    const tempBookings = { ...(bookings || {}) };
+    snap.forEach((doc) => {
+      const d = doc.data();
+      const key = d.date || '';
+      if (key) delete tempBookings[key];
+    });
+
+    const conflict = this.checkConflicts(startDate, endDate, tempBookings);
+    if (conflict) return { error: 'conflict', date: conflict };
+
+    await reservationRepository.deleteByGroup(groupId);
+
+    const createResult = await this.createStayReservation({
+      resourceId,
+      userId,
+      userName,
+      photo,
+      startDate,
+      endDate,
+      motif,
+      bookings: tempBookings,
+      createdBy,
+      peopleCount,
+      reservationGroupId: groupId
+    });
+    if (createResult.error) return createResult;
     return { success: true };
   },
 
@@ -151,7 +192,7 @@ const reservationService = {
         while (cur <= endObj) {
           const ds = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
           if (bookings[ds] && bookings[ds].id !== bookingId) {
-            return { error: 'conflict', message: `Le ${ds} est déjà réservé` };
+            return { error: 'conflict', message: 'Ce jour est déjà réservé' };
           }
           cur.setDate(cur.getDate() + 1);
         }

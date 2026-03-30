@@ -41,7 +41,7 @@
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <!-- Non-blocking font loading (swap prevents FOIT) -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/style.css?v=30">
+<link rel="stylesheet" href="css/style.css?v=48">
 <!-- Firebase SDK (defer = non-blocking parse, keeps order) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
@@ -239,7 +239,7 @@
       </div>
 
       <div class="house-primary-action">
-        <button class="ccv2-btn-reserve" id="reserve-cta-btn" onclick="openBookingModal()">Réserver la maison</button>
+        <button type="button" class="ccv2-btn-reserve" id="reserve-cta-btn" onclick="switchToBookingMode()">Réserver la maison</button>
         <div id="early-return-container" style="display:none"></div>
       </div>
 
@@ -293,14 +293,138 @@
     </div>
   </section>
 
-  <section class="tab-panel" id="tab-calendar">
-    <div class="cal-sticky-header">
-      <div class="cal-header">
-        <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
+  <section class="tab-panel planning-tab" id="tab-calendar">
+    <div id="planning-reserve-shell" class="planning-reserve-shell">
+      <div class="planning-reserve-body">
+        <div id="planning-calendar-block" class="planning-calendar-block">
+          <div class="planning-calendar-sticky-stack">
+            <div class="planning-reserve-header" id="planning-reserve-header" hidden>
+              <div class="planning-reserve-header-text">
+                <h1 class="planning-reserve-title" id="planning-reserve-title">Arrivée / Départ</h1>
+                <p class="planning-reserve-recap" id="planning-reserve-recap" hidden></p>
+                <p class="planning-reserve-subtitle" id="planning-reserve-subtitle">Sélectionnez votre date de départ</p>
+              </div>
+              <button type="button" class="bm-close planning-reserve-close-btn" id="planning-reserve-close" aria-label="Annuler la réservation">×</button>
+            </div>
+            <div class="cal-sticky-header planning-cal-sticky">
+              <div class="bm-cal-top-header">
+                <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
+              </div>
+              <div id="planning-hint" class="planning-hint" aria-live="polite"></div>
+            </div>
+          </div>
+          <div class="cal-scroll-body" id="cal-scroll-body">
+            <div id="cal-grid"></div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="cal-scroll-body" id="cal-scroll-body">
-      <div id="cal-grid"></div>
+
+    <div id="planning-wizard-wrap" class="planning-wizard-wrap" style="display:none" aria-hidden="true">
+      <div class="planning-wizard-chrome">
+        <button type="button" class="bm-close planning-wizard-close-btn" id="planning-wizard-close" onclick="planningActionEffacer()" aria-label="Fermer la réservation">×</button>
+      </div>
+      <div class="bm-card-mini planning-mini-dates" id="planning-mini-dates-card" onclick="planningExpandDatesFromWizard()">
+        <div class="bm-card-mini-text">
+          <div class="bm-card-mini-label">DATES</div>
+          <div class="bm-card-mini-value" id="bm-mini-dates-val">—</div>
+        </div>
+        <div class="bm-card-mini-edit">Modifier</div>
+      </div>
+
+      <div class="bm-card-mini planning-mini-personnes" id="planning-mini-personnes-card" style="display:none" hidden role="button" tabindex="0" onclick="goToStep('booker')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();goToStep('booker');}">
+        <div class="bm-card-mini-text">
+          <div class="bm-card-mini-label">PERSONNES</div>
+          <div class="bm-card-mini-value" id="bm-mini-wizard-personnes-val">—</div>
+        </div>
+        <div class="bm-card-mini-edit">Modifier</div>
+      </div>
+
+      <div class="bm-step" id="bm-step-hours" style="display:none" role="group" aria-label="Étape heures">
+        <div class="bm-section bm-wizard-card">
+          <div class="bm-section-title">À quelle heure ?</div>
+          <div class="bm-time-row">
+            <div class="bm-time-block">
+              <label class="bm-time-label" for="bm-start-hour">Prise</label>
+              <input class="bm-time-input" type="time" id="bm-start-hour" name="bm-start-hour" value="09:00" onchange="updateBookingRecap()">
+            </div>
+            <div class="bm-time-block">
+              <label class="bm-time-label" for="bm-end-hour">Retour</label>
+              <input class="bm-time-input" type="time" id="bm-end-hour" name="bm-end-hour" value="20:00" onchange="updateBookingRecap()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bm-step" id="bm-step-personnes" style="display:none" role="group" aria-label="Personnes">
+        <div class="bm-section bm-wizard-card">
+          <div class="bm-section-title">Qui vient avec toi ?</div>
+          <div class="bm-section-subtitle" style="color:#7c7269;font-size:14px;margin-bottom:12px">Toi + les personnes qui t'accompagnent.</div>
+          <div class="bm-personnes-stepper">
+            <button type="button" class="bm-guest-btn" id="bm-person-minus" onclick="bmPersonTotalDelta(-1)" aria-label="Moins">−</button>
+            <span class="bm-personnes-val" id="bm-person-total-val">1</span>
+            <button type="button" class="bm-guest-btn" id="bm-person-plus" onclick="bmPersonTotalDelta(1)" aria-label="Plus">+</button>
+          </div>
+          <div id="bm-personnes-label" class="bm-personnes-label">personne</div>
+          <div id="bm-personnes-capacity-hint" class="bm-personnes-capacity-hint" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="bm-step" id="bm-step-booker" style="display:none" role="group" aria-label="Étape pour qui">
+        <div class="bm-section bm-booker-heading">
+          <div class="bm-section-title">Pour qui ?</div>
+          <div class="bm-booker-tabs" id="bm-booker-tabs">
+            <button type="button" class="bm-booker-tab active" data-tab="member" onclick="switchBookerTab('member')">Membre</button>
+            <button type="button" class="bm-booker-tab" data-tab="external" onclick="switchBookerTab('external')">Externe</button>
+          </div>
+        </div>
+        <div class="bm-section bm-booker-body">
+          <div id="bm-booker-member-list" class="bm-booker-member-list"></div>
+          <div id="bm-booker-external" class="bm-booker-external-wrap" style="display:none">
+            <div class="input-group bm-booker-external-field">
+              <label for="bm-external-name">Nom de l'invité</label>
+              <input type="text" id="bm-external-name" name="bm-external-name" placeholder="Nom de l'invité" autocomplete="off" oninput="onExternalNameInput(this.value)">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:none" aria-hidden="true">
+        <span id="bm-mini-hours-val"></span>
+        <span id="bm-mini-booker-val"></span>
+      </div>
+
+      <div class="bm-step" id="bm-step-destination" role="group" aria-label="Étape destination ou motif">
+        <div class="bm-section bm-destination-step-inner" id="bm-step1-full">
+          <div class="bm-section-title" id="bm-step1-title">Où vas-tu ?</div>
+          <div id="bm-dest-section">
+            <div class="bm-dest-search">
+              <span class="bm-dest-search-icon">🔍</span>
+              <input class="bm-dest-input" type="text" id="bm-dest-input" placeholder="Rechercher une destination" oninput="filterDestSuggestions(this.value)" autocomplete="off">
+            </div>
+            <div class="bm-dest-suggestions" id="bm-dest-suggestions"></div>
+            <div class="bm-dest-km" id="bm-dest-km"></div>
+          </div>
+          <div id="bm-motif-section" style="display:none">
+            <div class="input-group bm-motif-group">
+              <textarea id="bm-motif-input" placeholder="Ex : Week-end en famille" autocomplete="off" rows="4"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="planning-micro-prompt" class="planning-micro-prompt" style="display:none" role="status" aria-live="polite">
+      <span class="planning-micro-prompt-text" id="planning-micro-prompt-text"></span>
+      <div class="planning-micro-prompt-actions">
+        <button type="button" class="planning-micro-btn planning-micro-cancel" id="planning-micro-cancel">Annuler</button>
+        <button type="button" class="planning-micro-btn planning-micro-ok" id="planning-micro-ok">Oui</button>
+      </div>
+    </div>
+
+    <div id="planning-action-bar" class="planning-action-bar" style="display:none">
+      <button type="button" class="planning-action-left bm-reset-btn" id="planning-action-left" onclick="planningActionLeftClick()">Effacer</button>
+      <button type="button" class="planning-action-right btn-primary" id="planning-action-right" onclick="planningActionRightClick()">Suivant →</button>
     </div>
   </section>
 
@@ -450,132 +574,6 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
-
-<!-- ===== BOOKING MODAL (full-screen Airbnb) ===== -->
-<div class="booking-modal" id="booking-modal" role="dialog" aria-modal="true" aria-label="Réservation">
-  <div class="bm-header">
-    <button class="bm-close" onclick="closeBookingModal()">✕</button>
-  </div>
-  <div class="bm-body" id="bm-body">
-
-    <!-- STEP 1 — Dates (premier pas) -->
-    <div class="bm-step active" id="bm-step-dates" role="group" aria-label="Étape dates">
-      <!-- Mini -->
-      <div class="bm-card-mini" onclick="goToStep('dates')">
-        <div>
-          <div class="bm-card-mini-label">Dates</div>
-          <div class="bm-card-mini-value" id="bm-mini-dates-val">Ajouter des dates</div>
-        </div>
-        <div class="bm-card-mini-edit">Modifier</div>
-      </div>
-      <!-- Full -->
-      <div class="bm-section bm-section--dates">
-        <div class="bm-dates-header">
-          <div class="bm-section-title">Quand ?</div>
-          <div class="bm-section-subtitle" id="bm-dates-hint">Sélectionnez votre date de départ</div>
-          <div class="bm-cal-top-header">
-            <div>L</div><div>M</div><div>M</div><div>J</div><div>V</div><div>S</div><div>D</div>
-          </div>
-        </div>
-        <div class="bm-dates-scroll">
-          <div id="bm-calendar-container"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 2 — Horaires (voiture uniquement) -->
-    <div class="bm-step upcoming" id="bm-step-hours" role="group" aria-label="Étape heures">
-      <!-- Mini -->
-      <div class="bm-card-mini" onclick="goToStep('hours')">
-        <div>
-          <div class="bm-card-mini-label">Heure</div>
-          <div class="bm-card-mini-value" id="bm-mini-hours-val">09:00 → 20:00</div>
-        </div>
-        <div class="bm-card-mini-edit">Modifier</div>
-      </div>
-      <!-- Full -->
-      <div class="bm-section">
-        <div class="bm-section-title">À quelle heure ?</div>
-        <div class="bm-time-row">
-          <div class="bm-time-block">
-            <label class="bm-time-label" for="bm-start-hour">Prise</label>
-            <input class="bm-time-input" type="time" id="bm-start-hour" name="bm-start-hour" value="09:00" onchange="updateBookingRecap()">
-          </div>
-          <div class="bm-time-block">
-            <label class="bm-time-label" for="bm-end-hour">Retour</label>
-            <input class="bm-time-input" type="time" id="bm-end-hour" name="bm-end-hour" value="20:00" onchange="updateBookingRecap()">
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 3 — Pour qui ? (participants, invités, hôte) -->
-    <div class="bm-step" id="bm-step-booker" style="display:none" role="group" aria-label="Étape pour qui">
-      <!-- Mini (collapsed) -->
-      <div class="bm-card-mini" onclick="goToStep('booker')">
-        <div>
-          <div class="bm-card-mini-label">Pour</div>
-          <div class="bm-card-mini-value" id="bm-mini-booker-val">Moi-même</div>
-        </div>
-        <div class="bm-card-mini-edit">Modifier</div>
-      </div>
-      <!-- Full (expanded) -->
-      <div class="bm-section" id="bm-step-booker-full">
-        <div class="bm-section-title">Pour qui ?</div>
-        <div class="bm-booker-tabs" id="bm-booker-tabs">
-          <button class="bm-booker-tab active" data-tab="member" onclick="switchBookerTab('member')">Membre</button>
-          <button class="bm-booker-tab" data-tab="external" onclick="switchBookerTab('external')">Locataire externe</button>
-        </div>
-        <div id="bm-booker-member-list" class="bm-booker-member-list"></div>
-        <div id="bm-booker-external" style="display:none">
-          <div class="input-group" style="margin-top:8px">
-            <label for="bm-external-name">Nom du locataire</label>
-            <input type="text" id="bm-external-name" name="bm-external-name" placeholder="Nom du locataire" autocomplete="off" oninput="onExternalNameInput(this.value)">
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 4 — Destination / Motif (dernier pas) -->
-    <div class="bm-step upcoming" id="bm-step-destination" role="group" aria-label="Étape destination ou motif">
-      <!-- Mini (collapsed) -->
-      <div class="bm-card-mini" onclick="goToStep('destination')">
-        <div>
-          <div class="bm-card-mini-label" id="bm-step1-mini-label">Destination</div>
-          <div class="bm-card-mini-value" id="bm-mini-dest-val">Je suis flexible</div>
-        </div>
-        <div class="bm-card-mini-edit">Modifier</div>
-      </div>
-      <!-- Full (expanded) -->
-      <div class="bm-section" id="bm-step1-full">
-        <div class="bm-section-title" id="bm-step1-title">Où ?</div>
-        <!-- Car: destination search -->
-        <div id="bm-dest-section">
-          <div class="bm-dest-search">
-            <span class="bm-dest-search-icon">🔍</span>
-            <input class="bm-dest-input" type="text" id="bm-dest-input" placeholder="Rechercher une destination" oninput="filterDestSuggestions(this.value)" autocomplete="off">
-          </div>
-          <div class="bm-dest-suggestions" id="bm-dest-suggestions"></div>
-          <div class="bm-dest-km" id="bm-dest-km"></div>
-        </div>
-        <!-- House: motif input -->
-        <div id="bm-motif-section" style="display:none">
-          <div class="input-group bm-motif-group">
-            <label>Motif / Description <span style="color:var(--text-light);font-weight:400">(optionnel)</span></label>
-            <textarea id="bm-motif-input" placeholder="Ex: vacances d'été, week-end famille..." autocomplete="off" rows="4"></textarea>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-  <div class="bm-footer">
-    <div class="bm-footer-actions">
-      <button class="bm-reset-btn" onclick="resetBookingModal()">Réinitialiser</button>
-      <button class="bm-next-btn" id="bm-next-btn" onclick="bmNextStep()">Suivant</button>
-    </div>
-  </div>
-</div>
 
 <div id="celebration" class="celebration" style="display:none;" aria-live="polite">
   <div class="celebration-inner">
@@ -844,8 +842,8 @@
 <script src="src/infra/firebase/firebase.client.js?v=7" defer></script>
 <script src="src/infra/firebase/firebase.mapper.js?v=5" defer></script>
 <script src="js/firebase.js?v=9" defer></script>
-<script src="js/app.js?v=10" defer></script>
-<script src="js/ui.js?v=9" defer></script>
+<script src="js/app.js?v=11" defer></script>
+<script src="js/ui.js?v=10" defer></script>
 <script src="js/xp.js?v=4" defer></script>
 <script src="js/celebration.js?v=8" defer></script>
 <script src="js/auth.js?v=22" defer></script>
@@ -860,12 +858,12 @@
 <script src="src/modules/user/user.service.js?v=4" defer></script>
 <script src="src/modules/resource/resource.repository.js?v=7" defer></script>
 <script src="src/modules/resource/resource.service.js?v=8" defer></script>
-<script src="js/booking.js?v=8" defer></script>
-<script src="js/calendar.js?v=6" defer></script>
+<script src="js/booking.js?v=14" defer></script>
+<script src="js/calendar.js?v=15" defer></script>
 <script src="js/history.js?v=4" defer></script>
 <script src="src/modules/profile/profile.service.js?v=2" defer></script>
 <script src="js/profile.js?v=7" defer></script>
-<script src="js/resources.js?v=20" defer></script>
+<script src="js/resources.js?v=22" defer></script>
 <script src="js/onboarding-resource.js?v=4" defer></script>
 <script src="js/famresa-completion.js?v=3" defer></script>
 <script src="js/famresa-guides.js?v=5" defer></script>

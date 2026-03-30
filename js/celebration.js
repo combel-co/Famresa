@@ -54,7 +54,14 @@ function celebrate(icon, title, xpText, subtitle, onClose, opts) {
   const inviteFoot = document.getElementById('cel-invite-footer');
   if (inviteFoot) inviteFoot.style.display = 'none';
   const xpEl = document.getElementById('cel-xp');
-  if (xpEl) xpEl.style.display = '';
+  const hideXp = opts && opts.hideXp === true;
+  if (xpEl) {
+    if (hideXp) {
+      xpEl.style.display = 'none';
+    } else {
+      xpEl.style.display = '';
+    }
+  }
 
   const colors = ['rgba(255,255,255,0.85)', '#f59e0b', 'rgba(255,255,255,0.5)', '#10b981', '#a5b4fc', '#fde68a'];
   const container = document.getElementById('confetti-container');
@@ -279,8 +286,8 @@ function finishOnboardingResourceCelebration(resourceId, isHouse, opts) {
   if (resourceId && typeof selectResource === 'function') selectResource(resourceId);
   if (typeof enterApp === 'function') {
     enterApp('dashboard').then(() => {
-      if (opts && opts.openBooking && typeof openBookingModal === 'function') {
-        openBookingModal();
+      if (opts && opts.openBooking && typeof switchToBookingMode === 'function') {
+        switchToBookingMode();
       }
     });
   }

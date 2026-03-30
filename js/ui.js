@@ -31,6 +31,13 @@ function setTextSizePreference(isLarge) {
     if (h && h.offsetHeight > 0) {
       root.style.setProperty('--header-h', h.offsetHeight + 'px');
     }
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(function () {
+        if (typeof syncResourceTabsHeight === 'function') syncResourceTabsHeight();
+      });
+    } else if (typeof syncResourceTabsHeight === 'function') {
+      syncResourceTabsHeight();
+    }
   } catch (e) {}
 }
 
@@ -484,7 +491,7 @@ function _initPullToRefresh() {
 
   window.addEventListener('touchstart', (e) => {
     if (!_isAppVisible()) { _ptrArmed = false; return; }
-    if (document.querySelector('#overlay.open, #booking-modal.open')) { _ptrArmed = false; return; }
+    if (document.querySelector('#overlay.open')) { _ptrArmed = false; return; }
     if (!_ptrAllowed()) { _ptrArmed = false; return; }
     const main = document.getElementById('app-main');
     const atTop = main ? main.scrollTop <= 0 : (window.scrollY || 0) <= 0;

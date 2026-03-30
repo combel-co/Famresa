@@ -359,6 +359,40 @@ async function submitResourceChoiceJoin() {
 }
 
 // ==========================================
+// --resource-tabs-h : hauteur réelle #resource-tabs (sticky calendrier / planning)
+// ==========================================
+function syncResourceTabsHeight() {
+  const el = document.getElementById('resource-tabs');
+  const root = document.documentElement;
+  if (!el) return;
+  if (typeof window !== 'undefined' && !window._resourceTabsHeightLivePx) window._resourceTabsHeightLivePx = 0;
+  try {
+    const cs = window.getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden') {
+      root.style.setProperty('--resource-tabs-h', '0px');
+      // On conserve la dernière hauteur mesurée pour les UI sticky en mode réserve.
+      const livePx = (typeof window !== 'undefined' ? window._resourceTabsHeightLivePx : 0) || 0;
+      root.style.setProperty('--resource-tabs-h-live', livePx + 'px');
+      return;
+    }
+    const h = el.getBoundingClientRect().height;
+    const px = Math.ceil(Math.max(0, h));
+    root.style.setProperty('--resource-tabs-h', px + 'px');
+    root.style.setProperty('--resource-tabs-h-live', px + 'px');
+    if (typeof window !== 'undefined') window._resourceTabsHeightLivePx = px;
+  } catch (_) {}
+}
+
+function ensureResourceTabsResizeObserver() {
+  const el = document.getElementById('resource-tabs');
+  if (!el || typeof ResizeObserver === 'undefined') return;
+  if (el.dataset.resourceTabsRo === '1') return;
+  el.dataset.resourceTabsRo = '1';
+  const ro = new ResizeObserver(() => syncResourceTabsHeight());
+  ro.observe(el);
+}
+
+// ==========================================
 // RESOURCE TABS RENDER
 // ==========================================
 function renderResourceTabs() {
@@ -378,6 +412,16 @@ function renderResourceTabs() {
   </div>`);
 
   container.innerHTML = pills.join('');
+
+  const run = () => {
+    syncResourceTabsHeight();
+    ensureResourceTabsResizeObserver();
+  };
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(run);
+  } else {
+    run();
+  }
 }
 
 function selectResourceType(type) {
@@ -430,7 +474,6 @@ function subscribeBookings() {
     if (runId !== _photoHydrationRun) return;
     renderCalendar();
     renderExperiencePanels();
-    if (document.getElementById('booking-modal')?.classList.contains('open')) renderBmCalendar();
   }
 
   function _rebuild() {
@@ -440,7 +483,6 @@ function subscribeBookings() {
     Object.entries(_bookingsNew).forEach(([k, v]) => { bookings[k] = v; });
     renderCalendar();
     renderExperiencePanels();
-    if (document.getElementById('booking-modal')?.classList.contains('open')) renderBmCalendar();
     _hydrateCurrentBookingPhotos().catch(() => {});
   }
 
@@ -1498,7 +1540,10 @@ async function _rmMemberMenu(accessId, memberName, resourceId) {
 
 async function _rmRemoveMember(accessId, memberName, resourceId) {
   try {
-    await resourceService.removeManageAccess({ accessId });
+    await resourceService.removeManageAccess({
+      accessId,
+      approverProfileId: currentUser?.id || null,
+    });
     showToast(`${memberName} retiré(e)`);
     await showResourceManagePage(resourceId);
   } catch(e) { showToast('Erreur — réessayez'); }
@@ -1627,4 +1672,20 @@ async function handleResourceJoinCode(code, options = {}) {
     notify('Erreur — réessayez');
     return { status: 'error' };
   }
+}
+
+if (typeof window !== 'undefined' && !window._resourceTabsHeightResizeBound) {
+  window._resourceTabsHeightResizeBound = true;
+  let _resourceTabsResizeDebounce = null;
+  window.addEventListener(
+    'resize',
+    () => {
+      if (_resourceTabsResizeDebounce != null) clearTimeout(_resourceTabsResizeDebounce);
+      _resourceTabsResizeDebounce = setTimeout(() => {
+        _resourceTabsResizeDebounce = null;
+        if (typeof syncResourceTabsHeight === 'function') syncResourceTabsHeight();
+      }, 100);
+    },
+    { passive: true }
+  );
 }

@@ -4,12 +4,22 @@
 // Business logic delegated to reservationService
 // (src/modules/reservation/reservation.service.js)
 
-let bm = { startDate: null, endDate: null, startHour: '09:00', endHour: '20:00', destinations: [], step: 'start', booker: null, bookerTab: 'member' };
-let bmCurrentStep = 'destination';
-let bmIsAdmin = false;
-let bmMembers = [];
-let bmIsEditing = false;
-let bmCalendarSignature = '';
+var bm = {
+  startDate: null,
+  endDate: null,
+  startHour: '09:00',
+  endHour: '20:00',
+  destinations: [],
+  step: 'start',
+  booker: null,
+  bookerTab: 'member',
+  personTotal: 1
+};
+var bmCurrentStep = 'destination';
+var bmIsAdmin = false;
+var bmMembers = [];
+var bmIsEditing = false;
+var bmCalendarSignature = '';
 
 function bmGetContext() {
   const resource = resources.find(r => r.id === selectedResource);
@@ -23,14 +33,19 @@ function bmGetContext() {
 
 function bmBuildStepConfig() {
   const { isHouse, isAdmin, isEditing } = bmGetContext();
-  if (isEditing) return ['destination'];
-  if (isHouse) return ['dates', 'booker', 'destination'];
-  return isAdmin ? ['dates', 'hours', 'booker', 'destination'] : ['dates', 'hours', 'destination'];
+  if (isEditing) return isHouse ? ['personnes', 'destination'] : ['destination'];
+  if (isHouse) return isAdmin ? ['booker', 'destination'] : ['personnes', 'destination'];
+  return isAdmin ? ['hours', 'booker', 'destination'] : ['hours', 'destination'];
 }
 
 function bmCanProceedFromStep(step) {
-  if (step === 'dates') return !!bm.startDate;
   if (step === 'hours') return !!bm.startHour && !!bm.endHour;
+  if (step === 'personnes') {
+    const cap = bmGetHouseCapacity();
+    const t = bm.personTotal || 1;
+    if (cap != null && t > cap) return false;
+    return t >= 1;
+  }
   if (step === 'booker') {
     if (bm.bookerTab === 'external') return !!(bm.booker && bm.booker.type === 'external' && bm.booker.name);
     return true;
@@ -39,6 +54,7 @@ function bmCanProceedFromStep(step) {
 }
 
 function bmBuildCelebrationRecap(resource, iconFallback) {
+  const { isHouse, isAdmin } = bmGetContext();
   const startDate = bm.startDate ? new Date(bm.startDate + 'T00:00:00') : null;
   const endDate = (bm.endDate || bm.startDate) ? new Date((bm.endDate || bm.startDate) + 'T00:00:00') : null;
   const endStr = bm.endDate || bm.startDate;
@@ -48,19 +64,37 @@ function bmBuildCelebrationRecap(resource, iconFallback) {
       : startDate && endDate
         ? Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 86400000))
         : 1;
-  let participant = bm.booker?.name || currentUser?.name || 'Moi-même';
-  if (bmGetContext().isHouse && bm.bookerTab === 'member') {
-    const tot = bmComputeStayTotal();
-    participant = `${tot} pers.`;
+
+  let participants = '—';
+  if (isHouse) {
+    if (isAdmin && bm.bookerTab === 'member') {
+      const n = Math.max(1, bmComputeStayTotal());
+      const host = _resolveHouseStayBooker();
+      participants = n <= 1 ? bmFirstName(host.name || currentUser?.name) : `${n} personnes`;
+    } else if (isAdmin && bm.bookerTab === 'external') {
+      participants = bm.booker?.name || bmFirstName(currentUser?.name);
+    } else {
+      const n = Math.max(1, Number(bm.personTotal) || 1);
+      participants = n <= 1 ? bmFirstName(currentUser?.name) : `${n} personnes`;
+    }
+  } else {
+    const b = _resolveBooker();
+    participants = bmFirstName(b.name || currentUser?.name);
   }
+
+  const isHouseRes = resource?.type === 'house';
+  const sub = isHouseRes
+    ? (resource?.familyName || 'Réservation famille')
+    : 'Réservation véhicule';
+
   return {
-    icon: resource?.emoji || iconFallback || '🏠',
+    icon: resource?.emoji || iconFallback || (isHouseRes ? '🏠' : '🚗'),
     name: resource?.name || 'Ressource',
-    sub: resource?.familyName || 'Réservation famille',
+    sub,
     arrivee: startDate ? startDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'short' }) : '—',
     depart: endDate ? endDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'short' }) : '—',
     duree: `${nights} ${nights > 1 ? 'nuits' : 'nuit'}`,
-    participants: participant
+    participants
   };
 }
 
@@ -76,7 +110,7 @@ function renderBmSteps() {
   const currentIndex = Math.max(0, steps.indexOf(bmCurrentStep));
   bmCurrentStep = steps[currentIndex] || steps[0];
 
-  ['dates', 'hours', 'booker', 'destination'].forEach((step) => {
+  ['hours', 'personnes', 'booker', 'destination'].forEach((step) => {
     const el = document.getElementById(`bm-step-${step}`);
     if (!el) return;
     const index = steps.indexOf(step);
@@ -92,6 +126,15 @@ function renderBmSteps() {
     else if (index === currentIndex) el.classList.add('active');
     else el.classList.add('upcoming');
   });
+
+  const ptVal = document.getElementById('bm-person-total-val');
+  if (ptVal) ptVal.textContent = String(Math.max(1, Number(bm.personTotal) || 1));
+  const plab = document.getElementById('bm-personnes-label');
+  if (plab) {
+    const n = Math.max(1, Number(bm.personTotal) || 1);
+    plab.textContent = n <= 1 ? 'personne' : 'personnes';
+  }
+  bmSyncPersonnesCapacityHint();
 
   const bookerVal = document.getElementById('bm-mini-booker-val');
   if (bookerVal) {
@@ -124,24 +167,52 @@ function renderBmSteps() {
       : 'Ajouter des dates';
   }
 
+  const personnesCard = document.getElementById('planning-mini-personnes-card');
+  const personnesWizardVal = document.getElementById('bm-mini-wizard-personnes-val');
+  if (personnesCard && personnesWizardVal) {
+    const bookerIdx = steps.indexOf('booker');
+    const showPersonnesSummary = bookerIdx !== -1 && currentIndex > bookerIdx;
+    if (showPersonnesSummary) {
+      let n = 1;
+      if (isHouse && bm.bookerTab === 'member') {
+        n = Math.max(1, bmComputeStayTotal());
+      }
+      personnesWizardVal.textContent = n <= 1 ? '1 personne' : `${n} personnes`;
+      personnesCard.style.display = '';
+      personnesCard.removeAttribute('hidden');
+      personnesCard.setAttribute(
+        'aria-label',
+        `Composition : ${personnesWizardVal.textContent}. Modifier`
+      );
+    } else {
+      personnesCard.style.display = 'none';
+      personnesCard.setAttribute('hidden', '');
+      personnesCard.removeAttribute('aria-label');
+    }
+  }
+
+  const destInner = document.getElementById('bm-step1-full');
+  if (destInner) {
+    destInner.classList.toggle('bm-wizard-card', !isHouse);
+    destInner.classList.toggle('bm-destination-house-inner', isHouse);
+  }
+
   const hoursVal = document.getElementById('bm-mini-hours-val');
   if (hoursVal) hoursVal.textContent = `${bm.startHour} → ${bm.endHour}`;
 
   const destTitle = document.querySelector('#bm-step-destination .bm-section-title');
-  const destLabel = document.querySelector('#bm-step-destination .bm-card-mini-label');
-  if (destTitle) destTitle.textContent = isHouse ? 'Motif (optionnel)' : 'Où ?';
-  if (destLabel) destLabel.textContent = isHouse ? 'Motif' : 'Destination';
+  if (destTitle) destTitle.textContent = isHouse ? 'Un mot sur ton séjour (optionnel)' : 'Où vas-tu ?';
 
-  const datesTitle = document.querySelector('#bm-step-dates .bm-section-title');
-  if (datesTitle) datesTitle.textContent = isHouse ? 'Arrivée / Départ' : 'Quand ?';
-
-  const nextBtn = document.getElementById('bm-next-btn');
-  if (nextBtn) {
+  const inWizard = typeof getPlanningPhase === 'function' && getPlanningPhase() === 'wizard';
+  const rightBtn = document.getElementById('planning-action-right');
+  const leftBtn = document.getElementById('planning-action-left');
+  if (rightBtn && inWizard) {
     const isLast = currentIndex === steps.length - 1;
-    nextBtn.textContent = isLast ? (isEditing ? 'Enregistrer' : 'Réserver') : 'Suivant';
-    nextBtn.disabled = !bmCanProceedFromStep(bmCurrentStep);
-    nextBtn.setAttribute('aria-disabled', String(nextBtn.disabled));
+    rightBtn.textContent = isLast ? (isEditing ? 'Enregistrer' : 'Réserver') : 'Suivant →';
+    rightBtn.disabled = !bmCanProceedFromStep(bmCurrentStep);
+    rightBtn.classList.toggle('is-disabled', rightBtn.disabled);
   }
+  if (leftBtn && inWizard) leftBtn.textContent = 'Retour';
 
   const destSection = document.getElementById('bm-dest-section');
   const motifSection = document.getElementById('bm-motif-section');
@@ -160,7 +231,16 @@ function bmNextStep() {
     confirmRangeBooking();
     return;
   }
-  bmCurrentStep = steps[currentIndex + 1];
+  const nextStep = steps[currentIndex + 1];
+  if (
+    bmCurrentStep === 'booker' &&
+    bmGetContext().isHouse &&
+    bmIsAdmin &&
+    (nextStep === 'personnes' || nextStep === 'destination')
+  ) {
+    bm.personTotal = Math.max(1, bmComputeStayTotal());
+  }
+  bmCurrentStep = nextStep;
   renderBmSteps();
   bmScrollToStep(bmCurrentStep);
 }
@@ -169,130 +249,28 @@ function goToStep(step) {
   const steps = bmBuildStepConfig();
   if (!steps.includes(step)) return;
   bmCurrentStep = step;
-  if (step === 'dates') renderBmCalendar();
+  if (step === 'dates' && typeof planningExpandDatesFromWizard === 'function') planningExpandDatesFromWizard();
   renderBmSteps();
   bmScrollToStep(step);
 }
 
+/** @deprecated Legacy name — planning unifié uses switchToBookingMode + calendrier. */
 function openBookingModal() {
-  if (!currentUser) { showWelcomeScreen(); return; }
-  bm = {
-    startDate: null,
-    endDate: null,
-    startHour: '09:00',
-    endHour: '20:00',
-    destinations: [],
-    step: 'start',
-    booker: null,
-    bookerTab: 'member',
-    participatesByMemberId: {},
-    guestsByMemberId: {},
-    primaryProfileId: null
-  };
-  bmIsEditing = false;
-  bmCalendarSignature = '';
-  bmIsAdmin = window._myResourceRoles && window._myResourceRoles[selectedResource] === 'admin';
-  bmMembers = [];
-  bmCurrentStep = 'dates';
-  const _resOpen = resources.find((r) => r.id === selectedResource);
-  if (_resOpen?.type === 'house' || bmIsAdmin) void loadBookerMembers();
-
-  document.getElementById('booking-modal').classList.add('open');
-  const sh = document.getElementById('bm-start-hour'); if (sh) sh.value = '09:00';
-  const eh = document.getElementById('bm-end-hour'); if (eh) eh.value = '20:00';
-  const di = document.getElementById('bm-dest-input'); if (di) di.value = '';
-  const mi = document.getElementById('bm-motif-input'); if (mi) mi.value = '';
-  const ni = document.getElementById('bm-external-name'); if (ni) ni.value = '';
-  const hint = document.getElementById('bm-dates-hint'); if (hint) hint.textContent = 'Sélectionnez votre date de départ';
-  renderDestSuggestions('');
-  renderBmCalendar();
-  renderBmSteps();
+  if (typeof switchToBookingMode === 'function') switchToBookingMode();
 }
 
 function closeBookingModal() {
   _editingBookingId = null;
   bmIsEditing = false;
-  bmCalendarSignature = '';
-  document.getElementById('booking-modal').classList.remove('open');
+  if (typeof exitPlanningUnifiedMode === 'function') exitPlanningUnifiedMode();
 }
 
 function renderBmCalendar() {
-  const container = document.getElementById('bm-calendar-container');
-  const body = document.getElementById('bm-body');
-  if (!container) return;
-  const scrollTop = body ? body.scrollTop : 0;
-  const today = new Date(); today.setHours(0,0,0,0);
-  let html = '';
-
-  for (let m = 0; m < reservationService.BOOKING_HORIZON_MONTHS; m++) {
-    const d = new Date(today.getFullYear(), today.getMonth() + m, 1);
-    const year = d.getFullYear(); const month = d.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    let firstDay = d.getDay() - 1; if (firstDay < 0) firstDay = 6;
-    html += `<div class="bm-month-block">`;
-    html += `<div class="bm-month-label">${d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</div>`;
-    html += `<div class="bm-cal-grid">`;
-    for (let i = 0; i < firstDay; i++) html += `<div class="bm-day bm-empty"></div>`;
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      const cellDate = new Date(year, month, day);
-      const isPast = cellDate < today;
-      const isToday = cellDate.getTime() === today.getTime();
-      const booking = bookings[ds];
-
-      let classes = ['bm-day'];
-      if (isPast) classes.push('bm-past');
-      else if (isToday) classes.push('bm-today');
-      if (booking && !isPast) classes.push('bm-booked');
-
-      if (bm.startDate && bm.endDate) {
-        if (ds === bm.startDate && ds === bm.endDate) classes.push('bm-day--start', 'bm-day--end');
-        else if (ds === bm.startDate) classes.push('bm-day--start');
-        else if (ds === bm.endDate) classes.push('bm-day--end');
-        else if (ds > bm.startDate && ds < bm.endDate) classes.push('bm-day--mid');
-      } else if (bm.startDate && ds === bm.startDate) classes.push('bm-day--start', 'bm-day--end');
-
-      let avHtml = '';
-      if (booking) {
-        const avatarPhoto = booking._currentPhoto || booking.photo || null;
-        avHtml = avatarPhoto
-          ? `<div class="bm-booking-avatar"><img src="${avatarPhoto}" alt=""></div>`
-          : `<div class="bm-booking-avatar">${getInitials(booking.userName || '?')}</div>`;
-      }
-
-      const isInteractive = !isPast && !booking;
-      const onAction = isInteractive
-        ? `onclick="onBmDayClick('${ds}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();onBmDayClick('${ds}')}" tabindex="0" role="button" aria-label="Sélectionner le ${day}"`
-        : 'aria-disabled="true" tabindex="-1"';
-      html += `<div class="${classes.join(' ')}" ${onAction}><span class="bm-day-num">${day}</span>${avHtml}</div>`;
-    }
-    html += `</div></div>`;
-  }
-  const bookingKeys = Object.keys(bookings || {}).sort().join(',');
-  const signature = `${bm.startDate || ''}|${bm.endDate || ''}|${bookingKeys}`;
-  if (signature !== bmCalendarSignature || container.innerHTML !== html) {
-    container.innerHTML = html;
-    bmCalendarSignature = signature;
-  }
-  if (body) body.scrollTop = scrollTop;
+  if (typeof renderCalendar === 'function') renderCalendar();
 }
 
 function onBmDayClick(ds) {
-  if (!bm.startDate || bm.endDate) {
-    bm.startDate = ds; bm.endDate = null; bm.step = 'end';
-  } else {
-    if (ds < bm.startDate) { bm.endDate = bm.startDate; bm.startDate = ds; }
-    else bm.endDate = ds;
-    bm.step = 'start';
-  }
-  const hint = document.getElementById('bm-dates-hint');
-  if (hint) {
-    if (bm.startDate && bm.endDate) hint.textContent = formatBmDateRange(bm.startDate, bm.endDate);
-    else hint.textContent = 'Sélectionnez la date de retour';
-  }
-  renderBmCalendar();
-  renderBmSteps();
+  bmApplyDaySelection(ds);
 }
 
 function formatBmDateRange(s, e) {
@@ -337,22 +315,38 @@ function updateBookingRecap() {
 }
 
 function resetBookingModal() {
+  resetBookingWizardState();
+  if (typeof exitPlanningUnifiedMode === 'function') exitPlanningUnifiedMode();
+}
+
+function resetBookingWizardState() {
   _editingBookingId = null;
   bmIsEditing = false;
-  bmCalendarSignature = '';
-  bm.startDate = null; bm.endDate = null; bm.destinations = []; bm.step = 'start';
-  bm.booker = null; bm.bookerTab = 'member';
-  bmCurrentStep = 'dates';
-  const hint = document.getElementById('bm-dates-hint'); if (hint) hint.textContent = 'Sélectionnez votre date de départ';
-  const di = document.getElementById('bm-dest-input'); if (di) di.value = '';
-  const mi = document.getElementById('bm-motif-input'); if (mi) mi.value = '';
-  const ni = document.getElementById('bm-external-name'); if (ni) ni.value = '';
-  const kmEl = document.getElementById('bm-dest-km'); if (kmEl) kmEl.textContent = '';
+  bm.startDate = null;
+  bm.endDate = null;
+  bm.destinations = [];
+  bm.step = 'start';
+  bm.booker = null;
+  bm.bookerTab = 'member';
+  bm.personTotal = 1;
+  bm.participatesByMemberId = {};
+  bm.guestsByMemberId = {};
+  bm.primaryProfileId = null;
+  bmCurrentStep = 'hours';
+  const di = document.getElementById('bm-dest-input');
+  if (di) di.value = '';
+  const mi = document.getElementById('bm-motif-input');
+  if (mi) mi.value = '';
+  const ni = document.getElementById('bm-external-name');
+  if (ni) ni.value = '';
+  const kmEl = document.getElementById('bm-dest-km');
+  if (kmEl) kmEl.textContent = '';
   const _resReset = resources.find((r) => r.id === selectedResource);
   if (_resReset?.type === 'house') bmInitHouseParticipation();
   if (_resReset?.type === 'house' || bmIsAdmin) renderBookerMemberList();
   renderDestSuggestions('');
-  renderBmCalendar();
+  const steps = bmBuildStepConfig();
+  bmCurrentStep = steps[0] || 'destination';
   renderBmSteps();
 }
 
@@ -375,7 +369,7 @@ function bmGetHouseCapacity() {
 function bmComputeStayTotal() {
   let t = 0;
   for (const m of bmMembers) {
-    if (bm.participatesByMemberId[m.id] === false) continue;
+    if (bm.participatesByMemberId[m.id] !== true) continue;
     t += 1 + Math.max(0, Number(bm.guestsByMemberId[m.id] || 0));
   }
   return t;
@@ -384,11 +378,29 @@ function bmComputeStayTotal() {
 function bmMaxGuestsForMember(memberId) {
   const cap = bmGetHouseCapacity();
   if (cap == null) return 999;
-  const others = bmComputeStayTotal() - (bm.participatesByMemberId[memberId] === false ? 0 : 1 + Math.max(0, Number(bm.guestsByMemberId[memberId] || 0)));
+  const selfContrib =
+    bm.participatesByMemberId[memberId] === true
+      ? 1 + Math.max(0, Number(bm.guestsByMemberId[memberId] || 0))
+      : 0;
+  const others = bmComputeStayTotal() - selfContrib;
   return Math.max(0, cap - others - 1);
 }
 
+/** Nouvelle résa : seul le profil actif participe par défaut (les autres décochés). */
 function bmInitHouseParticipation() {
+  bm.participatesByMemberId = {};
+  bm.guestsByMemberId = {};
+  const primaryId = currentUser?.id || bmMembers[0]?.id || null;
+  for (const m of bmMembers) {
+    bm.participatesByMemberId[m.id] = primaryId != null && m.id === primaryId;
+    bm.guestsByMemberId[m.id] = 0;
+  }
+  bm.primaryProfileId = primaryId;
+  bmEnsurePrimaryParticipant();
+}
+
+/** Édition / compat : tout le monde coché (ex. chargement résa existante). */
+function bmInitHouseParticipationAllParticipating() {
   bm.participatesByMemberId = {};
   bm.guestsByMemberId = {};
   for (const m of bmMembers) {
@@ -399,8 +411,56 @@ function bmInitHouseParticipation() {
   bmEnsurePrimaryParticipant();
 }
 
+function bmSortMembersPrimaryFirst() {
+  const uid = currentUser?.id;
+  if (!uid || !bmMembers.length) return;
+  bmMembers.sort((a, b) => {
+    if (a.id === uid) return -1;
+    if (b.id === uid) return 1;
+    return String(a.name || '').localeCompare(String(b.name || ''), 'fr');
+  });
+}
+
+/**
+ * Après chargement async des membres : ne pas écraser l’état si l’utilisateur a déjà modifié la composition.
+ * (Sinon fin de requête tardive → tout le monde recoché = bug « Suivant ».)
+ */
+function bmAfterHouseMembersLoaded() {
+  if (!bmMembers.length) {
+    renderBookerMemberList();
+    renderBmSteps();
+    return;
+  }
+  bmSortMembersPrimaryFirst();
+  const memberIds = new Set(bmMembers.map((m) => m.id));
+  const hadState = Object.keys(bm.participatesByMemberId).length > 0;
+  if (hadState) {
+    for (const id of Object.keys(bm.participatesByMemberId)) {
+      if (!memberIds.has(id)) {
+        delete bm.participatesByMemberId[id];
+        delete bm.guestsByMemberId[id];
+      }
+    }
+    for (const m of bmMembers) {
+      if (bm.participatesByMemberId[m.id] === undefined) {
+        bm.participatesByMemberId[m.id] = false;
+        bm.guestsByMemberId[m.id] = 0;
+      }
+    }
+    bmEnsurePrimaryParticipant();
+  } else {
+    if (bmIsEditing) {
+      bmInitHouseParticipationAllParticipating();
+    } else {
+      bmInitHouseParticipation();
+    }
+  }
+  renderBookerMemberList();
+  renderBmSteps();
+}
+
 function bmEnsurePrimaryParticipant() {
-  const part = bmMembers.filter((m) => bm.participatesByMemberId[m.id] !== false);
+  const part = bmMembers.filter((m) => bm.participatesByMemberId[m.id] === true);
   if (!part.length) return;
   if (!part.some((m) => m.id === bm.primaryProfileId)) {
     bm.primaryProfileId = part[0].id;
@@ -408,6 +468,15 @@ function bmEnsurePrimaryParticipant() {
 }
 
 function bmToggleParticipate(memberId, checked) {
+  if (!checked) {
+    const otherActive = bmMembers.some(
+      (m) => m.id !== memberId && bm.participatesByMemberId[m.id] === true
+    );
+    if (!otherActive) {
+      if (typeof showToast === 'function') showToast('Garde au moins un participant.');
+      return;
+    }
+  }
   bm.participatesByMemberId[memberId] = !!checked;
   if (!checked) bm.guestsByMemberId[memberId] = 0;
   bmEnsurePrimaryParticipant();
@@ -427,7 +496,7 @@ function bmSetPrimaryProfile(profileId) {
 }
 
 function bmGuestDelta(memberId, delta) {
-  if (bm.participatesByMemberId[memberId] === false) return;
+  if (bm.participatesByMemberId[memberId] !== true) return;
   const cur = Math.max(0, Number(bm.guestsByMemberId[memberId] || 0));
   const next = cur + delta;
   if (next < 0) return;
@@ -440,6 +509,66 @@ function bmGuestDelta(memberId, delta) {
   bm.guestsByMemberId[memberId] = next;
   renderBookerMemberList();
   renderBmSteps();
+}
+
+function bmSyncPersonnesCapacityHint() {
+  const hint = document.getElementById('bm-personnes-capacity-hint');
+  if (!hint) return;
+  const res = resources.find((r) => r.id === selectedResource);
+  const cap = res?.capacity != null ? Number(res.capacity) : null;
+  if (!Number.isFinite(cap) || cap <= 0) {
+    hint.style.display = 'none';
+    return;
+  }
+  const counter = Math.max(1, Number(bm.personTotal) || 1);
+  const remaining = Math.max(0, cap - counter);
+  hint.textContent = `${cap} places au total · ${remaining} disponibles`;
+  hint.style.display = '';
+}
+
+function bmPersonTotalDelta(delta) {
+  const cap = bmGetHouseCapacity();
+  let next = Math.max(1, (Number(bm.personTotal) || 1) + delta);
+  if (cap != null && next > cap) {
+    if (typeof showToast === 'function') showToast(`Capacité max. : ${cap} personne${cap > 1 ? 's' : ''}`);
+    return;
+  }
+  bm.personTotal = next;
+  renderBmSteps();
+}
+
+function bmGetSelection() {
+  return { startDate: bm.startDate, endDate: bm.endDate };
+}
+
+/**
+ * Date selection while in planning reserve mode (replaces modal onBmDayClick).
+ */
+function bmApplyDaySelection(ds) {
+  const booking = bookings[ds];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const cellDate = new Date(ds + 'T00:00:00');
+  if (cellDate < today) return;
+  if (booking) {
+    if (typeof showToast === 'function') showToast('Ce jour est déjà réservé');
+    return;
+  }
+
+  if (!bm.startDate || bm.endDate) {
+    bm.startDate = ds;
+    bm.endDate = null;
+    bm.step = 'end';
+  } else {
+    if (ds < bm.startDate) {
+      bm.endDate = bm.startDate;
+      bm.startDate = ds;
+    } else {
+      bm.endDate = ds;
+    }
+    bm.step = 'start';
+  }
+  if (typeof onPlanningDatesChanged === 'function') onPlanningDatesChanged();
 }
 
 async function loadBookerMembers() {
@@ -462,11 +591,10 @@ async function loadBookerMembers() {
                 .toUpperCase()
                 .slice(0, 2) || '?';
             bmMembers.push({ id: currentUser.id, name, photo: prof.photo || currentUser.photo || null, initials });
-            bmMembers.sort((a, b) => a.name.localeCompare(b.name, 'fr'));
           }
         } catch (_) {}
       }
-      bmInitHouseParticipation();
+      bmAfterHouseMembersLoaded();
     } else {
       if (!currentUser?.familyId) return;
       bmMembers = await reservationService.getEligibleBookers(currentUser.familyId);
@@ -474,7 +602,14 @@ async function loadBookerMembers() {
   } catch (_) {
     bmMembers = [];
   }
-  renderBookerMemberList();
+  if (res.type === 'house') {
+    if (!bmMembers.length) {
+      renderBookerMemberList();
+      renderBmSteps();
+    }
+  } else {
+    renderBookerMemberList();
+  }
 }
 
 function renderBookerMemberList() {
@@ -512,7 +647,7 @@ function renderBookerMemberList() {
         </div>
       </div>`;
     }
-    const partOptions = bmMembers.filter((m) => bm.participatesByMemberId[m.id] !== false);
+    const partOptions = bmMembers.filter((m) => bm.participatesByMemberId[m.id] === true);
     let selOpts = partOptions
       .map((m) => {
         const label = m.id === currentUser.id ? bmFirstName(currentUser.name || m.name) : bmFirstName(m.name);
@@ -621,7 +756,6 @@ function _resolveHouseStayBooker() {
 async function confirmRangeBooking() {
   if (!currentUser || !bm.startDate) return;
 
-  // If in edit mode, save changes instead of creating new
   if (_editingBookingId) {
     await saveEditedBooking();
     return;
@@ -637,9 +771,6 @@ async function confirmRangeBooking() {
 
   try {
     const booker = _resolveBooker();
-    // Keep photo snapshot in booking payload for legacy history,
-    // while UI rendering always prioritizes live profil photo.
-    window.__lastCelebrationRecap = bmBuildCelebrationRecap(res, res?.emoji || '🚗');
     const result = await reservationService.createCarReservation({
       resourceId: selectedResource,
       userId: booker.id,
@@ -655,13 +786,23 @@ async function confirmRangeBooking() {
     });
 
     if (result.error === 'conflict') {
-      showToast(`Conflit : le ${result.date} est déjà réservé`);
+      showToast('Ce jour est déjà réservé');
       return;
     }
 
-    closeBookingModal();
-    celebrate('✓', 'Réservation confirmée !', `+${result.xpGained} XP`,
-      result.destinations.length > 0 ? `Direction : ${result.destinations[0].name}` : 'Bonne route !');
+    window.__lastCelebrationRecap = bmBuildCelebrationRecap(res, res?.emoji || '🚗');
+    const sub = `${formatBmSubtitleRange(bm.startDate, bm.endDate || bm.startDate)}`;
+    if (typeof afterBookingSuccess === 'function') afterBookingSuccess(bm.startDate);
+    celebrate(
+      res?.emoji || '🚗',
+      'Réservation confirmée !',
+      '+20 XP',
+      sub,
+      () => {
+        if (typeof finishPlanningAfterCelebrate === 'function') finishPlanningAfterCelebrate(bm.startDate);
+      },
+      { closeDelayMs: 3200 }
+    );
     setTimeout(() => { const nb = checkNewBadges(); nb.forEach(b => showToast(`Badge débloqué : ${b.label}`)); }, 2800);
   } catch(e) { showToast('Erreur — réessayez'); }
 }
@@ -675,10 +816,7 @@ async function createStay() {
   try {
     const external = bm.bookerTab === 'external';
     const booker = external ? _resolveBooker() : _resolveHouseStayBooker();
-    const peopleCount = external ? 1 : bmComputeStayTotal();
-    // Keep photo snapshot in booking payload for legacy history,
-    // while UI rendering always prioritizes live profil photo.
-    window.__lastCelebrationRecap = bmBuildCelebrationRecap(resources.find(r => r.id === selectedResource), '🏠');
+    const peopleCount = Math.max(1, Number(bm.personTotal) || 1);
     const result = await reservationService.createStayReservation({
       resourceId: selectedResource,
       userId: booker.id,
@@ -693,21 +831,65 @@ async function createStay() {
     });
 
     if (result.error === 'conflict') {
-      showToast(`Conflit : le ${result.date} est déjà réservé`);
+      showToast('Ce jour est déjà réservé');
       return;
     }
 
-    closeBookingModal();
-    celebrate('🏠', 'Séjour confirmé !', '+20 XP', motif || `${formatBmDateRange(startDate, endDate)}`);
+    window.__lastCelebrationRecap = bmBuildCelebrationRecap(resources.find(r => r.id === selectedResource), '🏠');
+    const sub = `${formatBmSubtitleRange(startDate, endDate)}`;
+    if (typeof afterBookingSuccess === 'function') afterBookingSuccess(startDate);
+    celebrate(
+      '🏠',
+      'Séjour confirmé !',
+      '+20 XP',
+      sub,
+      () => {
+        if (typeof finishPlanningAfterCelebrate === 'function') finishPlanningAfterCelebrate(startDate);
+      },
+      { closeDelayMs: 3200 }
+    );
     setTimeout(() => { const nb = checkNewBadges(); nb.forEach(b => showToast(`Badge débloqué : ${b.label}`)); }, 2800);
   } catch(e) { showToast('Erreur — réessayez'); }
+}
+
+function bmEnsureDefaultEndForNext() {
+  if (!bm.startDate) return;
+  if (bm.endDate) return;
+  const s = new Date(bm.startDate + 'T00:00:00');
+  s.setDate(s.getDate() + 1);
+  bm.endDate = `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}-${String(s.getDate()).padStart(2, '0')}`;
+}
+
+function initWizardAfterDates() {
+  bmIsAdmin = window._myResourceRoles && window._myResourceRoles[selectedResource] === 'admin';
+  const res = resources.find((r) => r.id === selectedResource);
+  if (res?.type === 'house' || bmIsAdmin) void loadBookerMembers();
+  const steps = bmBuildStepConfig();
+  bmCurrentStep = steps[0] || 'destination';
+  if (!bmIsEditing) {
+    const pc = Number(
+      bm.personTotal || (res?.type === 'house' && bmIsAdmin ? Math.max(1, bmComputeStayTotal()) : 1)
+    );
+    bm.personTotal = Number.isFinite(pc) && pc > 0 ? pc : 1;
+  }
+  renderBmSteps();
+}
+
+function formatBmSubtitleRange(startDate, endDate) {
+  const nights = countStayNights(startDate, endDate);
+  const n = Math.max(1, nights);
+  const sd = new Date(startDate + 'T00:00:00');
+  const ed = new Date(endDate + 'T00:00:00');
+  const a = sd.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  const b = ed.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  return `${a} → ${b} · ${n} ${n > 1 ? 'nuits' : 'nuit'}`;
 }
 
 async function cancelStay(groupId) {
   try {
     await reservationService.cancelStay(groupId);
     closeSheet();
-    showToast('Séjour annulé');
+    showToast('Réservation annulée');
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 
@@ -893,48 +1075,83 @@ async function confirmEarlyReturn(bookingId, resourceId) {
 // ==========================================
 // EDIT BOOKING — Re-open modal pre-filled for modification
 // ==========================================
-let _editingBookingId = null;
+var _editingBookingId = null;
 
 function openEditBookingModal(bookingId) {
-  const booking = Object.values(bookings).find(b => b && b.id === bookingId);
-  if (!booking) { showToast('Réservation introuvable'); return; }
+  const booking = Object.values(bookings).find((b) => b && b.id === bookingId);
+  if (!booking) {
+    showToast('Réservation introuvable');
+    return;
+  }
 
   closeSheet();
   _editingBookingId = bookingId;
   bmIsEditing = true;
-  bmCalendarSignature = '';
 
-  // Open modal and pre-fill with existing values
-  openBookingModal();
-
-  // Pre-fill destinations
   if (booking.destinations && booking.destinations.length > 0) {
     const dest = booking.destinations[0];
     bm.destinations = [{ name: dest.name, km: dest.kmFromParis || dest.km || 0 }];
+  } else {
+    bm.destinations = [];
   }
 
-  // Pre-fill dates
   bm.startDate = booking.startDate || null;
   bm.endDate = booking.endDate || null;
-
-  // Pre-fill hours
   bm.startHour = booking.startHour || '09:00';
   bm.endHour = booking.endHour || '20:00';
-  const sh = document.getElementById('bm-start-hour'); if (sh) sh.value = bm.startHour;
-  const eh = document.getElementById('bm-end-hour'); if (eh) eh.value = bm.endHour;
+  const sh = document.getElementById('bm-start-hour');
+  if (sh) sh.value = bm.startHour;
+  const eh = document.getElementById('bm-end-hour');
+  if (eh) eh.value = bm.endHour;
 
-  // Edit flow starts on destination recap step
-  bmCurrentStep = 'destination';
+  const pc = booking.peopleCount || 1 + (Number(booking.guestCount) || Number(booking.companions) || 0);
+  bm.personTotal = Math.max(1, Number(pc) || 1);
+  const mi = document.getElementById('bm-motif-input');
+  if (mi) mi.value = booking.motif || '';
 
-  // Update UI
+  switchTab('planning');
+  setTimeout(() => {
+    if (typeof enterPlanningEditMode === 'function') enterPlanningEditMode();
+  }, 0);
   renderDestSuggestions('');
-  renderBmCalendar();
-  renderBmSteps();
 }
 
 async function saveEditedBooking() {
   if (!_editingBookingId) return;
   try {
+    const booking = Object.values(bookings).find((b) => b && b.id === _editingBookingId);
+    const res = resources.find((r) => r.id === selectedResource);
+    const isHouse = res && res.type === 'house';
+
+    if (isHouse && booking && booking.reservationGroupId) {
+      const motif = document.getElementById('bm-motif-input')?.value.trim() || '';
+      const peopleCount = Math.max(1, Number(bm.personTotal) || 1);
+      const result = await reservationService.updateStayReservation({
+        groupId: booking.reservationGroupId,
+        resourceId: selectedResource,
+        userId: booking.userId,
+        userName: booking.userName,
+        photo: booking.photo || null,
+        startDate: bm.startDate,
+        endDate: bm.endDate || bm.startDate,
+        motif,
+        bookings,
+        createdBy: booking.createdBy || null,
+        peopleCount,
+        familyId: currentUser?.familyId
+      });
+      if (result.error === 'conflict') {
+        showToast('Ce jour est déjà réservé');
+        return;
+      }
+      _editingBookingId = null;
+      bmIsEditing = false;
+      if (typeof exitPlanningUnifiedMode === 'function') exitPlanningUnifiedMode();
+      if (typeof renderCalendar === 'function') renderCalendar();
+      showToast('Réservation modifiée');
+      return;
+    }
+
     const updates = {
       destinations: bm.destinations,
       startDate: bm.startDate,
@@ -944,13 +1161,15 @@ async function saveEditedBooking() {
     };
     const result = await reservationService.updateReservation(_editingBookingId, updates, bookings);
     if (result.error === 'conflict') {
-      showToast(result.message);
+      showToast('Ce jour est déjà réservé');
       return;
     }
     _editingBookingId = null;
-    closeBookingModal();
+    bmIsEditing = false;
+    if (typeof exitPlanningUnifiedMode === 'function') exitPlanningUnifiedMode();
+    if (typeof renderCalendar === 'function') renderCalendar();
     showToast('Réservation modifiée');
-  } catch(e) {
+  } catch (e) {
     showToast('Erreur — réessayez');
   }
 }
