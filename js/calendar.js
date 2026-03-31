@@ -12,6 +12,17 @@ function getPlanningPhase() {
   return _planningPhase;
 }
 
+/** Barre de statut / chrome navigateur : beige en réservation/wizard planning, blanc sinon. */
+function syncPlanningThemeColor(planningBookingFocus) {
+  let meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.setAttribute('name', 'theme-color');
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute('content', planningBookingFocus ? '#faf8f4' : '#ffffff');
+}
+
 /**
  * Masque header app + onglets ressources pendant reserve/wizard sur l’onglet Planning.
  * Réaligne sur switchTab (Profil = caché) hors flux réservation.
@@ -22,6 +33,7 @@ function syncPlanningShellChrome() {
   const onCalendar = typeof activeTab !== 'undefined' && activeTab === 'calendar';
   const focus = inBooking && onCalendar;
   document.body.classList.toggle('planning-booking-focus', !!focus);
+  syncPlanningThemeColor(!!focus);
 
   if (!focus) {
     const appHeader = document.getElementById('app-header');

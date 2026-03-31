@@ -59,6 +59,10 @@
   --header-h: 85px;
   --bottom-nav-h: 84px;
   --resource-tabs-h: 52px;
+  /* Dernière hauteur mesurée des pills ressource (fallback jusqu’au 1er sync JS) */
+  --resource-tabs-h-live: 52px;
+  /* Carte « Réserver à partir du… » — marge au-dessus de la bottom nav */
+  --planning-micro-prompt-bottom-gap: 22px;
 
   /* ── Mode grande UI (html.ui-large) : typo via calc(* var(--ui-text-scale)) ── */
   --ui-text-scale: 1;
@@ -70,6 +74,7 @@ html.ui-large {
   --header-h: 96px;
   --bottom-nav-h: 94px;
   --resource-tabs-h: 58px;
+  --resource-tabs-h-live: 58px;
   --gap-xs: 5px;
   --gap-sm: 9px;
   --gap-md: 14px;
@@ -112,6 +117,7 @@ html.ui-large {
   /* Planning — flux réservation unifié : pas de header famille/profil ni pills ressources */
   body.planning-booking-focus {
     --resource-tabs-h: 0px;
+    background: #faf8f4;
   }
   body.planning-booking-focus #app-header,
   body.planning-booking-focus #resource-tabs {
@@ -152,10 +158,13 @@ html.ui-large {
     box-sizing: border-box;
   }
   body.planning-reserve-active .planning-calendar-sticky-stack {
-    top: env(safe-area-inset-top, 0px);
-    /* En mode réserve, header + tabs ressources sont masqués :
-       on réserve leur hauteur pour que l'alignement visuel reste identique. */
-    height: calc(var(--header-h) + var(--resource-tabs-h-live));
+    top: 0;
+    padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+    /* En mode réserve, header + tabs ressources sont masqués : min-height pour
+       l'alignement avec la consult, sans rogner titre/sous-titre si le bloc dépasse. */
+    min-height: calc(
+      env(safe-area-inset-top, 0px) + 10px + var(--header-h) + var(--resource-tabs-h-live, var(--resource-tabs-h))
+    );
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -239,20 +248,23 @@ html.ui-large {
   }
   body.planning-reserve-active .bm-day--start .bm-day-num,
   body.planning-reserve-active .bm-day--end .bm-day-num {
-    background: #e8dfd4 !important;
-    color: #2d2a24 !important;
+    background: #2d2a24 !important;
+    color: #fff !important;
     font-weight: 600;
   }
   body.planning-reserve-active .bm-day--start::before {
     left: 50%;
-    background: rgba(232, 223, 212, 0.75);
+    background: rgba(45, 42, 36, 0.5);
   }
   body.planning-reserve-active .bm-day--end::before {
     right: 50%;
-    background: rgba(232, 223, 212, 0.75);
+    background: rgba(45, 42, 36, 0.5);
   }
   body.planning-reserve-active .bm-day--mid::before {
-    background: rgba(232, 223, 212, 0.45);
+    background: rgba(45, 42, 36, 0.32);
+  }
+  body.planning-reserve-active .bm-day--start.bm-day--end::before {
+    display: none;
   }
 
   /* Phase réserve : pas de double bordure haute avec le fond #tab-calendar */
@@ -1892,7 +1904,7 @@ html.ui-large {
     position: fixed;
     left: 16px;
     right: 16px;
-    bottom: calc(var(--bottom-nav-h, 84px) + 8px);
+    bottom: calc(var(--bottom-nav-h, 84px) + var(--planning-micro-prompt-bottom-gap, 22px));
     z-index: 400;
     display: none;
     align-items: center;
@@ -2522,6 +2534,18 @@ html.ui-large {
   /* Active step fills remaining space; section scrolls internally */
   .bm-step.active { flex: 1; min-height: 0; display: flex; flex-direction: column; }
   .bm-step.active .bm-section { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  /* Étape « Pour qui ? » : l'en-tête ne doit pas absorber la moitié de la hauteur (bande blanche). */
+  .bm-step.active .bm-section.bm-booker-heading {
+    flex: 0 0 auto;
+    min-height: 0;
+    overflow: visible;
+  }
+  .bm-step.active .bm-section.bm-booker-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 
   /* Dates step — titre sticky + calendrier scrollable */
   .bm-step.active .bm-section--dates {
@@ -2653,7 +2677,7 @@ html.ui-large {
     }
     .resource-tabs { margin-left: -14px; margin-right: -14px; padding-left: 14px; padding-right: 14px; }
     :root { --header-h: 77px; }  /* mobile: padding 16+16 + content 44 + border 1 */
-    html.ui-large { --header-h: 88px; --bottom-nav-h: 90px; --resource-tabs-h: 60px; }
+    html.ui-large { --header-h: 88px; --bottom-nav-h: 90px; --resource-tabs-h: 60px; --resource-tabs-h-live: 60px; }
     .cal-day { font-size: calc(13px * var(--ui-text-scale)); border-radius: 10px; height: 48px; padding-top: 7px; padding-bottom: 18px; }
   }
 
