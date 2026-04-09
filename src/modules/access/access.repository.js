@@ -32,4 +32,12 @@ const accessRepository = {
     if (status === 'accepted') update.accepted_at = ts();
     await accesRessourceRef().doc(accessId).update(update);
   },
+
+  /**
+   * Met à jour le rôle (admin | member | guest) sur un document accès existant.
+   */
+  async updateRole(accessId, role) {
+    if (!accessId || !role) return;
+    await accesRessourceRef().doc(accessId).update({ role });
+  },
 };

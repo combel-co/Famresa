@@ -113,6 +113,7 @@ const resourceService = {
     ]);
 
     const acceptedEntries = accessEntries.filter((entry) => entry.status === 'accepted');
+    const adminCount = acceptedEntries.filter((entry) => (entry.role || 'member') === 'admin').length;
     const pendingEntries = accessEntries.filter((entry) => entry.status === 'pending');
     const currentAccess = acceptedEntries.find((entry) => entry.profileId === currentUserId) || null;
     const isAdmin = currentAccess?.role === 'admin';
@@ -193,6 +194,7 @@ const resourceService = {
         memberCount: acceptedMembers.length,
         bookingCount,
         pendingCount: pendingMembers.length,
+        adminCount,
       },
       invite: {
         enabled: canInvite,
@@ -293,6 +295,18 @@ const resourceService = {
 
   async removeManageAccess({ accessId, approverProfileId }) {
     await accessService.removeManageAccess({ accessId, approverProfileId });
+  },
+
+  /**
+   * Promouvoir ou rétrograder un membre (admin / membre / invité).
+   * @param {{ accessId: string, newRole: 'admin'|'member'|'guest', currentUserId: string }} params
+   */
+  async setMemberRole({ accessId, newRole, currentUserId }) {
+    if (!currentUserId) {
+      const err = new Error('FORBIDDEN');
+      throw err;
+    }
+    await accessService.setAccessRole({ accessId, newRole, actorProfileId: currentUserId });
   },
 
   async deleteManagedResource({ resourceId }) {

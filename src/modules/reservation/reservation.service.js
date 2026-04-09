@@ -71,16 +71,54 @@ const reservationService = {
 
   /**
    * Create a house stay (one doc per day, batch write).
-   * @returns {{ success: true } | { error, date }}
+   * @param {Object} [stayOccupancyByDate] - date -> { totalPeople, byGroup }
+   * @param {number|null|undefined} [resourceCapacity] - si défini (>0), capacité partagée entre groupes
+   * @param {string|null} [excludeReservationGroupId] - exclure ce groupe du total (mise à jour)
+   * @returns {{ success: true, reservationGroupId } | { error: 'conflict'|'capacity', date }}
    */
-  async createStayReservation({ resourceId, userId, userName, photo, startDate, endDate, motif, bookings, createdBy, peopleCount, reservationGroupId: existingGroupId }) {
+  async createStayReservation({
+    resourceId,
+    userId,
+    userName,
+    photo,
+    startDate,
+    endDate,
+    motif,
+    bookings,
+    createdBy,
+    peopleCount,
+    reservationGroupId: existingGroupId,
+    stayOccupancyByDate,
+    resourceCapacity,
+    excludeReservationGroupId
+  }) {
     const dates = getDateRange(startDate, endDate);
-    for (const ds of dates) {
-      if (bookings[ds]) return { error: 'conflict', date: ds };
-    }
 
     const pc = peopleCount != null && peopleCount !== '' ? Number(peopleCount) : null;
     const peopleOk = Number.isFinite(pc) && pc > 0 ? pc : null;
+    const newPeopleCount = peopleOk != null ? peopleOk : 1;
+
+    const capRaw = resourceCapacity != null && resourceCapacity !== '' ? Number(resourceCapacity) : NaN;
+    const useCapacity = Number.isFinite(capRaw) && capRaw > 0;
+
+    if (useCapacity) {
+      const occMap = stayOccupancyByDate && typeof stayOccupancyByDate === 'object' ? stayOccupancyByDate : {};
+      for (const ds of dates) {
+        const occ = occMap[ds];
+        let current = occ && typeof occ.totalPeople === 'number' ? occ.totalPeople : 0;
+        if (excludeReservationGroupId && occ && occ.byGroup && typeof occ.byGroup[excludeReservationGroupId] === 'number') {
+          current -= occ.byGroup[excludeReservationGroupId];
+        }
+        if (current + newPeopleCount > capRaw) {
+          return { error: 'capacity', date: ds };
+        }
+      }
+    } else {
+      for (const ds of dates) {
+        if (bookings[ds]) return { error: 'conflict', date: ds };
+      }
+    }
+
     const companions = peopleOk != null ? Math.max(0, peopleOk - 1) : null;
 
     const groupId = existingGroupId || reservationRepository.generateGroupId();
@@ -109,23 +147,28 @@ const reservationService = {
 
   /**
    * Replace a house stay (same group id) with new dates / motif / occupancy.
-   * @param {{ groupId: string, resourceId: string, userId: string, userName: string, photo: any, startDate: string, endDate: string, motif: string, bookings: object, createdBy: any, peopleCount: number, familyId?: string }} params
+   * @param {{ groupId: string, resourceId: string, userId: string, userName: string, photo: any, startDate: string, endDate: string, motif: string, bookings: object, stayOccupancyByDate?: object, resourceCapacity?: number|null, createdBy: any, peopleCount: number, familyId?: string }} params
    */
-  async updateStayReservation({ groupId, resourceId, userId, userName, photo, startDate, endDate, motif, bookings, createdBy, peopleCount, familyId }) {
+  async updateStayReservation({
+    groupId,
+    resourceId,
+    userId,
+    userName,
+    photo,
+    startDate,
+    endDate,
+    motif,
+    bookings,
+    stayOccupancyByDate,
+    resourceCapacity,
+    createdBy,
+    peopleCount,
+    familyId
+  }) {
     const snap = await reservationsRef()
       .where('reservationGroupId', '==', groupId)
       .get();
     if (snap.empty) return { error: 'not_found' };
-
-    const tempBookings = { ...(bookings || {}) };
-    snap.forEach((doc) => {
-      const d = doc.data();
-      const key = d.date || '';
-      if (key) delete tempBookings[key];
-    });
-
-    const conflict = this.checkConflicts(startDate, endDate, tempBookings);
-    if (conflict) return { error: 'conflict', date: conflict };
 
     await reservationRepository.deleteByGroup(groupId);
 
@@ -137,7 +180,10 @@ const reservationService = {
       startDate,
       endDate,
       motif,
-      bookings: tempBookings,
+      bookings: bookings || {},
+      stayOccupancyByDate,
+      resourceCapacity,
+      excludeReservationGroupId: groupId,
       createdBy,
       peopleCount,
       reservationGroupId: groupId

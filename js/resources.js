@@ -65,7 +65,8 @@ async function loadResources(options = {}) {
       resources = accessibleResources.map((r) => ({
         ...r,
         name: r.name || r.nom || 'Ressource',
-        type: r.type || 'car'
+        type: r.type || 'car',
+        capacity: r.capacity ?? r.capacite ?? r.metadata?.capacity
       }));
 
       if (resources.length === 0) {
@@ -446,12 +447,66 @@ function selectResource(resourceId) {
 // ==========================================
 // BOOKINGS SUBSCRIPTION
 // ==========================================
+
+function _houseStayGroupKeyForDoc(d) {
+  if (d.reservationGroupId) return String(d.reservationGroupId);
+  const s = d.startDate || d.date_debut || d.date;
+  const e = d.endDate || d.date_fin || s;
+  const uid = d.userId || d.profil_id || '';
+  return `stay_${uid}_${s}_${e}`;
+}
+
+function _peopleCountFromStayDoc(d) {
+  const pc = Number(d.peopleCount);
+  if (Number.isFinite(pc) && pc > 0) return pc;
+  const c = d.companions != null ? Number(d.companions) : Number(d.guestCount);
+  const extra = Number.isFinite(c) && c >= 0 ? c : 0;
+  return 1 + extra;
+}
+
+/**
+ * Agrège l'occupation (personnes) par jour pour les séjours maison, par groupe de réservation.
+ */
+function buildHouseStayOccupancyFromDocs(allDocs) {
+  const dayToGroupPeople = {};
+  for (const d of allDocs) {
+    const gk = _houseStayGroupKeyForDoc(d);
+    const people = _peopleCountFromStayDoc(d);
+    const start = d.startDate || d.date_debut;
+    const end = d.endDate || d.date_fin || start;
+    if (start && end) {
+      let cur = new Date(start + 'T00:00:00');
+      const endObj = new Date(end + 'T00:00:00');
+      while (cur <= endObj) {
+        const ds = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+        if (!dayToGroupPeople[ds]) dayToGroupPeople[ds] = {};
+        dayToGroupPeople[ds][gk] = people;
+        cur.setDate(cur.getDate() + 1);
+      }
+    } else if (d.date) {
+      const ds = d.date;
+      if (!dayToGroupPeople[ds]) dayToGroupPeople[ds] = {};
+      dayToGroupPeople[ds][gk] = people;
+    }
+  }
+  const occupancy = {};
+  for (const ds of Object.keys(dayToGroupPeople)) {
+    const byGroup = dayToGroupPeople[ds];
+    let totalPeople = 0;
+    for (const k of Object.keys(byGroup)) totalPeople += byGroup[k];
+    occupancy[ds] = { totalPeople, byGroup };
+  }
+  return occupancy;
+}
+
 function subscribeBookings() {
   if (unsubscribe) unsubscribe();
 
   // Two separate maps so neither listener clears the other's data
   let _bookingsNew    = {};
   let _bookingsLegacy = {};
+  let _allDocsNew = [];
+  let _allDocsLegacy = [];
   let _readyNew     = false;
   let _readyLegacy  = false;
 
@@ -481,6 +536,17 @@ function subscribeBookings() {
     // Legacy first, new data takes precedence (overwrites same dates)
     Object.entries(_bookingsLegacy).forEach(([k, v]) => { bookings[k] = v; });
     Object.entries(_bookingsNew).forEach(([k, v]) => { bookings[k] = v; });
+
+    const res = resources.find((r) => r.id === selectedResource);
+    if (res && res.type === 'house') {
+      const byId = new Map();
+      for (const d of _allDocsLegacy) byId.set(d.id, d);
+      for (const d of _allDocsNew) byId.set(d.id, d);
+      houseStayOccupancyByDate = buildHouseStayOccupancyFromDocs([...byId.values()]);
+    } else {
+      houseStayOccupancyByDate = {};
+    }
+
     renderCalendar();
     renderExperiencePanels();
     _hydrateCurrentBookingPhotos().catch(() => {});
@@ -507,7 +573,12 @@ function subscribeBookings() {
       .where('ressource_id', '==', selectedResource)
       .onSnapshot(snap => {
         _bookingsNew = {};
-        snap.forEach(doc => _expandToMap(reservationToJS(doc.data(), doc.id), _bookingsNew));
+        _allDocsNew = [];
+        snap.forEach(doc => {
+          const j = reservationToJS(doc.data(), doc.id);
+          _allDocsNew.push(j);
+          _expandToMap(j, _bookingsNew);
+        });
         _readyNew = true;
         if (_readyLegacy) _rebuild();
       }, err => {
@@ -532,12 +603,20 @@ function subscribeBookings() {
         .where('resourceId', '==', selectedResource)
         .onSnapshot(snap => {
           _bookingsLegacy = {};
-          snap.forEach(doc => _expandToMap({ id: doc.id, ...doc.data() }, _bookingsLegacy));
+          _allDocsLegacy = [];
+          snap.forEach(doc => {
+            const j = { id: doc.id, ...doc.data() };
+            _allDocsLegacy.push(j);
+            _expandToMap(j, _bookingsLegacy);
+          });
           // Also pick up carId-only bookings
           legacyCol.where('carId', '==', selectedResource).get().then(snap2 => {
             snap2.forEach(doc => {
               const d = { id: doc.id, ...doc.data() };
-              if (!d.resourceId) _expandToMap(d, _bookingsLegacy);
+              if (!d.resourceId) {
+                _allDocsLegacy.push(d);
+                _expandToMap(d, _bookingsLegacy);
+              }
             });
             _readyLegacy = true;
             if (_readyNew) _rebuild();
@@ -828,13 +907,17 @@ async function showCarInfo() {
   const photoPreview = res.photoUrl
     ? `<img src="${res.photoUrl}" alt="" style="width:100%;height:100%;object-fit:cover">`
     : (res.emoji || '🚗');
+  const displayName = res.name || res.nom || '';
   document.getElementById('sheet-content').innerHTML = `
     <div class="login-sheet">
       <div id="resource-photo-preview" style="width:92px;height:92px;border-radius:16px;overflow:hidden;background:#f3f4f6;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size: calc(44px * var(--ui-text-scale))">${photoPreview}</div>
       <label style="font-size: calc(12px * var(--ui-text-scale));color:var(--accent);cursor:pointer;text-decoration:underline" onclick="document.getElementById('resource-photo-input').click()">Modifier la photo</label>
       <input type="file" id="resource-photo-input" accept="image/*" style="display:none" onchange="handleResourcePhoto(this)">
-      <h2 style="margin:0 0 4px">${res.name}</h2>
-      ${plaque ? `<div style="display:inline-block;font-size: calc(12px * var(--ui-text-scale));font-weight:700;color:var(--accent);background:rgba(99,102,241,0.10);border:1px solid rgba(99,102,241,0.18);border-radius:6px;padding:3px 10px;letter-spacing:0.5px;margin-bottom:20px">${plaque}</div>` : '<div style="margin-bottom:20px"></div>'}
+      <div class="input-group" style="margin-top:16px">
+        <label>Nom</label>
+        <input type="text" id="car-name" placeholder="Ex : Mercedes 180 A" value="${_rmEscapeHtml(displayName)}">
+      </div>
+      ${plaque ? `<div style="display:inline-block;font-size: calc(12px * var(--ui-text-scale));font-weight:700;color:var(--accent);background:rgba(99,102,241,0.10);border:1px solid rgba(99,102,241,0.18);border-radius:6px;padding:3px 10px;letter-spacing:0.5px;margin-bottom:12px">${_rmEscapeHtml(plaque)}</div>` : '<div style="margin-bottom:12px"></div>'}
       <div class="input-group">
         <label>Plaque d'immatriculation</label>
         <input type="text" id="car-plaque" placeholder="Ex: AB-123-CD" value="${_rmEscapeHtml(plaque)}" style="text-transform:uppercase">
@@ -883,6 +966,7 @@ async function showCarInfo() {
 }
 
 async function saveCarInfo() {
+  const carName = (document.getElementById('car-name')?.value || '').trim();
   const plaque = (document.getElementById('car-plaque')?.value || '').trim().toUpperCase();
   const carLocation = (document.getElementById('car-location')?.value || '').trim();
   const assurance = (document.getElementById('car-assurance')?.value || '').trim();
@@ -901,15 +985,24 @@ async function saveCarInfo() {
       carLocation,
       lieu: carLocation
     };
+    if (carName) {
+      updates.name = carName;
+      updates.nom = carName;
+    }
     if (Number.isFinite(seatParsed) && seatParsed > 0) updates.seatCount = seatParsed;
+    else updates.seatCount = null;
     if (fuelType) updates.fuelType = fuelType;
+    else updates.fuelType = null;
     if (mileageRaw) {
       const digits = String(mileageRaw).replace(/\D/g, '');
       const n = parseInt(digits, 10);
       updates.mileageKm = digits && Number.isFinite(n) ? n : mileageRaw;
+    } else {
+      updates.mileageKm = null;
     }
     if (btRaw === 'yes') updates.carBluetooth = true;
     else if (btRaw === 'no') updates.carBluetooth = false;
+    else updates.carBluetooth = null;
     if (photoUrl) updates.photoUrl = photoUrl;
 
     await ressourcesRef().doc(selectedResource).update(updates);
@@ -919,6 +1012,8 @@ async function saveCarInfo() {
     window._resourcePhotoDraft = null;
     closeSheet();
     showToast('Infos enregistrées ✓');
+    if (typeof renderResourceTabs === 'function') renderResourceTabs();
+    if (typeof renderCalendar === 'function') renderCalendar();
     if (typeof renderExperiencePanels === 'function') renderExperiencePanels();
     if (typeof renderProfileTab === 'function') renderProfileTab();
   } catch (e) {
@@ -936,6 +1031,11 @@ function showHouseInfo() {
   if (!res) return;
   window._resourcePhotoDraft = res.photoUrl || null;
   const structuredAddress = getResourceStructuredAddress(res);
+  const houseName = res.name || res.nom || '';
+  const capNum = typeof getResourceHouseCapacityNumber === 'function' ? getResourceHouseCapacityNumber(res) : null;
+  const capStr = capNum != null ? String(capNum) : '';
+  const roomsRaw = res.rooms ?? res.bedrooms ?? res.chambres;
+  const roomsStr = roomsRaw != null && roomsRaw !== '' ? String(roomsRaw) : '';
   const photoPreview = res.photoUrl
     ? `<img src="${res.photoUrl}" alt="" style="width:100%;height:100%;object-fit:cover">`
     : (res.emoji || '🏠');
@@ -945,28 +1045,42 @@ function showHouseInfo() {
       <label style="font-size: calc(12px * var(--ui-text-scale));color:var(--accent);cursor:pointer;text-decoration:underline" onclick="document.getElementById('resource-photo-input').click()">Modifier la photo</label>
       <input type="file" id="resource-photo-input" accept="image/*" style="display:none" onchange="handleResourcePhoto(this)">
       <h2>Info maison</h2>
-      <div style="color:var(--text-light);font-size: calc(13px * var(--ui-text-scale));margin-bottom:20px">${res.emoji || '🏠'} ${res.name}</div>
+      <div style="color:var(--text-light);font-size: calc(12px * var(--ui-text-scale));margin-bottom:14px">${res.emoji || '🏠'} Renseignez toutes les informations de la maison.</div>
+      <div class="input-group">
+        <label>Nom</label>
+        <input type="text" id="house-name" placeholder="Ex : Maison des champs" value="${_rmEscapeHtml(houseName)}">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="input-group">
+          <label>Capacité (personnes)</label>
+          <input type="number" id="house-capacity" min="1" max="999" placeholder="ex. 8" value="${_rmEscapeHtml(capStr)}">
+        </div>
+        <div class="input-group">
+          <label>Pièces (optionnel)</label>
+          <input type="number" id="house-rooms" min="0" max="99" placeholder="ex. 4" value="${_rmEscapeHtml(roomsStr)}">
+        </div>
+      </div>
       <div class="input-group">
         <label>Rue</label>
-        <input type="text" id="house-address-street" placeholder="123 rue..." value="${structuredAddress.street || ''}">
+        <input type="text" id="house-address-street" placeholder="123 rue..." value="${_rmEscapeHtml(structuredAddress.street || '')}">
       </div>
       <div class="input-group">
         <label>Ville</label>
-        <input type="text" id="house-address-city" placeholder="Les Lèves-et-Thoumeyragues" value="${structuredAddress.city || ''}">
+        <input type="text" id="house-address-city" placeholder="Les Lèves-et-Thoumeyragues" value="${_rmEscapeHtml(structuredAddress.city || '')}">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="input-group">
           <label>Code postal</label>
-          <input type="text" id="house-address-postal" placeholder="33220" value="${structuredAddress.postalCode || ''}">
+          <input type="text" id="house-address-postal" placeholder="33220" value="${_rmEscapeHtml(structuredAddress.postalCode || '')}">
         </div>
         <div class="input-group">
           <label>Pays</label>
-          <input type="text" id="house-address-country" placeholder="France" value="${structuredAddress.country || ''}">
+          <input type="text" id="house-address-country" placeholder="France" value="${_rmEscapeHtml(structuredAddress.country || '')}">
         </div>
       </div>
       <div class="input-group">
         <label>Observations</label>
-        <textarea id="house-observations" placeholder="Notes importantes..." rows="3" style="resize:none;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size: calc(14px * var(--ui-text-scale));width:100%">${res.observations || ''}</textarea>
+        <textarea id="house-observations" placeholder="Notes importantes..." rows="3" style="resize:none;padding:10px;border:1px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size: calc(14px * var(--ui-text-scale));width:100%">${_rmEscapeHtml(res.observations || '')}</textarea>
       </div>
       <button class="btn btn-primary" onclick="saveHouseInfo()">Enregistrer</button>
       <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick="closeSheet()">Fermer</button>
@@ -975,6 +1089,9 @@ function showHouseInfo() {
 }
 
 async function saveHouseInfo() {
+  const houseName = (document.getElementById('house-name')?.value || '').trim();
+  const capRaw = document.getElementById('house-capacity')?.value;
+  const roomsRaw = document.getElementById('house-rooms')?.value;
   const street = (document.getElementById('house-address-street')?.value || '').trim();
   const city = (document.getElementById('house-address-city')?.value || '').trim();
   const postalCode = (document.getElementById('house-address-postal')?.value || '').trim();
@@ -991,6 +1108,28 @@ async function saveHouseInfo() {
       address_country: country,
       observations
     };
+    if (houseName) {
+      updates.name = houseName;
+      updates.nom = houseName;
+    }
+    const capTrim = String(capRaw ?? '').trim();
+    if (capTrim === '') {
+      updates.capacity = null;
+      updates.capacite = null;
+    } else {
+      const capParsed = parseInt(capTrim, 10);
+      if (Number.isFinite(capParsed) && capParsed > 0) {
+        updates.capacity = capParsed;
+        updates.capacite = capParsed;
+      }
+    }
+    const roomsTrim = String(roomsRaw ?? '').trim();
+    if (roomsTrim === '') {
+      updates.rooms = null;
+    } else {
+      const roomsParsed = parseInt(roomsTrim, 10);
+      if (Number.isFinite(roomsParsed) && roomsParsed >= 0) updates.rooms = roomsParsed;
+    }
     if (photoUrl) updates.photoUrl = photoUrl;
     await ressourcesRef().doc(selectedResource).update(updates);
     const res = resources.find(r => r.id === selectedResource);
@@ -998,6 +1137,10 @@ async function saveHouseInfo() {
     window._resourcePhotoDraft = null;
     closeSheet();
     showToast('Infos maison enregistrées ✓');
+    if (typeof renderResourceTabs === 'function') renderResourceTabs();
+    if (typeof renderCalendar === 'function') renderCalendar();
+    if (typeof renderExperiencePanels === 'function') renderExperiencePanels();
+    if (typeof renderProfileTab === 'function') renderProfileTab();
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 
@@ -1195,29 +1338,36 @@ function _rmRenderPage(viewModel) {
 
   const inviteBlockHtml = viewModel.permissions.canInvite && viewModel.invite?.inviteCode
     ? `
-      <div class="rm-invite-heading">Inviter quelqu'un à rejoindre</div>
-      <div class="rm-invite-line-card">
-        <div class="rm-invite-line-hdr">Lien</div>
-        <div class="rm-invite-line-body rm-invite-line-body--link">
-          <span class="rm-invite-url-text">${_rmEscapeHtml(viewModel.invite.displayUrl || '')}</span>
-          <button type="button" class="rm-invite-share-icn" onclick='_rmShareResourceInvite(${JSON.stringify(resource.id)})' aria-label="Partager le lien">📤</button>
+      <div class="rm-section-lbl">Inviter à rejoindre</div>
+      <p class="rm-invite-lede">Partagez le lien ou communiquez le code et le mot de passe.</p>
+      <div class="rm-members-group rm-invite-group">
+        <div class="rm-invite-row">
+          <div class="rm-invite-cell">
+            <div class="rm-m-name">Lien</div>
+            <div class="rm-m-joined rm-invite-url-line" title="${_rmEscapeHtml(viewModel.invite.displayUrl || '')}">${_rmEscapeHtml(viewModel.invite.displayUrl || '')}</div>
+          </div>
+          <div class="rm-invite-row-actions">
+            <button type="button" class="rm-invite-action-txt" onclick='_rmCopyInviteLink(${JSON.stringify(resource.id)})'>Copier</button>
+            <button type="button" class="rm-invite-action-txt rm-invite-action-txt--soft" onclick='_rmShareResourceInvite(${JSON.stringify(resource.id)})' aria-label="Partager le lien">Partager</button>
+          </div>
         </div>
-      </div>
-      <div class="rm-invite-line-card">
-        <div class="rm-invite-line-hdr">Code d'activation</div>
-        <div class="rm-invite-line-body rm-invite-line-body--row">
-          <input type="text" id="rm-invite-code-input" class="rm-invite-code-input rm-invite-code-input--inline" value="${_rmEscapeHtml(viewModel.invite.inviteCode)}" maxlength="8" autocomplete="off" spellcheck="false" aria-label="Code d'activation">
-          <button type="button" class="rm-invite-btn-sm" onclick='_rmSaveInviteCode(${JSON.stringify(resource.id)})'>Enregistrer</button>
+        <div class="rm-invite-row rm-invite-row--stack">
+          <div class="rm-invite-cell rm-invite-cell--fill">
+            <div class="rm-m-name">Code d'activation</div>
+            <input type="text" id="rm-invite-code-input" class="rm-invite-input-line rm-invite-input-line--code" value="${_rmEscapeHtml(viewModel.invite.inviteCode)}" maxlength="8" autocomplete="off" spellcheck="false" aria-label="Code d'activation">
+            <div class="lock-error rm-invite-line-err" id="rm-invite-code-error" role="alert"></div>
+          </div>
+          <button type="button" class="rm-p-btn-reject rm-invite-save-btn" onclick='_rmSaveInviteCode(${JSON.stringify(resource.id)})'>Enregistrer</button>
         </div>
-        <div class="lock-error rm-invite-line-err" id="rm-invite-code-error" role="alert"></div>
-      </div>
-      <div class="rm-invite-line-card">
-        <div class="rm-invite-line-hdr">Mot de passe</div>
-        <div class="rm-invite-line-body rm-invite-line-body--row">
-          <input type="text" id="rm-join-pin-field" class="rm-join-pin-field" value="${_rmEscapeHtml(viewModel.invite.joinPin || '')}" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="Mot de passe à 4 chiffres">
-          <button type="button" class="rm-invite-btn-sm" onclick='_rmSaveJoinPin(${JSON.stringify(resource.id)})'>Enregistrer</button>
+        <div class="rm-invite-row rm-invite-row--stack">
+          <div class="rm-invite-cell rm-invite-cell--fill">
+            <div class="rm-m-name">Mot de passe</div>
+            <div class="rm-m-joined">4 chiffres pour valider les demandes</div>
+            <input type="text" id="rm-join-pin-field" class="rm-invite-input-line rm-invite-input-line--pin" value="${_rmEscapeHtml(viewModel.invite.joinPin || '')}" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="Mot de passe à 4 chiffres">
+            <div class="lock-error rm-invite-line-err" id="rm-join-pin-error" role="alert"></div>
+          </div>
+          <button type="button" class="rm-p-btn-reject rm-invite-save-btn" onclick='_rmSaveJoinPin(${JSON.stringify(resource.id)})'>Enregistrer</button>
         </div>
-        <div class="lock-error rm-invite-line-err" id="rm-join-pin-error" role="alert"></div>
       </div>`
     : '';
 
@@ -1254,7 +1404,7 @@ function _rmRenderPage(viewModel) {
         </div>
         <div class="rm-role-pill ${_rmEscapeHtml(member.roleClass)}">${_rmEscapeHtml(member.roleLabel)}</div>
         ${member.canManage
-          ? `<button class="rm-m-menu" type="button" onclick='_rmMemberMenu(${JSON.stringify(member.accessId)}, ${JSON.stringify(member.name)}, ${JSON.stringify(resource.id)})'>···</button>`
+          ? `<button class="rm-m-menu" type="button" onclick='_rmMemberMenu(${JSON.stringify(member.accessId)}, ${JSON.stringify(member.name)}, ${JSON.stringify(resource.id)}, ${JSON.stringify(member.role || 'member')}, ${stats.adminCount})'>···</button>`
           : '' }
       </div>`).join('')
     : '<div class="rm-empty-state">Aucun membre actif</div>';
@@ -1275,11 +1425,6 @@ function _rmRenderPage(viewModel) {
       </div>`
     : '';
 
-  const guidesHouseHtml =
-    viewModel.permissions.isAdmin && resource.type === 'house' && typeof famresaHouseGuideRowsHtml === 'function'
-      ? `<div class="rm-section-lbl">Guides séjour</div><div class="rm-guides-block"><div class="house-raw-grid">${famresaHouseGuideRowsHtml(resources.find((r) => r.id === resource.id) || resource)}</div></div>`
-      : '';
-
   return `
     <div class="rm-page-header">
       <button class="rm-back-btn" onclick="hideResourceManagePage()">‹</button>
@@ -1298,7 +1443,6 @@ function _rmRenderPage(viewModel) {
         </div>
         <div class="rm-resource-role-badge ${_rmEscapeHtml(resource.roleClass)}">${_rmEscapeHtml(resource.roleLabel)}</div>
       </div>
-      ${guidesHouseHtml}
       ${inviteBlockHtml}
       ${pendingHtml}
       <div class="rm-section-lbl">Membres actifs</div>
@@ -1513,13 +1657,22 @@ async function _rmSendInviteEmail(resourceId) {
   }
 }
 
-async function _rmMemberMenu(accessId, memberName, resourceId) {
+async function _rmMemberMenu(accessId, memberName, resourceId, memberRole, adminCount) {
   const overlay = document.getElementById('resource-manage-overlay');
   if (!overlay) return;
 
   // Remove any existing inline sheet
   const existing = document.getElementById('rm-inline-sheet');
   if (existing) existing.remove();
+
+  const roleNorm = memberRole || 'member';
+  const ac = typeof adminCount === 'number' ? adminCount : 0;
+  const promoteBtn = roleNorm !== 'admin'
+    ? `<button class="btn" style="background:var(--accent);color:#fff;margin-bottom:10px" onclick='_rmSetMemberRole(${JSON.stringify(accessId)}, ${JSON.stringify(memberName)}, ${JSON.stringify(resourceId)}, ${JSON.stringify('admin')})'>Nommer administrateur</button>`
+    : '';
+  const demoteBtn = roleNorm === 'admin' && ac > 1
+    ? `<button class="btn" style="background:#f5f5f5;color:var(--text);margin-bottom:10px" onclick='_rmSetMemberRole(${JSON.stringify(accessId)}, ${JSON.stringify(memberName)}, ${JSON.stringify(resourceId)}, ${JSON.stringify('member')})'>Rétrograder en membre</button>`
+    : '';
 
   const sheet = document.createElement('div');
   sheet.id = 'rm-inline-sheet';
@@ -1531,11 +1684,68 @@ async function _rmMemberMenu(accessId, memberName, resourceId) {
       <div class="login-sheet">
         <h2>${_rmEscapeHtml(memberName)}</h2>
         <p style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));margin-bottom:20px">Gérer les droits de ce membre</p>
+        ${promoteBtn}
+        ${demoteBtn}
         <button class="btn btn-danger" onclick='_rmRemoveMember(${JSON.stringify(accessId)}, ${JSON.stringify(memberName)}, ${JSON.stringify(resourceId)});document.getElementById("rm-inline-sheet")?.remove()'>Retirer l'accès</button>
         <button class="btn" style="background:#f5f5f5;color:var(--text);margin-top:10px" onclick='document.getElementById("rm-inline-sheet")?.remove()'>Annuler</button>
       </div>
     </div>`;
   overlay.appendChild(sheet);
+}
+
+/** Met à jour window._myResourceRoles après un changement de rôle (ex. rétrogradation de soi-même). */
+async function _refreshMyRoleForResource(resourceId) {
+  if (!currentUser?.id || !resourceId) return;
+  try {
+    const docs = await findResourceAccessDocs(resourceId, currentUser.id);
+    const entries = docs.map((d) => accesRessourceToJS(d.data(), d.id));
+    const accepted = entries.filter((e) => (e.statut ?? e.status) === 'accepted');
+    if (accepted.length === 0) {
+      delete window._myResourceRoles[resourceId];
+      return;
+    }
+    let best = 'guest';
+    for (const e of accepted) {
+      const r = e.role || 'guest';
+      if (r === 'admin') {
+        best = 'admin';
+        break;
+      }
+      if (r === 'member' && best === 'guest') best = 'member';
+    }
+    window._myResourceRoles[resourceId] = best;
+  } catch (_) {}
+}
+
+async function _rmSetMemberRole(accessId, memberName, resourceId, newRole) {
+  document.getElementById('rm-inline-sheet')?.remove();
+  try {
+    await resourceService.setMemberRole({
+      accessId,
+      newRole,
+      currentUserId: currentUser?.id || null,
+    });
+    showToast(
+      newRole === 'admin'
+        ? `${memberName} est administrateur`
+        : 'Rôle mis à jour',
+    );
+    await _refreshMyRoleForResource(resourceId);
+    await showResourceManagePage(resourceId);
+  } catch (e) {
+    const m = e?.message || '';
+    if (m === 'LAST_ADMIN') {
+      showToast('Il doit rester au moins un administrateur.');
+    } else if (m === 'ACCESS_FORBIDDEN' || m === 'FORBIDDEN') {
+      showToast('Action non autorisée');
+    } else if (m === 'ACCESS_INVALID_STATE' || m === 'ACCESS_NOT_FOUND') {
+      showToast('Accès introuvable ou invalide');
+    } else if (m === 'INVALID_ROLE') {
+      showToast('Rôle invalide');
+    } else {
+      showToast('Erreur — réessayez');
+    }
+  }
 }
 
 async function _rmRemoveMember(accessId, memberName, resourceId) {
@@ -1552,6 +1762,10 @@ async function _rmRemoveMember(accessId, memberName, resourceId) {
 function _rmEditResource(resourceId, editMode) {
   selectResource(resourceId);
   hideResourceManagePage();
+  if (typeof famresaResourceEditHubOpen === 'function') {
+    famresaResourceEditHubOpen(resourceId);
+    return;
+  }
   if (editMode === 'house') {
     showHouseInfo();
     return;

@@ -41,7 +41,7 @@
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <!-- Non-blocking font loading (swap prevents FOIT) -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="css/style.css?v=48">
+<link rel="stylesheet" href="css/style.css?v=61">
 <!-- Firebase SDK (defer = non-blocking parse, keeps order) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" defer></script>
@@ -301,7 +301,6 @@
             <div class="planning-reserve-header" id="planning-reserve-header" hidden>
               <div class="planning-reserve-header-text">
                 <h1 class="planning-reserve-title" id="planning-reserve-title">Arrivée / Départ</h1>
-                <p class="planning-reserve-recap" id="planning-reserve-recap" hidden></p>
                 <p class="planning-reserve-subtitle" id="planning-reserve-subtitle">Sélectionnez votre date de départ</p>
               </div>
               <button type="button" class="bm-close planning-reserve-close-btn" id="planning-reserve-close" aria-label="Annuler la réservation">×</button>
@@ -842,32 +841,32 @@
 <script src="src/infra/firebase/firebase.client.js?v=7" defer></script>
 <script src="src/infra/firebase/firebase.mapper.js?v=5" defer></script>
 <script src="js/firebase.js?v=9" defer></script>
-<script src="js/app.js?v=11" defer></script>
+<script src="js/app.js?v=13" defer></script>
 <script src="js/ui.js?v=10" defer></script>
 <script src="js/xp.js?v=4" defer></script>
 <script src="js/celebration.js?v=8" defer></script>
 <script src="js/auth.js?v=22" defer></script>
 <script src="js/fuel.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.repository.js?v=4" defer></script>
-<script src="src/modules/reservation/reservation.service.js?v=4" defer></script>
-<script src="src/modules/access/access.repository.js?v=5" defer></script>
-<script src="src/modules/access/access.service.js?v=6" defer></script>
+<script src="src/modules/reservation/reservation.service.js?v=5" defer></script>
+<script src="src/modules/access/access.repository.js?v=6" defer></script>
+<script src="src/modules/access/access.service.js?v=7" defer></script>
 <script src="src/modules/family/family.repository.js?v=4" defer></script>
 <script src="src/modules/family/family.service.js?v=4" defer></script>
 <script src="src/modules/user/user.repository.js?v=4" defer></script>
 <script src="src/modules/user/user.service.js?v=4" defer></script>
 <script src="src/modules/resource/resource.repository.js?v=7" defer></script>
-<script src="src/modules/resource/resource.service.js?v=8" defer></script>
-<script src="js/booking.js?v=14" defer></script>
-<script src="js/calendar.js?v=15" defer></script>
+<script src="src/modules/resource/resource.service.js?v=9" defer></script>
+<script src="js/booking.js?v=16" defer></script>
+<script src="js/calendar.js?v=18" defer></script>
 <script src="js/history.js?v=4" defer></script>
 <script src="src/modules/profile/profile.service.js?v=2" defer></script>
 <script src="js/profile.js?v=7" defer></script>
-<script src="js/resources.js?v=22" defer></script>
+<script src="js/resources.js?v=31" defer></script>
 <script src="js/onboarding-resource.js?v=4" defer></script>
-<script src="js/famresa-completion.js?v=3" defer></script>
-<script src="js/famresa-guides.js?v=5" defer></script>
-<script src="js/dashboard.js?v=21" defer></script>
+<script src="js/famresa-completion.js?v=6" defer></script>
+<script src="js/famresa-guides.js?v=10" defer></script>
+<script src="js/dashboard.js?v=23" defer></script>
 <script src="js/stay.js?v=5" defer></script>
 <script src="js/checklist.js?v=4" defer></script>
 <script src="js/events.js?v=4" defer></script>
@@ -982,6 +981,10 @@ function swApplyUpdate() {
   <div class="famresa-cpl-panel" id="completion-overlay-inner"></div>
 </div>
 
+<div id="resource-edit-hub-overlay" class="rm-overlay hidden famresa-cpl-overlay famresa-reh-overlay" aria-hidden="true" onclick="famresaRehOnBackdropClick(event)">
+  <div class="famresa-cpl-panel" id="resource-edit-hub-inner" onclick="event.stopPropagation()"></div>
+</div>
+
 <div id="guides-overlay" class="rm-overlay hidden famresa-ge-overlay" aria-hidden="true">
   <div class="famresa-ge-panel" id="guides-overlay-inner"></div>
 </div>
@@ -992,6 +995,10 @@ function swApplyUpdate() {
 
 <div id="guides-checkout-overlay" class="rm-overlay hidden famresa-co-overlay" aria-hidden="true">
   <div class="famresa-co-panel" id="guides-checkout-inner"></div>
+</div>
+
+<div id="guides-checkin-overlay" class="rm-overlay hidden famresa-co-overlay" aria-hidden="true">
+  <div class="famresa-co-panel" id="guides-checkin-inner"></div>
 </div>
 
 <div id="resource-manage-overlay" class="rm-overlay hidden">

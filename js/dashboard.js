@@ -196,7 +196,14 @@ function getHouseDecisionState(resourceId) {
   }
 
   const occupantName = currentBooking?.userName || '—';
-  const peopleCount = getHousePeopleCount(currentBooking);
+  let peopleCount = getHousePeopleCount(currentBooking);
+  if (
+    typeof houseStayOccupancyByDate !== 'undefined' &&
+    houseStayOccupancyByDate[todayStr] &&
+    typeof houseStayOccupancyByDate[todayStr].totalPeople === 'number'
+  ) {
+    peopleCount = houseStayOccupancyByDate[todayStr].totalPeople;
+  }
   const endDate = currentBooking?.endDate || currentBooking?.date_fin || todayStr;
   const endMidnightMs = new Date(endDate + 'T00:00:00').getTime();
   const nightsLeft = currentBooking ? Math.max(1, Math.ceil((endMidnightMs - todayMidnightMs) / 86400000) + 1) : 0;
@@ -359,8 +366,9 @@ function _dashIncompleteHtml() {
 function renderHouseRawInfo(resource, decisionState) {
   const wrap = document.getElementById('house-raw-list');
   if (!wrap) return;
-  const capNum = resource?.capacity != null && resource.capacity !== '' ? Number(resource.capacity) : NaN;
-  const capVal = Number.isFinite(capNum) && capNum > 0 ? `${capNum} pers.` : _dashIncompleteHtml();
+  const capNum =
+    typeof getResourceHouseCapacityNumber === 'function' ? getResourceHouseCapacityNumber(resource) : null;
+  const capVal = capNum != null ? `${capNum} pers.` : _dashIncompleteHtml();
   const rooms = Number(resource?.rooms || resource?.bedrooms || resource?.chambres || 0);
   const roomsVal = rooms > 0 ? `${rooms}` : _dashIncompleteHtml();
   const addrOk = hasUsableResourceAddress(resource);

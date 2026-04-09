@@ -325,16 +325,11 @@ function planningActionRightClick() {
 
 function onPlanningDatesChanged() {
   const hint = document.getElementById('planning-hint');
-  const recapEl = document.getElementById('planning-reserve-recap');
   const subEl = document.getElementById('planning-reserve-subtitle');
   if (!hint) return;
 
   if (_planningPhase !== 'reserve' || typeof bmGetSelection !== 'function') {
     hint.textContent = '';
-    if (recapEl) {
-      recapEl.textContent = '';
-      recapEl.setAttribute('hidden', '');
-    }
     if (subEl) {
       subEl.textContent = 'Sélectionnez votre date de départ';
       subEl.removeAttribute('hidden');
@@ -345,37 +340,32 @@ function onPlanningDatesChanged() {
   hint.textContent = '';
 
   const sel = bmGetSelection();
-  if (subEl) {
-    if (!sel.startDate) {
-      subEl.textContent = 'Sélectionnez votre date de départ';
-      subEl.removeAttribute('hidden');
-    } else if (!sel.endDate) {
-      subEl.textContent = 'Sélectionnez votre date de fin';
-      subEl.removeAttribute('hidden');
-    } else {
-      subEl.textContent = '';
-      // On ne toggle plus `hidden` pour éviter un saut visuel / changement de styles.
-      subEl.removeAttribute('hidden');
-    }
+  if (!subEl) return;
+
+  if (!sel.startDate) {
+    subEl.textContent = 'Sélectionnez votre date de départ';
+    subEl.removeAttribute('hidden');
+    return;
   }
 
-  if (recapEl) {
-    if (sel.startDate && sel.endDate) {
-      const n = Math.max(1, countStayNights(sel.startDate, sel.endDate));
-      const sd = new Date(sel.startDate + 'T00:00:00');
-      const ed = new Date(sel.endDate + 'T00:00:00');
-      const a = sd.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
-      const b = ed.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
-      recapEl.textContent =
-        sel.startDate === sel.endDate
-          ? `1 nuit · ${a}`
-          : `${n} nuit${n > 1 ? 's' : ''} · ${a} → ${b}`;
-      recapEl.removeAttribute('hidden');
-    } else {
-      recapEl.textContent = '';
-      recapEl.setAttribute('hidden', '');
-    }
+  if (!sel.endDate) {
+    const sd = new Date(sel.startDate + 'T00:00:00');
+    const depart = sd.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+    subEl.textContent = `Sélectionnez votre date de fin — départ le ${depart}`;
+    subEl.removeAttribute('hidden');
+    return;
   }
+
+  const n = Math.max(1, countStayNights(sel.startDate, sel.endDate));
+  const sd = new Date(sel.startDate + 'T00:00:00');
+  const ed = new Date(sel.endDate + 'T00:00:00');
+  const a = sd.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  const b = ed.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  subEl.textContent =
+    sel.startDate === sel.endDate
+      ? `1 nuit · ${a}`
+      : `${n} nuit${n > 1 ? 's' : ''} · ${a} → ${b}`;
+  subEl.removeAttribute('hidden');
 }
 
 function renderCalendar() {
@@ -393,6 +383,14 @@ function renderCalendar() {
   const sel = typeof bmGetSelection === 'function' ? bmGetSelection() : { startDate: null, endDate: null };
   const bmStart = sel.startDate;
   const bmEnd = sel.endDate;
+  const calRes = resources.find((r) => r.id === selectedResource);
+  const calIsHouse = calRes?.type === 'house';
+  const calCap =
+    typeof getResourceHouseCapacityNumber === 'function' ? getResourceHouseCapacityNumber(calRes) : null;
+  const needPeople =
+    typeof bm !== 'undefined' && bm.personTotal != null
+      ? Math.max(1, Number(bm.personTotal) || 1)
+      : 1;
   let html = '';
 
   for (let m = 0; m < CAL_HORIZON_MONTHS; m++) {
@@ -420,7 +418,14 @@ function renderCalendar() {
       let classes = ['bm-day'];
       if (isPast) classes.push('bm-past');
       else if (isToday) classes.push('bm-today');
-      if (booking && !isPast) classes.push('bm-booked');
+      if (booking && !isPast) {
+        classes.push('bm-booked');
+        if (calIsHouse && calCap != null && typeof houseStayOccupancyByDate !== 'undefined') {
+          const occ = houseStayOccupancyByDate[dateStr];
+          const tot = occ && typeof occ.totalPeople === 'number' ? occ.totalPeople : 0;
+          if (tot < calCap) classes.push('bm-day--partial');
+        }
+      }
 
       if (_planningPhase === 'reserve' && bmStart) {
         if (bmEnd) {
@@ -441,7 +446,11 @@ function renderCalendar() {
 
       const inReserve = _planningPhase === 'reserve';
       const clickableConsult = _planningPhase === 'consult' && !isPast;
-      const clickableReserve = inReserve && !isPast && !booking;
+      let canReserveThisDay =
+        calIsHouse && calCap != null && typeof houseStayHasRoomFor === 'function'
+          ? houseStayHasRoomFor(dateStr, needPeople)
+          : !booking;
+      const clickableReserve = inReserve && !isPast && canReserveThisDay;
 
       let onAction = 'aria-disabled="true" tabindex="-1"';
       if (clickableReserve) {
@@ -543,14 +552,23 @@ function showOccupiedDaySheetH4(dateStr, booking) {
     : `<div class="h4-avatar h4-avatar--txt">${getInitials(booking.userName || '?')}</div>`;
   const mineStyle = isMine ? 'h4-avatar-wrap--me' : '';
 
-  const cap = res?.capacity != null ? Number(res.capacity) : null;
-  const total = getBookingOccupancy(booking);
+  const cap =
+    typeof getResourceHouseCapacityNumber === 'function' ? getResourceHouseCapacityNumber(res) : null;
+  let total = getBookingOccupancy(booking);
+  if (
+    isHouse &&
+    typeof houseStayOccupancyByDate !== 'undefined' &&
+    houseStayOccupancyByDate[dateStr] &&
+    typeof houseStayOccupancyByDate[dateStr].totalPeople === 'number'
+  ) {
+    total = houseStayOccupancyByDate[dateStr].totalPeople;
+  }
   let capBlock = '';
-  if (Number.isFinite(cap) && cap > 0) {
+  if (cap != null) {
     const rest = cap - total;
     const restLabel = rest <= 0 ? 'Complet' : `${rest} places restantes sur ${cap}`;
     const restColor = rest <= 0 ? '#c0392b' : '#2d6a4f';
-    capBlock = `<div class="h4-cap-bar"><span class="h4-cap-ico" aria-hidden="true">👥</span><div>${total} personnes · <span style="color:${restColor};font-weight:600">${restLabel}</span></div></div>`;
+    capBlock = `<div class="h4-cap-bar"><span class="h4-cap-ico" aria-hidden="true">👥</span><div>${total} personnes au total · <span style="color:${restColor};font-weight:600">${restLabel}</span></div></div>`;
   } else {
     capBlock = `<div class="h4-cap-bar"><span class="h4-cap-ico" aria-hidden="true">👥</span><div>${total} personne${total > 1 ? 's' : ''}</div></div>`;
   }
@@ -561,6 +579,13 @@ function showOccupiedDaySheetH4(dateStr, booking) {
       <button type="button" class="btn btn-primary" style="width:100%;background:#2d6a4f;margin-top:12px" onclick="showEditStayFromSheet('${booking.reservationGroupId || ''}','${booking.id}')">Modifier la réservation</button>
       <button type="button" style="width:100%;margin-top:12px;background:none;border:none;color:#c0392b;font-size:14px;cursor:pointer" onclick="showCancelStayConfirmSheet('${booking.reservationGroupId || ''}','${booking.id}','${startDate}','${endDate}',${isHouse})">Annuler la réservation</button>
       <button type="button" class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="closeSheet()">Fermer</button>`;
+  } else if (isHouse && cap != null) {
+    const rest = cap - total;
+    if (rest > 0) {
+      actions = `
+      <button type="button" class="btn btn-primary" style="width:100%;background:#2d6a4f;margin-top:12px" onclick="closeSheet();enterPlanningReserveFromPrompt('${dateStr}')">Réserver aussi</button>
+      <button type="button" class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="closeSheet()">Fermer</button>`;
+    }
   }
 
   const html = `

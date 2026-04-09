@@ -21,6 +21,14 @@ async function _assertResourceAdmin({ accessId, approverProfileId }) {
   if (!approverEntry) throw new Error('ACCESS_FORBIDDEN');
 }
 
+function _entryAccepted(entry) {
+  return (entry.status ?? entry.statut) === 'accepted';
+}
+
+function _entryRole(entry) {
+  return entry.role || 'member';
+}
+
 const accessService = {
   async listByResourceId(resourceId) {
     const entries = await accessRepository.listByResourceId(resourceId);
@@ -49,6 +57,36 @@ const accessService = {
   async removeManageAccess({ accessId, approverProfileId }) {
     await _assertResourceAdmin({ accessId, approverProfileId });
     await accessRepository.updateStatus(accessId, 'rejected');
+  },
+
+  /**
+   * Change le rôle d’un accès accepté (ex. membre → admin). Réservé aux admins de la ressource.
+   * @throws {Error} ACCESS_FORBIDDEN, ACCESS_NOT_FOUND, ACCESS_INVALID_STATE, LAST_ADMIN, INVALID_ROLE
+   */
+  async setAccessRole({ accessId, newRole, actorProfileId }) {
+    const allowed = new Set(['admin', 'member', 'guest']);
+    if (!allowed.has(newRole)) throw new Error('INVALID_ROLE');
+
+    await _assertResourceAdmin({ accessId, approverProfileId: actorProfileId });
+
+    const target = await accessRepository.getById(accessId);
+    if (!target) throw new Error('ACCESS_NOT_FOUND');
+    if (!_entryAccepted(target)) throw new Error('ACCESS_INVALID_STATE');
+
+    const currentRole = _entryRole(target);
+    if (currentRole === newRole) return;
+
+    const resourceId = target.resourceId ?? target.ressource_id ?? null;
+    if (!resourceId) throw new Error('ACCESS_RESOURCE_ID_MISSING');
+
+    const entries = await accessRepository.listByResourceId(resourceId);
+    const adminCount = entries.filter((e) => _entryAccepted(e) && _entryRole(e) === 'admin').length;
+
+    if (currentRole === 'admin' && newRole !== 'admin' && adminCount <= 1) {
+      throw new Error('LAST_ADMIN');
+    }
+
+    await accessRepository.updateRole(accessId, newRole);
   },
 
   /**

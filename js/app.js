@@ -5,6 +5,8 @@ let currentUser = JSON.parse(localStorage.getItem('famcar_user') || 'null');
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let bookings = {};
+/** Par date (YYYY-MM-DD) : occupation séjours maison agrégée — { totalPeople, byGroup: { [groupId]: number } } */
+let houseStayOccupancyByDate = {};
 let resources = [];
 let selectedResource = null;
 let unsubscribe = null;
@@ -228,6 +230,39 @@ async function refreshAppDataSilently() {
 // ==========================================
 // BOOKING HELPERS
 // ==========================================
+
+/**
+ * Capacité d'une maison (capacity, capacite FR, ou metadata.capacity).
+ * @returns {number|null} strictement positif, ou null si non définie
+ */
+function getResourceHouseCapacityNumber(res) {
+  if (!res) return null;
+  const raw = res.capacity ?? res.capacite ?? res.metadata?.capacity;
+  if (raw == null || raw === '') return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Maison avec capacité : vérifie s'il reste au moins `peopleNeeded` places ce jour.
+ * Sans capacité ou autre ressource : jour libre si aucune résa (comportement exclusif).
+ */
+function houseStayHasRoomFor(ds, peopleNeeded) {
+  const res = resources.find((r) => r.id === selectedResource);
+  if (!res) return true;
+  if (res.type !== 'house') {
+    return !bookings[ds];
+  }
+  const cap = getResourceHouseCapacityNumber(res);
+  if (cap == null) {
+    return !bookings[ds];
+  }
+  const need = Math.max(1, Number(peopleNeeded) || 1);
+  const occ = houseStayOccupancyByDate[ds];
+  const total = occ && typeof occ.totalPeople === 'number' ? occ.totalPeople : 0;
+  return cap - total >= need;
+}
+
 function getMonthBookingEntries() {
   const monthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-`;
   const seen = new Set();

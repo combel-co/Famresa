@@ -202,24 +202,14 @@ html.ui-large {
     letter-spacing: -0.4px;
     line-height: 1.15;
   }
-  .planning-reserve-recap {
+  .planning-reserve-subtitle {
+    display: block;
     margin: 0 0 6px;
     font-size: calc(14px * var(--ui-text-scale));
     font-weight: 500;
     color: #5c554c;
     line-height: 1.35;
-  }
-  .planning-reserve-recap[hidden] {
-    display: none !important;
-  }
-  .planning-reserve-subtitle {
-    display: block;
-    margin: 0;
-    font-size: calc(14px * var(--ui-text-scale));
-    color: #8a8075;
-    font-weight: 500;
-    line-height: 1.35;
-    min-height: 1.35em; /* évite un "saut" visuel quand le texte devient vide */
+    min-height: 2.7em; /* une zone stable sous le titre (évite les sauts entre étapes) */
   }
   .planning-reserve-subtitle[hidden] {
     display: none !important;
@@ -1198,7 +1188,7 @@ html.ui-large {
      DASHBOARD — RESOURCE CARD V2 (ccv2)
      ═══════════════════════════════════════════ */
   /* ---- CAR CARD V2 (ccv2) ---- */
-  .ccv2-card { margin-bottom:12px; background:#f7f6f2; border:0.5px solid #e5e4df; border-radius:20px; overflow:hidden; }
+  .ccv2-card { margin-top: 13px; margin-bottom:12px; background:#f7f6f2; border:0.5px solid #e5e4df; border-radius:20px; overflow:hidden; }
   .ccv2-card.state-available { background:#f7f6f2; border-color:#e5e4df; }
   .ccv2-card.state-occupied { background:#fffaf0; border-color:#fde68a; }
   .ccv2-card.state-soon { background:#f0faf4; border-color:#bbf7d0; }
@@ -1585,6 +1575,36 @@ html.ui-large {
   .house-raw-guide-action:hover {
     color: #2d2a24;
   }
+.house-raw-guide-card {
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: calc(12px * var(--ui-text-scale));
+  font-weight: 600;
+  line-height: 1.1;
+  border-radius: 999px;
+  padding: 6px 11px;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.house-raw-guide-card.is-complete {
+  cursor: pointer;
+  background: #f7f6f2;
+  color: #4b4a44;
+  border: 0.5px solid #e8e7e2;
+}
+.house-raw-guide-card.is-complete:hover {
+  background: #f0eee8;
+}
+.house-raw-guide-card.is-todo {
+  cursor: pointer;
+  color: #ffffff;
+  border: 0.5px solid #2d6a4f;
+  background: linear-gradient(135deg, #1f4b37 0%, #2d6a4f 100%);
+}
+.house-raw-guide-card.is-disabled {
+  opacity: 0.6;
+  cursor: default;
+}
   .ccv2-top { display:flex; justify-content:space-between; align-items:flex-start; padding:16px 16px 0; }
   .ccv2-name { font-size: calc(17px * var(--ui-text-scale)); font-weight:500; color:var(--text); line-height:1.2; }
   .ccv2-model { font-size: calc(12px * var(--ui-text-scale)); color:#6b6b6b; margin-top:2px; }
@@ -2457,16 +2477,50 @@ html.ui-large {
   .bm-day.bm-empty { cursor: default; pointer-events: none; }
   .bm-day.bm-past { opacity: 0.35; cursor: default; pointer-events: none; }
   .bm-day.bm-booked { cursor: not-allowed; }
+  .bm-day.bm-booked.bm-day--partial:not(.bm-past) {
+    cursor: pointer;
+  }
+  .bm-day.bm-booked.bm-day--partial:not(.bm-past) .bm-day-num {
+    background: #e3f2e6;
+    color: #1b4332;
+  }
+  .bm-day.bm-booked.bm-day--partial:not(.bm-past):hover .bm-day-num {
+    background: #d8eddc;
+  }
   .bm-day-num {
     width: 34px; height: 34px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: calc(13px * var(--ui-text-scale));
     font-weight: 400;
     position: relative; z-index: 2;
-    transition: background 0.12s, color 0.12s;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
     color: #2d2a24;
   }
-  .bm-day.bm-today .bm-day-num { font-weight: 600; color: #2d6a4f; }
+  /* Aujourd'hui : cercle contour épais, sans fond */
+  .bm-day.bm-today .bm-day-num {
+    font-weight: 600;
+    color: #2d6a4f;
+    background: transparent !important;
+    border: 3px solid #2d6a4f;
+    box-sizing: border-box;
+  }
+  .bm-day.bm-today.bm-booked .bm-day-num {
+    color: #1b4332;
+    border-color: #2d6a4f;
+    background: transparent !important;
+  }
+  .bm-day.bm-today.bm-booked.bm-day--partial:not(.bm-past) .bm-day-num {
+    background: transparent !important;
+    color: #1b4332;
+  }
+  .bm-day.bm-today.bm-booked.bm-day--partial:not(.bm-past):hover .bm-day-num {
+    background: transparent !important;
+    border-color: #1b4332;
+  }
+  .bm-day.bm-today:not(.bm-booked):hover .bm-day-num {
+    background: transparent !important;
+    border-color: #1b4332;
+  }
   .bm-day.bm-booked .bm-day-num { background: #f0ebe2; color: #b0a89e; font-size: calc(11px * var(--ui-text-scale)); }
   .bm-day:not(.bm-empty):not(.bm-past):not(.bm-booked):hover .bm-day-num { background: #efe9de; }
 
@@ -3173,12 +3227,130 @@ html.ui-large {
   .rm-invite-card-unified {
     padding: 14px 14px 16px;
   }
+  /* Un seul cadre : séparateurs légers entre sous-sections */
+  .rm-invite-line-card.rm-invite-card-unified .rm-invite-field-block {
+    margin-top: 12px;
+    padding-top: 12px;
+  }
   .rm-invite-unified-title {
     font-size: calc(15px * var(--ui-text-scale));
     font-weight: 600;
     color: var(--text);
     margin-bottom: 12px;
   }
+
+  /* Bloc invitation — aligné sur Membres actifs (rm-members-group + rm-m-name / rm-m-joined) */
+  .rm-invite-lede {
+    font-size: calc(11px * var(--ui-text-scale));
+    color: var(--text-muted);
+    line-height: 1.4;
+    margin: 0 4px 6px;
+    padding: 0 4px;
+  }
+  .rm-invite-group.rm-members-group {
+    margin-bottom: 10px;
+  }
+  .rm-invite-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border-bottom: 0.5px solid var(--border-light);
+  }
+  .rm-invite-group .rm-invite-row:last-child {
+    border-bottom: none;
+  }
+  .rm-invite-row--stack {
+    align-items: center;
+  }
+  .rm-invite-cell {
+    flex: 1;
+    min-width: 0;
+  }
+  .rm-invite-cell--fill {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .rm-invite-cell--fill .rm-m-joined {
+    margin-top: -1px;
+    margin-bottom: 2px;
+  }
+  .rm-invite-url-line {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rm-invite-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px 8px;
+    flex-shrink: 0;
+  }
+  .rm-invite-action-txt {
+    min-height: 36px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--accent);
+    font-size: calc(11px * var(--ui-text-scale));
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .rm-invite-action-txt--soft {
+    color: var(--text-secondary);
+    font-weight: 500;
+    border: 0.5px solid var(--border-light);
+    background: var(--bg);
+  }
+  .rm-invite-action-txt:focus-visible,
+  .rm-invite-save-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .rm-invite-input-line {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 4px 0;
+    border: none;
+    border-bottom: 0.5px solid var(--border-light);
+    border-radius: 0;
+    background: transparent;
+    color: var(--text);
+    font-size: calc(13px * var(--ui-text-scale));
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    box-sizing: border-box;
+  }
+  .rm-invite-input-line--code {
+    font-family: ui-monospace, monospace;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .rm-invite-input-line--pin {
+    font-family: ui-monospace, monospace;
+    letter-spacing: 0.12em;
+    max-width: 8em;
+  }
+  .rm-invite-input-line:focus {
+    outline: none;
+    border-bottom-color: var(--accent);
+  }
+  .rm-invite-group .rm-invite-line-err {
+    margin-top: 4px;
+    margin-bottom: 0;
+    font-size: calc(11px * var(--ui-text-scale));
+  }
+  .rm-invite-save-btn {
+    flex-shrink: 0;
+    align-self: center;
+  }
+
   .rm-invite-field-block {
     margin-top: 16px;
     padding-top: 14px;
@@ -3388,7 +3560,7 @@ html.ui-large {
 
   /* ── FamResa completion (E) + guides (F/G) ── */
   .dash-completion-wrap {
-    padding: 0 16px 10px;
+    padding: 13px 16px 0;
   }
   .dash-completion-wrap--below-tabs {
     margin-bottom: 8px;
@@ -3538,6 +3710,176 @@ html.ui-large {
   .famresa-cpl-form { margin-top: 8px; }
   .famresa-cpl-save { width: 100%; margin-top: 16px; }
 
+  /* Hub « Modifier la ressource » (MECE) */
+  .reh-menu-list { border-top: 1px solid var(--border-light, #eee); margin-top: 4px; }
+  .reh-menu-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 14px 4px;
+    border: none;
+    border-bottom: 1px solid var(--border-light, #eee);
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    gap: 10px;
+  }
+  .reh-menu-row__label { font-weight: 500; font-size: calc(15px * var(--ui-text-scale)); flex: 1; min-width: 0; }
+  .reh-menu-row__right { flex-shrink: 0; display: flex; align-items: center; gap: 8px; font-size: calc(13px * var(--ui-text-scale)); }
+  .reh-pill-todo {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 12px;
+    font-size: calc(12px * var(--ui-text-scale));
+    font-weight: 600;
+    background: linear-gradient(135deg, #1f4b37 0%, #2d6a4f 100%);
+    color: #fff;
+    line-height: 1.2;
+  }
+  .reh-pill-warn {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 12px;
+    font-size: calc(12px * var(--ui-text-scale));
+    font-weight: 600;
+    background: #fff7ed;
+    color: #c2410c;
+    border: 0.5px solid #fed7aa;
+    line-height: 1.2;
+  }
+  .reh-done-wrap { display: flex; align-items: center; gap: 8px; }
+  .reh-check-ring {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #16a34a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .reh-check-ring svg { width: 12px; height: 12px; stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .reh-modify-link {
+    border: none;
+    background: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    font-size: calc(13px * var(--ui-text-scale));
+    color: var(--text-light);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .reh-footer-close { width: 100%; margin-top: 20px; padding-top: 8px; }
+  .reh-photo-preview {
+    width: 80px;
+    height: 80px;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #f3f4f6;
+    margin: 0 auto 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(36px * var(--ui-text-scale));
+  }
+
+  /* Hub édition ressource : panneau et formulaires plus compacts */
+  #resource-edit-hub-inner.famresa-cpl-panel {
+    padding: 8px 12px 16px;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  #resource-edit-hub-inner .famresa-cpl-header {
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  #resource-edit-hub-inner .famresa-cpl-back {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  #resource-edit-hub-inner .famresa-cpl-header-title {
+    font-size: calc(15px * var(--ui-text-scale));
+    line-height: 1.25;
+  }
+  #resource-edit-hub-inner .famresa-cpl-circle-wrap {
+    margin: 4px 0 8px;
+  }
+  #resource-edit-hub-inner .famresa-cpl-circle {
+    width: 68px;
+    height: 68px;
+    font-size: calc(16px * var(--ui-text-scale));
+  }
+  #resource-edit-hub-inner .famresa-cpl-lead {
+    margin: 0 2px 8px;
+    font-size: calc(12px * var(--ui-text-scale));
+    line-height: 1.35;
+  }
+  #resource-edit-hub-inner .famresa-cpl-form {
+    margin-top: 4px;
+  }
+  #resource-edit-hub-inner .ob-fields {
+    margin: 4px 0 8px;
+    gap: 8px;
+  }
+  #resource-edit-hub-inner .input-group {
+    margin-bottom: 0;
+  }
+  #resource-edit-hub-inner .input-group label {
+    font-size: calc(11px * var(--ui-text-scale));
+    font-weight: 600;
+    margin-bottom: 3px;
+    color: var(--text-muted, var(--text-secondary));
+  }
+  #resource-edit-hub-inner .input-group input,
+  #resource-edit-hub-inner .input-group select {
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: calc(14px * var(--ui-text-scale));
+  }
+  #resource-edit-hub-inner .reh-textarea {
+    resize: none;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: calc(13px * var(--ui-text-scale));
+    width: 100%;
+    box-sizing: border-box;
+    line-height: 1.35;
+    min-height: 72px;
+  }
+  #resource-edit-hub-inner .reh-field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  #resource-edit-hub-inner .reh-field-grid .input-group {
+    min-width: 0;
+  }
+  #resource-edit-hub-inner .famresa-cpl-save {
+    margin-top: 10px;
+    padding: 10px 14px;
+    font-size: calc(14px * var(--ui-text-scale));
+  }
+  #resource-edit-hub-inner .reh-footer-close {
+    margin-top: 14px;
+    padding-top: 4px;
+  }
+  #resource-edit-hub-inner .reh-footer-close .btn {
+    padding: 10px 14px;
+    font-size: calc(14px * var(--ui-text-scale));
+  }
+  #resource-edit-hub-inner .reh-menu-row {
+    padding: 10px 2px;
+  }
+  #resource-edit-hub-inner .reh-menu-row__label {
+    font-size: calc(14px * var(--ui-text-scale));
+  }
+
   .famresa-ge-head {
     display: flex;
     align-items: center;
@@ -3622,6 +3964,41 @@ html.ui-large {
     cursor: pointer;
     text-decoration: underline;
   }
+  /* Formulaire d'édition guide: harmonisé avec le style app */
+  .famresa-ge-form.ob-fields {
+    margin: 8px 0 12px;
+    gap: 10px;
+  }
+  .famresa-ge-form .input-group {
+    margin-bottom: 0;
+  }
+  .famresa-ge-form .input-group label {
+    font-size: calc(12px * var(--ui-text-scale));
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+  .famresa-ge-form .input-group input,
+  .famresa-ge-form .input-group textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: calc(15px * var(--ui-text-scale));
+    line-height: 1.35;
+    outline: none;
+  }
+  .famresa-ge-form .input-group textarea {
+    min-height: 92px;
+    resize: vertical;
+  }
+  .famresa-ge-form .input-group input:focus,
+  .famresa-ge-form .input-group textarea:focus {
+    border-color: var(--accent);
+  }
   .btn-ghost-sm {
     padding: 4px 8px;
     font-size: calc(12px * var(--ui-text-scale));
@@ -3691,6 +4068,11 @@ html.ui-large {
   .famresa-co-row.is-done .famresa-co-check {
     background: var(--accent, #2f7759);
     border-color: var(--accent, #2f7759);
+  }
+  .famresa-co-row.is-readonly {
+    cursor: default;
+    opacity: 0.92;
+    pointer-events: none;
   }
   .famresa-co-title { font-weight: 600; font-size: calc(15px * var(--ui-text-scale)); display: block; }
   .famresa-co-sub { font-size: calc(13px * var(--ui-text-scale)); color: var(--text-light); display: block; margin-top: 4px; }

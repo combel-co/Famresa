@@ -1,0 +1,40 @@
+rules_version = '2';
+// Déployer avec Firebase CLI : firebase deploy --only firestore:rules
+//
+// La capacité partagée des séjours maison est appliquée côté client (reservation.service.js).
+// Pour une garantie serveur stricte, prévoir une Cloud Function ou des agrégats Firestore
+// qui vérifient la somme des peopleCount par ressource et par jour avant écriture.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /reservations/{docId} {
+      // À resserrer selon votre modèle d’auth (ex. accès par famille / resource_access).
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null;
+    }
+
+    // Collections existantes — adapter à votre politique réelle
+    match /ressources/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Mise à jour du champ role (promotion admin, etc.) : règles larges ici ;
+    // la logique métier (dernier admin, droits) est appliquée dans access.service.js côté app.
+    match /acces_ressource/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    match /familles/{familleId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+
+      match /bookings/{bookingId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null;
+      }
+    }
+  }
+}

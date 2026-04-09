@@ -362,8 +362,9 @@ function bmFirstName(fullName) {
 
 function bmGetHouseCapacity() {
   const res = resources.find((r) => r.id === selectedResource);
-  const c = res?.capacity != null ? Number(res.capacity) : NaN;
-  return Number.isFinite(c) && c > 0 ? c : null;
+  return typeof getResourceHouseCapacityNumber === 'function'
+    ? getResourceHouseCapacityNumber(res)
+    : null;
 }
 
 function bmComputeStayTotal() {
@@ -515,8 +516,8 @@ function bmSyncPersonnesCapacityHint() {
   const hint = document.getElementById('bm-personnes-capacity-hint');
   if (!hint) return;
   const res = resources.find((r) => r.id === selectedResource);
-  const cap = res?.capacity != null ? Number(res.capacity) : null;
-  if (!Number.isFinite(cap) || cap <= 0) {
+  const cap = typeof getResourceHouseCapacityNumber === 'function' ? getResourceHouseCapacityNumber(res) : null;
+  if (cap == null) {
     hint.style.display = 'none';
     return;
   }
@@ -544,14 +545,42 @@ function bmGetSelection() {
 /**
  * Date selection while in planning reserve mode (replaces modal onBmDayClick).
  */
+function bmValidateHouseRangeCapacity(start, end, peopleNeeded) {
+  const res = resources.find((r) => r.id === selectedResource);
+  if (res?.type !== 'house') return null;
+  const cap = typeof getResourceHouseCapacityNumber === 'function' ? getResourceHouseCapacityNumber(res) : null;
+  if (cap == null) return null;
+  const need = Math.max(1, Number(peopleNeeded) || 1);
+  const startD = new Date(start + 'T00:00:00');
+  const endD = new Date(end + 'T00:00:00');
+  for (let cur = new Date(startD); cur <= endD; cur.setDate(cur.getDate() + 1)) {
+    const ds2 = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
+    const ok =
+      typeof houseStayHasRoomFor === 'function' ? houseStayHasRoomFor(ds2, need) : !bookings[ds2];
+    if (!ok) return ds2;
+  }
+  return null;
+}
+
 function bmApplyDaySelection(ds) {
-  const booking = bookings[ds];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const cellDate = new Date(ds + 'T00:00:00');
   if (cellDate < today) return;
-  if (booking) {
-    if (typeof showToast === 'function') showToast('Ce jour est déjà réservé');
+
+  const res = resources.find((r) => r.id === selectedResource);
+  const cap = typeof getResourceHouseCapacityNumber === 'function' ? getResourceHouseCapacityNumber(res) : null;
+  const need = Math.max(1, Number(bm.personTotal) || 1);
+  const dayOk =
+    typeof houseStayHasRoomFor === 'function' ? houseStayHasRoomFor(ds, need) : !bookings[ds];
+  if (!dayOk) {
+    if (typeof showToast === 'function') {
+      showToast(
+        res?.type === 'house' && cap != null
+          ? 'Capacité insuffisante pour ce jour'
+          : 'Ce jour est déjà réservé'
+      );
+    }
     return;
   }
 
@@ -567,6 +596,15 @@ function bmApplyDaySelection(ds) {
       bm.endDate = ds;
     }
     bm.step = 'start';
+    const rangeStart = bm.startDate <= bm.endDate ? bm.startDate : bm.endDate;
+    const rangeEnd = bm.startDate <= bm.endDate ? bm.endDate : bm.startDate;
+    const bad = bmValidateHouseRangeCapacity(rangeStart, rangeEnd, need);
+    if (bad) {
+      if (typeof showToast === 'function') showToast('Capacité insuffisante sur une ou plusieurs dates');
+      bm.endDate = null;
+      bm.step = 'end';
+      return;
+    }
   }
   if (typeof onPlanningDatesChanged === 'function') onPlanningDatesChanged();
 }
@@ -817,6 +855,8 @@ async function createStay() {
     const external = bm.bookerTab === 'external';
     const booker = external ? _resolveBooker() : _resolveHouseStayBooker();
     const peopleCount = Math.max(1, Number(bm.personTotal) || 1);
+    const resMeta = resources.find((r) => r.id === selectedResource);
+    const capNum = typeof getResourceHouseCapacityNumber === 'function' ? getResourceHouseCapacityNumber(resMeta) : null;
     const result = await reservationService.createStayReservation({
       resourceId: selectedResource,
       userId: booker.id,
@@ -827,11 +867,19 @@ async function createStay() {
       motif,
       bookings,
       createdBy: booker.createdBy,
-      peopleCount
+      peopleCount,
+      stayOccupancyByDate: typeof houseStayOccupancyByDate !== 'undefined' ? houseStayOccupancyByDate : {},
+      resourceCapacity: capNum
     });
 
     if (result.error === 'conflict') {
       showToast('Ce jour est déjà réservé');
+      return;
+    }
+    if (result.error === 'capacity') {
+      showToast(
+        capNum != null ? `Capacité dépassée (${capNum} pers. max.)` : 'Capacité dépassée'
+      );
       return;
     }
 
@@ -1126,6 +1174,7 @@ async function saveEditedBooking() {
     if (isHouse && booking && booking.reservationGroupId) {
       const motif = document.getElementById('bm-motif-input')?.value.trim() || '';
       const peopleCount = Math.max(1, Number(bm.personTotal) || 1);
+      const capNum = typeof getResourceHouseCapacityNumber === 'function' ? getResourceHouseCapacityNumber(res) : null;
       const result = await reservationService.updateStayReservation({
         groupId: booking.reservationGroupId,
         resourceId: selectedResource,
@@ -1136,12 +1185,18 @@ async function saveEditedBooking() {
         endDate: bm.endDate || bm.startDate,
         motif,
         bookings,
+        stayOccupancyByDate: typeof houseStayOccupancyByDate !== 'undefined' ? houseStayOccupancyByDate : {},
+        resourceCapacity: capNum,
         createdBy: booking.createdBy || null,
         peopleCount,
         familyId: currentUser?.familyId
       });
       if (result.error === 'conflict') {
         showToast('Ce jour est déjà réservé');
+        return;
+      }
+      if (result.error === 'capacity') {
+        showToast(capNum != null ? `Capacité dépassée (${capNum} pers. max.)` : 'Capacité dépassée');
         return;
       }
       _editingBookingId = null;
