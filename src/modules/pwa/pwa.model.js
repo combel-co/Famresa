@@ -3,13 +3,14 @@
 // ==========================================
 
 const pwaModel = {
-  CACHE_NAME: 'famresa-v8',
+  CACHE_NAME: 'famresa-v9',
 
   SHELL_ASSETS: [
     './',
     './index.html',
     './manifest.json',
     './css/style.css',
+    './icons/logo.svg',
     './icons/apple-touch-icon.png',
     './icons/favicon-32.png',
     './icons/favicon-16.png',

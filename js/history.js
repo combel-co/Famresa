@@ -42,3 +42,20 @@ async function shareApp() {
     showToast('Impossible de partager pour le moment');
   }
 }
+
+function showFaqSheet() {
+  document.getElementById('sheet-content').innerHTML = `
+    <div class="login-sheet">
+      <h2>Aide &amp; FAQ</h2>
+      <div class="pf-promo-card" onclick="shareApp()" role="button" tabindex="0" style="margin-top:12px;margin-bottom:0">
+        <div class="pf-promo-icon">📤</div>
+        <div class="pf-promo-text">
+          <div class="pf-promo-title">Comment faire découvrir l'application à un ami&nbsp;?</div>
+          <div class="pf-promo-desc">Simple, cliquer sur le bouton partager ci-dessous</div>
+        </div>
+        <div class="pf-promo-chevron">›</div>
+      </div>
+      <button type="button" class="btn" style="background:#f5f5f5;color:var(--text);margin-top:16px;width:100%" onclick="closeSheet()">Fermer</button>
+    </div>`;
+  document.getElementById('overlay').classList.add('open');
+}

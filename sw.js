@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v25';
+const CACHE_VERSION = 'v28';
 const CACHE_NAME = 'famresa-' + CACHE_VERSION;
 
 function getBasePath() {
@@ -36,6 +36,7 @@ self.addEventListener('install', event => {
         withBase('index.html'),
         withBase('manifest.json'),
         withBase('css/style.css'),
+        withBase('icons/logo.svg'),
         withBase('icons/apple-touch-icon.png'),
         withBase('icons/favicon-32.png'),
         withBase('icons/favicon-16.png'),

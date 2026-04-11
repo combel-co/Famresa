@@ -644,24 +644,67 @@ function subscribeBookings() {
 // ==========================================
 // ADD RESOURCE
 // ==========================================
+async function _familyRowForResourceCreation(id) {
+  if (!id) return null;
+  try {
+    const snap = await familleRef(id).get();
+    if (!snap.exists) return null;
+    const data = snap.data() || {};
+    return { id, name: data.nom || data.name || 'Espace partagé' };
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Familles où l’utilisateur peut rattacher une nouvelle ressource : membres explicites
+ * + familles déduites des accès ressource acceptés (invités sans ligne famille_membres).
+ * Aligné sur loadFamilyName (js/app.js).
+ */
 async function _loadUserFamiliesForResourceCreation() {
   if (!currentUser?.id) return [];
-  const memberSnap = await familleMembresRef().where('profil_id', '==', currentUser.id).get();
-  if (memberSnap.empty) return [];
 
-  const familyIds = [...new Set(memberSnap.docs.map((doc) => doc.data()?.famille_id).filter(Boolean))];
-  const familyDocs = await Promise.all(familyIds.map(async (id) => {
-    try {
-      const snap = await familleRef(id).get();
-      if (!snap.exists) return null;
-      const data = snap.data() || {};
-      return { id, name: data.nom || data.name || 'Espace partagé' };
-    } catch (_) {
-      return null;
+  const families = [];
+  const seen = new Set();
+
+  const appendUniqueInOrder = async (orderedIds) => {
+    const rows = await Promise.all(orderedIds.map((fid) => _familyRowForResourceCreation(fid)));
+    for (const row of rows) {
+      if (row && !seen.has(row.id)) {
+        seen.add(row.id);
+        families.push(row);
+      }
     }
-  }));
+  };
 
-  return familyDocs.filter(Boolean);
+  try {
+    const memberSnap = await familleMembresRef().where('profil_id', '==', currentUser.id).get();
+    const memberFamilyIds = [...new Set(memberSnap.docs.map((doc) => doc.data()?.famille_id).filter(Boolean))];
+    await appendUniqueInOrder(memberFamilyIds);
+  } catch (_) {}
+
+  let myAccessEntries = [];
+  try {
+    myAccessEntries = await getMyResourceAccessEntries(currentUser.id, null);
+  } catch (_) {}
+  if (myAccessEntries.length === 0) {
+    try {
+      const snap = await db.collection('resource_access').where('profileId', '==', currentUser.id).get();
+      snap.forEach((d) => myAccessEntries.push(accesRessourceToJS(d.data(), d.id)));
+    } catch (_) {}
+  }
+
+  const acceptedFamilyIds = [
+    ...new Set(
+      myAccessEntries
+        .filter((e) => (e.statut ?? e.status) === 'accepted')
+        .map((e) => e.famille_id || e.familyId)
+        .filter(Boolean)
+    ),
+  ];
+  await appendUniqueInOrder(acceptedFamilyIds);
+
+  return families;
 }
 
 function _toggleAddResourceFamilyFields() {
@@ -721,12 +764,32 @@ async function _ensureFamilyForNewResource(resourceName) {
 async function showAddResourceSheet() {
   const userFamilies = await _loadUserFamiliesForResourceCreation();
   const hasFamilies = userFamilies.length > 0;
+
+  let preferredFamilyId = null;
+  if (selectedResource) {
+    const res = resources.find((r) => r.id === selectedResource);
+    preferredFamilyId = res?.famille_id || res?.familleId || null;
+    if (!preferredFamilyId) {
+      try {
+        const rd = await ressourcesRef().doc(selectedResource).get();
+        if (rd.exists) {
+          const d = rd.data() || {};
+          preferredFamilyId = d.famille_id || d.familyId || null;
+        }
+      } catch (_) {}
+    }
+  }
+  const familySelectIndex = preferredFamilyId
+    ? userFamilies.findIndex((f) => f.id === preferredFamilyId)
+    : 0;
+  const selectedFamilyOptionIndex = familySelectIndex >= 0 ? familySelectIndex : 0;
+
   const familyBlock = hasFamilies
     ? `
       <div class="input-group">
         <label>Famille</label>
         <select id="add-res-family-select" onchange="_toggleAddResourceFamilyFields()">
-          ${userFamilies.map((family, index) => `<option value="${family.id}" ${index === 0 ? 'selected' : ''}>${family.name}</option>`).join('')}
+          ${userFamilies.map((family, index) => `<option value="${family.id}" ${index === selectedFamilyOptionIndex ? 'selected' : ''}>${family.name}</option>`).join('')}
           <option value="__new__">Créer une nouvelle famille</option>
         </select>
       </div>

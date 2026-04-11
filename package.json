@@ -3,8 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "icons:gen": "python3 scripts/gen_logo_icons.py",
     "cleanup:acces": "node scripts/cleanup-acces-ressource.mjs",
-    "cleanup:acces:apply": "node scripts/cleanup-acces-ressource.mjs --apply"
+    "cleanup:acces:apply": "node scripts/cleanup-acces-ressource.mjs --apply",
+    "reset:test-profile": "node scripts/reset-test-profile.mjs --profile-id=TEST_PROFILE_ID",
+    "reset:test-profile:apply": "node scripts/reset-test-profile.mjs --profile-id=TEST_PROFILE_ID --apply"
   },
   "devDependencies": {
     "firebase-admin": "^13.0.0"

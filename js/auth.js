@@ -786,18 +786,100 @@ async function loginUser() {
   }
 }
 
-// ---- SIGNUP ----
-let suTempPhoto = null;
+// ---- SIGNUP (step-by-step wizard) ----
+const _suState = { step: null, name: '', email: '', pin: '', emailExistsProfile: null, joinResourceId: null };
 
-function _setSignupInviteSubtitle() {
-  const sub = document.getElementById('su-auth-subtitle');
-  if (!sub) return;
-  if (_isInvitePreAuthFlow() && _pendingInviteResourceMeta?.resourceName && !_pendingInviteResourceMeta?.invalid) {
-    const rn = _pendingInviteResourceMeta.resourceName;
-    sub.textContent = `Crée ton compte pour rejoindre ${rn}.`;
-  } else {
-    sub.textContent = 'Tu pourras réserver en un clic.';
+function _suStepOrder() {
+  const steps = [];
+  if (_isInvitePreAuthFlow() && _pendingInviteResourceMeta && !_pendingInviteResourceMeta.invalid) {
+    steps.push('invite');
   }
+  steps.push('name', 'email', 'pin');
+  return steps;
+}
+
+function _suStepIndex(stepName) {
+  // Access step is always appended dynamically after PIN steps
+  const order = _suStepOrder();
+  const idx = order.indexOf(stepName);
+  if (idx >= 0) return idx;
+  // For steps not in the base order (e.g. 'access'), count based on DOM order
+  const allSteps = ['invite', 'name', 'email', 'pin', 'access'];
+  return allSteps.indexOf(stepName);
+}
+
+function suGoToStep(stepName) {
+  _suState.step = stepName;
+  const idx = _suStepIndex(stepName);
+  const track = document.getElementById('su-track');
+  if (track) track.style.transform = `translateX(-${idx * 100}%)`;
+  // Focus the primary input after slide transition
+  setTimeout(() => {
+    const stepEl = document.getElementById(`su-step-${stepName}`);
+    if (!stepEl) return;
+    const input = stepEl.querySelector('input:not([type="hidden"])');
+    if (input) input.focus();
+    // Setup PIN inputs for pin step
+    if (stepName === 'pin') {
+      const pins = stepEl.querySelectorAll('#su-user-pin input');
+      const confirmPins = stepEl.querySelectorAll('#su-user-pin-confirm input');
+      setupPinInputs(pins, () => confirmPins[0]?.focus());
+      setupPinInputs(confirmPins, suCreateAccount);
+    }
+    if (stepName === 'access') {
+      const accessPins = stepEl.querySelectorAll('#su-access-pin input');
+      setupPinInputs(accessPins, suSubmitAccessPin);
+    }
+  }, 380);
+}
+
+function suGoBack() {
+  const order = _suStepOrder();
+  const currentIdx = order.indexOf(_suState.step);
+  if (currentIdx <= 0) {
+    // Close overlay and go back to splash
+    document.getElementById('signup-overlay')?.classList.add('hidden');
+    if (_isInvitePreAuthFlow()) {
+      showSplash({ resetTimer: true });
+      _renderSplashInviteMode();
+    } else {
+      showSplash({ resetTimer: true });
+      _renderSplashGuestMode();
+    }
+    return;
+  }
+  // Reset email login block when going back from email step
+  if (_suState.step === 'email') {
+    _suResetEmailStep();
+  }
+  suGoToStep(order[currentIdx - 1]);
+}
+
+function _suResetEmailStep() {
+  const loginBlock = document.getElementById('su-email-login-block');
+  const btn = document.getElementById('su-email-btn');
+  const loginErr = document.getElementById('su-email-login-error');
+  if (loginBlock) loginBlock.style.display = 'none';
+  if (btn) { btn.textContent = 'Suivant'; btn.onclick = suValidateEmail; }
+  if (loginErr) loginErr.textContent = '';
+  clearPinInputs('#su-email-login-pin input');
+  _suState.emailExistsProfile = null;
+}
+
+function _suPopulateInviteCard() {
+  const meta = _pendingInviteResourceMeta || {};
+  const titleEl = document.getElementById('su-invite-title');
+  const emojiEl = document.getElementById('su-invite-emoji');
+  const resourceEl = document.getElementById('su-invite-resource');
+  const locationEl = document.getElementById('su-invite-location');
+  if (titleEl) {
+    titleEl.textContent = meta.adminFirstName
+      ? `${meta.adminFirstName} vous invite`
+      : 'Vous êtes invité';
+  }
+  if (emojiEl) emojiEl.textContent = meta.resourceType === 'house' ? '🏠' : '🚗';
+  if (resourceEl) resourceEl.textContent = meta.resourceName || 'Ressource';
+  if (locationEl) locationEl.textContent = meta.location || '';
 }
 
 function startSignup() {
@@ -809,99 +891,208 @@ function startSignup() {
   if (welcome) welcome.style.display = 'none';
   const bottomNav = document.querySelector('.bottom-nav');
   if (bottomNav) bottomNav.style.display = 'none';
-  suTempPhoto = null;
-  suPendingFamilyId = null;
-  document.getElementById('signup-overlay').classList.remove('hidden');
-  _setSignupInviteSubtitle();
-  showSignupStep(3);
-}
 
-function showSignupStep(id) {
-  document.querySelectorAll('.su-step').forEach(s => s.classList.add('hidden'));
-  document.getElementById(`su-step-${id}`)?.classList.remove('hidden');
-    if (id === 3) {
-    _setSignupInviteSubtitle();
-    suTempPhoto = null;
-    const prev = document.getElementById('su-photo-preview');
-    if (prev) { prev.innerHTML = '📷'; prev.classList.remove('has-photo'); }
-    document.querySelectorAll('#su-name,#su-email').forEach(el => { if (el) el.value = ''; });
-    clearPinInputs('#su-user-pin input, #su-user-pin-confirm input');
-    document.getElementById('su-profile-error').textContent = '';
-    const pins = document.querySelectorAll('#su-user-pin input');
-    const confirmPins = document.querySelectorAll('#su-user-pin-confirm input');
-    setupPinInputs(pins, () => confirmPins[0]?.focus());
-    setupPinInputs(confirmPins, signupProfileAdvance);
-    setTimeout(() => document.getElementById('su-name')?.focus(), 300);
-  }
-}
+  // Reset state
+  _suState.name = '';
+  _suState.email = '';
+  _suState.pin = '';
+  _suState.emailExistsProfile = null;
+  _suState.joinResourceId = null;
 
-function signupBackFromSimpleForm() {
-  document.getElementById('signup-overlay')?.classList.add('hidden');
+  // Clear all fields
+  const nameEl = document.getElementById('su-name');
+  const emailEl = document.getElementById('su-email');
+  if (nameEl) nameEl.value = '';
+  if (emailEl) emailEl.value = '';
+  clearPinInputs('#su-user-pin input, #su-user-pin-confirm input, #su-access-pin input, #su-email-login-pin input');
+  document.querySelectorAll('#signup-overlay .lock-error').forEach(el => el.textContent = '');
+  _suResetEmailStep();
+
+  // Populate invite card if in invite flow
   if (_isInvitePreAuthFlow()) {
-    showSplash({ resetTimer: true });
-    _renderSplashInviteMode();
-    return;
+    _suPopulateInviteCard();
   }
-  showSplash({ resetTimer: true });
-  _renderSplashGuestMode();
+
+  // Reset track position instantly before showing
+  const track = document.getElementById('su-track');
+  if (track) { track.style.transition = 'none'; track.style.transform = 'translateX(0)'; }
+
+  document.getElementById('signup-overlay').classList.remove('hidden');
+
+  // Re-enable transitions and go to first step
+  requestAnimationFrame(() => {
+    if (track) track.style.transition = '';
+    const firstStep = _suStepOrder()[0];
+    suGoToStep(firstStep);
+  });
 }
 
-function handleSignupPhoto(input) {
-  resizePhotoFile(input.files[0], (dataUrl) => {
-    suTempPhoto = dataUrl;
-    const preview = document.getElementById('su-photo-preview');
-    if (preview) { preview.innerHTML = `<img src="${dataUrl}" alt="">`; preview.classList.add('has-photo'); }
-  }, window.PHOTO_PRESET_AVATAR);
-}
+// -- Step validations --
 
-async function signupProfileAdvance() {
+function suValidateName() {
   const name = (document.getElementById('su-name')?.value || '').trim();
+  const errEl = document.getElementById('su-name-error');
+  if (!name) { if (errEl) errEl.textContent = 'Entrez votre prénom'; return; }
+  if (errEl) errEl.textContent = '';
+  _suState.name = name;
+  suGoToStep('email');
+}
+
+async function suValidateEmail() {
   const email = (document.getElementById('su-email')?.value || '').trim().toLowerCase();
-  const pin = getPinFromInputs('#su-user-pin input');
-  const pinConfirm = getPinFromInputs('#su-user-pin-confirm input');
-  const errEl = document.getElementById('su-profile-error');
-  if (!name) { errEl.textContent = 'Entre ton prénom'; return; }
-  if (!email) { errEl.textContent = 'Entre ton email'; return; }
-  if (!email.includes('@')) { errEl.textContent = 'Cet email n\'est pas valide'; return; }
-  if (pin.length < 4) { errEl.textContent = 'Entre 4 chiffres'; return; }
-  if (pin !== pinConfirm) { errEl.textContent = 'Les codes ne correspondent pas'; return; }
-  errEl.textContent = '';
+  const errEl = document.getElementById('su-email-error');
+  if (!email) { if (errEl) errEl.textContent = 'Entrez votre email'; return; }
+  if (!email.includes('@') || !email.includes('.')) { if (errEl) errEl.textContent = 'Cet email n\'est pas valide'; return; }
+  if (errEl) errEl.textContent = '';
+
+  // Disable button + show loading state
+  const btn = document.getElementById('su-email-btn');
+  const originalText = btn?.textContent;
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
   try {
-    // Check email uniqueness in new + legacy
     const [newSnap, oldSnap] = await Promise.all([
       profilsRef().where('email', '==', email).get(),
       db.collection('users').where('email', '==', email).get()
     ]);
-    if (!newSnap.empty || !oldSnap.empty) { errEl.textContent = 'Cet email est déjà utilisé'; return; }
 
-    // Create PROFIL (no family/admin code at signup stage)
-    const ref = await profilsRef().add({
-      nom: name, email, code_pin: pin,
-      photo: suTempPhoto || null,
-      familyId: null,
-      createdAt: ts()
-    });
-    currentUser = { id: ref.id, name, email, photo: suTempPhoto || null, familyId: null };
-    localStorage.setItem('famcar_user', JSON.stringify(currentUser));
-    document.getElementById('signup-overlay').classList.add('hidden');
-    showSkeleton();
-    const joinResult = await _consumePendingResourceJoin({ silent: true });
-    const loadResult = await loadResources({ suppressEmptyWelcomeUI: true });
+    if (!newSnap.empty || !oldSnap.empty) {
+      // Email exists → morph into login
+      const doc = !newSnap.empty ? newSnap.docs[0] : oldSnap.docs[0];
+      const data = doc.data();
+      _suState.emailExistsProfile = { id: doc.id, data, source: !newSnap.empty ? 'profils' : 'users' };
+      _suState.email = email;
+
+      const loginBlock = document.getElementById('su-email-login-block');
+      if (loginBlock) loginBlock.style.display = 'block';
+      if (btn) { btn.textContent = 'Se connecter'; btn.disabled = false; btn.onclick = suLoginFromEmail; }
+
+      // Focus first PIN input
+      setTimeout(() => {
+        const pins = document.querySelectorAll('#su-email-login-pin input');
+        setupPinInputs(pins, suLoginFromEmail);
+        pins[0]?.focus();
+      }, 100);
+      return;
+    }
+
+    // Email is new → proceed
+    _suState.email = email;
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
+    suGoToStep('pin');
+  } catch (e) {
+    console.error(e);
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
+    if (errEl) errEl.textContent = 'Erreur réseau — vérifiez votre connexion';
+  }
+}
+
+async function suLoginFromEmail() {
+  const pin = getPinFromInputs('#su-email-login-pin input');
+  const errEl = document.getElementById('su-email-login-error');
+  if (pin.length < 4) { if (errEl) errEl.textContent = 'Entrez les 4 chiffres'; return; }
+
+  const profile = _suState.emailExistsProfile;
+  if (!profile) { if (errEl) errEl.textContent = 'Erreur — rechargez la page'; return; }
+
+  const storedPin = String(profile.data.code_pin ?? profile.data.pin ?? '');
+  if (storedPin !== pin) { if (errEl) errEl.textContent = 'Code incorrect'; clearPinInputs('#su-email-login-pin input'); return; }
+
+  if (errEl) errEl.textContent = '';
+
+  // Successful login
+  const data = profile.data;
+  const familyId = data.familyId || data.famille_id || null;
+  let name = data.nom || data.name || '';
+  let photo = data.photo || null;
+  const createdAt = data.createdAt?.toMillis?.() || data.createdAt || null;
+
+  // Try richer profile from famille_membres
+  if (familyId) {
     try {
-      if (localStorage.getItem('famresa_debug') === '1') {
-        console.log('[famresa signup] loadResources', loadResult);
+      const member = await getFamilleMember(familyId, profile.id);
+      if (member) {
+        name = member.nom || member.name || name;
+        photo = member.photo || photo;
       }
     } catch (_) {}
+  }
+
+  currentUser = { id: profile.id, name, email: _suState.email, photo, familyId, createdAt };
+  localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+  document.getElementById('signup-overlay').classList.add('hidden');
+  showSkeleton();
+
+  try {
+    await runV2MigrationIfNeeded();
+    const joinResult = await _consumePendingResourceJoin({ silent: true });
+    const loadResult = await loadResources({ suppressEmptyWelcomeUI: true });
     if (_isPendingJoinResult(joinResult)) {
       hideSkeleton();
       await enterApp('dashboard');
-      showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId, {
-        hasJoinPin: !!joinResult.hasJoinPin,
-      });
+      showToast(`Bonjour ${currentUser.name} !`);
+      showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId, { hasJoinPin: !!joinResult.hasJoinPin });
       return;
     }
     if (loadResult?.needsFirstResourceOnboarding) {
       hideSkeleton();
+      if (typeof startFirstResourceOnboarding === 'function') startFirstResourceOnboarding();
+      return;
+    }
+    await enterApp('dashboard');
+    showToast(`Bonjour ${currentUser.name} !`);
+  } catch (e) {
+    hideSkeleton();
+    console.error(e);
+    showToast('Erreur — réessayez');
+  }
+}
+
+async function suCreateAccount() {
+  const pin = getPinFromInputs('#su-user-pin input');
+  const pinConfirm = getPinFromInputs('#su-user-pin-confirm input');
+  const errEl = document.getElementById('su-pin-error');
+  if (pin.length < 4) { if (errEl) errEl.textContent = 'Entrez 4 chiffres'; return; }
+  if (pin !== pinConfirm) { if (errEl) errEl.textContent = 'Les codes ne correspondent pas'; clearPinInputs('#su-user-pin-confirm input'); return; }
+  if (errEl) errEl.textContent = '';
+
+  const btn = document.querySelector('#su-step-pin .su-btn-full');
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+  try {
+    const name = _suState.name;
+    const email = _suState.email;
+
+    const ref = await profilsRef().add({
+      nom: name, email, code_pin: pin,
+      photo: null, familyId: null, createdAt: ts()
+    });
+    currentUser = { id: ref.id, name, email, photo: null, familyId: null };
+    localStorage.setItem('famcar_user', JSON.stringify(currentUser));
+
+    // Consume invite code if present
+    const joinResult = await _consumePendingResourceJoin({ silent: true });
+    const loadResult = await loadResources({ suppressEmptyWelcomeUI: true });
+
+    if (_isPendingJoinResult(joinResult)) {
+      if (joinResult.hasJoinPin) {
+        // Show access step (Step 5) inside wizard
+        _suState.joinResourceId = joinResult.resourceId;
+        const accessTitle = document.getElementById('su-access-title');
+        if (accessTitle) accessTitle.textContent = `Accéder à ${joinResult.resourceName || 'la ressource'}`;
+        if (btn) { btn.disabled = false; btn.textContent = 'Créer mon compte'; }
+        suGoToStep('access');
+        return;
+      }
+      // No join PIN → close overlay and show pending screen
+      document.getElementById('signup-overlay').classList.add('hidden');
+      await enterApp('dashboard');
+      showInvitePendingScreen(joinResult.resourceName, joinResult.resourceId, { hasJoinPin: false });
+      return;
+    }
+
+    document.getElementById('signup-overlay').classList.add('hidden');
+    if (loadResult?.needsFirstResourceOnboarding) {
       setTimeout(() => {
         if (typeof startFirstResourceOnboarding === 'function') startFirstResourceOnboarding();
       }, 400);
@@ -909,12 +1100,84 @@ async function signupProfileAdvance() {
     }
     await enterApp('dashboard');
     showToast(`Bienvenue ${name} !`);
-  } catch(e) { hideSkeleton(); console.error(e); errEl.textContent = 'Erreur — réessayez'; }
+  } catch (e) {
+    console.error(e);
+    if (btn) { btn.disabled = false; btn.textContent = 'Créer mon compte'; }
+    if (errEl) errEl.textContent = 'Erreur — réessayez';
+  }
 }
+
+async function suSubmitAccessPin() {
+  const pin = getPinFromInputs('#su-access-pin input');
+  const errEl = document.getElementById('su-access-error');
+  if (pin.length < 4) { if (errEl) errEl.textContent = 'Entrez les 4 chiffres'; return; }
+  if (!currentUser?.id || !_suState.joinResourceId) {
+    if (errEl) errEl.textContent = 'Session invalide — rechargez la page';
+    return;
+  }
+  if (errEl) errEl.textContent = '';
+
+  const btn = document.querySelector('#su-step-access .su-btn-full');
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+  try {
+    await accessService.acceptPendingWithJoinPin({
+      resourceId: _suState.joinResourceId,
+      profileId: currentUser.id,
+      pin,
+    });
+    document.getElementById('signup-overlay').classList.add('hidden');
+    if (typeof loadResources === 'function') await loadResources();
+    try { await loadFamilyName(); } catch (_) {}
+    const resJoined = typeof resources !== 'undefined' && resources
+      ? resources.find(r => r.id === _suState.joinResourceId) : null;
+    if (resJoined && typeof selectResource === 'function') selectResource(_suState.joinResourceId);
+    if (typeof renderExperiencePanels === 'function') renderExperiencePanels();
+    if (typeof renderCalendar === 'function') renderCalendar();
+    if (typeof renderProfileTab === 'function') renderProfileTab();
+    await enterApp('dashboard');
+    if (typeof celebrateInviteWelcome === 'function') {
+      celebrateInviteWelcome({
+        resourceName: resJoined?.name || resJoined?.nom || 'la ressource',
+        resourceId: _suState.joinResourceId,
+        isHouse: resJoined?.type === 'house',
+      });
+    } else {
+      showToast('Accès validé !');
+    }
+  } catch (e) {
+    console.error(e);
+    if (btn) { btn.disabled = false; btn.textContent = 'Valider'; }
+    const msg = String(e?.message || '');
+    if (msg.includes('PIN_MISMATCH')) {
+      if (errEl) errEl.textContent = 'Code incorrect';
+      clearPinInputs('#su-access-pin input');
+    } else {
+      if (errEl) errEl.textContent = 'Erreur — réessayez';
+    }
+  }
+}
+
+function suSkipAccessPin() {
+  document.getElementById('signup-overlay').classList.add('hidden');
+  enterApp('dashboard');
+  showInvitePendingScreen(
+    _pendingInviteResourceMeta?.resourceName || 'la ressource',
+    _suState.joinResourceId,
+    { hasJoinPin: true }
+  );
+}
+
+// Legacy compat wrappers (deprecated)
+function signupProfileAdvance() { suCreateAccount(); }
+function showSignupStep() { /* no-op: replaced by suGoToStep */ }
+function signupBackFromSimpleForm() { suGoBack(); }
 
 // ==========================================
 // CAR ONBOARDING (legacy wizard)
 // ==========================================
+let suPendingFamilyId = null;
+let _isSubmittingFamily = false;
 let selectedCarEmoji = '🚗';
 
 function selectCarEmoji(btn, emoji) {

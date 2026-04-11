@@ -129,6 +129,49 @@ Collections racine :
 - Google Fonts (DM Sans)
 - PWA avec Service Worker (offline-ready)
 
+## Maintenance — reset quotidien d'un profil test
+
+Un script admin dédié permet d'archiver puis réinitialiser un profil test sans impacter le runtime client.
+
+### Commandes
+
+```bash
+# simulation (aucune écriture)
+npm run reset:test-profile
+
+# exécution réelle (archive + reset)
+npm run reset:test-profile:apply
+```
+
+Par défaut, les scripts npm utilisent `TEST_PROFILE_ID`. Remplace cette valeur directement dans `package.json` ou lance la commande brute:
+
+```bash
+node scripts/reset-test-profile.mjs --profile-id=VOTRE_PROFILE_ID
+node scripts/reset-test-profile.mjs --profile-id=VOTRE_PROFILE_ID --apply
+```
+
+Options utiles:
+
+- `--archive-collection-prefix=archives_test_reset` (défaut)
+- `--service-account=/chemin/compte-service.json`
+- `--project-id=votre-project-id`
+- `--out=./reset-test-profile.jsonl` (journal JSONL)
+- `--seed-name`, `--seed-email`, `--seed-pin`, `--seed-photo`, `--seed-family-id`
+
+### Planification à minuit
+
+Le plus simple est un cron serveur (timezone explicite Europe/Paris) qui exécute:
+
+```bash
+node scripts/reset-test-profile.mjs --profile-id=VOTRE_PROFILE_ID --apply
+```
+
+Exemple crontab (minuit Europe/Paris via TZ local):
+
+```bash
+0 0 * * * /usr/bin/node /path/to/repo/scripts/reset-test-profile.mjs --profile-id=VOTRE_PROFILE_ID --apply >> /var/log/famresa-reset.log 2>&1
+```
+
 ---
 
 Fait avec ❤️ pour la famille.
