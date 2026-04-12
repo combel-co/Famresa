@@ -57,6 +57,7 @@ async function loadResources(options = {}) {
     )];
 
     if (acceptedIds.length > 0) {
+      hideResourceDashboardOverlays();
       let accessibleResources = [];
       try {
         accessibleResources = await getRessourcesByIds(acceptedIds);
@@ -218,6 +219,7 @@ async function loadResources(options = {}) {
       return { needsFirstResourceOnboarding: false };
     }
 
+    hideResourceDashboardOverlays();
     selectedResource = resources[0].id;
     renderResourceTabs();
     subscribeBookings();
@@ -229,6 +231,43 @@ async function loadResources(options = {}) {
       '<div class="loading" style="flex-direction:column;gap:8px;color:var(--danger)">⚠️ Connexion impossible<br><small style="color:var(--text-light)">Vérifiez votre connexion ou Firebase.</small></div>';
     return { needsFirstResourceOnboarding: false };
   }
+}
+
+function _dashboardMainCardSections() {
+  const mainCard = document.getElementById('resource-main-card');
+  if (!mainCard) return [];
+  const nodes = [];
+  const hero = document.getElementById('dash-resource-hero');
+  const week = document.getElementById('house-week-section');
+  const grid = document.getElementById('car-info-grid');
+  if (hero) nodes.push(hero);
+  if (week) nodes.push(week);
+  const primary = mainCard.querySelector('.house-primary-action');
+  if (primary) nodes.push(primary);
+  if (grid) nodes.push(grid);
+  return nodes;
+}
+
+function hideResourceDashboardOverlays() {
+  const pending = document.getElementById('resource-dashboard-pending-layer');
+  if (pending) {
+    pending.innerHTML = '';
+    pending.style.display = 'none';
+  }
+  const emptyLayer = document.getElementById('resource-dashboard-empty-layer');
+  if (emptyLayer) {
+    emptyLayer.innerHTML = '';
+    emptyLayer.style.display = 'none';
+  }
+  _dashboardMainCardSections().forEach((el) => {
+    el.style.display = '';
+  });
+}
+
+function _hideDashboardMainSections() {
+  _dashboardMainCardSections().forEach((el) => {
+    el.style.display = 'none';
+  });
 }
 
 // Empty dashboard while access request is pending (no welcome / create resource card)
@@ -243,18 +282,30 @@ function renderMinimalDashboardWhilePending(resourceLabel) {
     .replace(/"/g, '&quot;');
   const mainCard = document.getElementById('resource-main-card');
   if (mainCard) {
-    mainCard.innerHTML = `
-      <div style="padding:32px 20px;text-align:center;max-width:340px;margin:0 auto">
-        <div style="font-size: calc(44px * var(--ui-text-scale));margin-bottom:12px">⏳</div>
-        <div style="font-weight:700;font-size: calc(19px * var(--ui-text-scale));margin-bottom:10px">Demande en cours</div>
-        <div style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));line-height:1.55;margin-bottom:8px">
-          L'admin de <strong>${name}</strong> n'a pas encore validé ta demande.
+    hideResourceDashboardOverlays();
+    _hideDashboardMainSections();
+    let layer = document.getElementById('resource-dashboard-pending-layer');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.id = 'resource-dashboard-pending-layer';
+      mainCard.appendChild(layer);
+    }
+    layer.className = 'resource-dashboard-state-layer';
+    layer.innerHTML = `
+      <div class="resource-dashboard-state-inner">
+        <div style="padding:32px 20px;text-align:center;max-width:340px;margin:0 auto">
+          <div style="font-size: calc(44px * var(--ui-text-scale));margin-bottom:12px">⏳</div>
+          <div style="font-weight:700;font-size: calc(19px * var(--ui-text-scale));margin-bottom:10px">Demande en cours</div>
+          <div style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));line-height:1.55;margin-bottom:8px">
+            L'admin de <strong>${name}</strong> n'a pas encore validé ta demande.
+          </div>
+          <div style="color:var(--text-light);font-size: calc(13px * var(--ui-text-scale));line-height:1.5;margin-bottom:20px">
+            Tu recevras une notification dès que c'est fait.
+          </div>
+          <button type="button" class="btn btn-outline" style="width:100%" onclick="retryLoadResourcesPending()">Réessayer</button>
         </div>
-        <div style="color:var(--text-light);font-size: calc(13px * var(--ui-text-scale));line-height:1.5;margin-bottom:20px">
-          Tu recevras une notification dès que c'est fait.
-        </div>
-        <button type="button" class="btn btn-outline" style="width:100%" onclick="retryLoadResourcesPending()">Réessayer</button>
       </div>`;
+    layer.style.display = 'flex';
   }
 
   const upcomingLabel = document.getElementById('upcoming-label');
@@ -281,16 +332,28 @@ function renderNoAccessState() {
 
   const mainCard = document.getElementById('resource-main-card');
   if (mainCard) {
-    mainCard.innerHTML = `
-      <div style="padding:36px 20px;text-align:center;max-width:340px;margin:0 auto">
-        <div style="font-size: calc(48px * var(--ui-text-scale));margin-bottom:14px">🏠</div>
-        <div style="font-weight:700;font-size: calc(19px * var(--ui-text-scale));margin-bottom:10px">Pas encore de maison ni de voiture</div>
-        <div style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));line-height:1.55;margin-bottom:22px">
-          Demande un lien à un proche, ou crée la tienne pour la famille.
+    hideResourceDashboardOverlays();
+    _hideDashboardMainSections();
+    let layer = document.getElementById('resource-dashboard-empty-layer');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.id = 'resource-dashboard-empty-layer';
+      mainCard.appendChild(layer);
+    }
+    layer.className = 'resource-dashboard-state-layer';
+    layer.innerHTML = `
+      <div class="resource-dashboard-state-inner">
+        <div style="padding:36px 20px;text-align:center;max-width:340px;margin:0 auto">
+          <div style="font-size: calc(48px * var(--ui-text-scale));margin-bottom:14px">🏠</div>
+          <div style="font-weight:700;font-size: calc(19px * var(--ui-text-scale));margin-bottom:10px">Pas encore de maison ni de voiture</div>
+          <div style="color:var(--text-light);font-size: calc(14px * var(--ui-text-scale));line-height:1.55;margin-bottom:22px">
+            Demande un lien à un proche, ou crée la tienne pour la famille.
+          </div>
+          <button type="button" class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="startFirstResourceOnboardingFromEmptyState()">Créer une maison ou une voiture</button>
+          <button type="button" class="btn btn-outline" style="width:100%" onclick="openInviteLinkPromptFromDashboard()">J'ai un lien d'invitation</button>
         </div>
-        <button type="button" class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="startFirstResourceOnboardingFromEmptyState()">Créer une maison ou une voiture</button>
-        <button type="button" class="btn btn-outline" style="width:100%" onclick="openInviteLinkPromptFromDashboard()">J'ai un lien d'invitation</button>
       </div>`;
+    layer.style.display = 'flex';
   }
 
   const upcomingLabel = document.getElementById('upcoming-label');
@@ -434,7 +497,11 @@ function selectResourceType(type) {
 // SELECT RESOURCE
 // ==========================================
 function selectResource(resourceId) {
+  const prevId = selectedResource;
   selectedResource = resourceId;
+  if (prevId !== resourceId && typeof scrollAppMainToTop === 'function') {
+    scrollAppMainToTop();
+  }
   renderResourceTabs();
   if (unsubscribe) unsubscribe();
   subscribeBookings();
@@ -1452,35 +1519,14 @@ function _rmRenderPage(viewModel) {
 
   const inviteBlockHtml = viewModel.permissions.canInvite && viewModel.invite?.inviteCode
     ? `
-      <div class="rm-section-lbl">Inviter à rejoindre</div>
-      <p class="rm-invite-lede">Partagez le lien ou communiquez le code et le mot de passe.</p>
-      <div class="rm-members-group rm-invite-group">
-        <div class="rm-invite-row">
-          <div class="rm-invite-cell">
-            <div class="rm-m-name">Lien</div>
-            <div class="rm-m-joined rm-invite-url-line" title="${_rmEscapeHtml(viewModel.invite.displayUrl || '')}">${_rmEscapeHtml(viewModel.invite.displayUrl || '')}</div>
-          </div>
-          <div class="rm-invite-row-actions">
-            <button type="button" class="rm-invite-action-txt" onclick='_rmCopyInviteLink(${JSON.stringify(resource.id)})'>Copier</button>
-            <button type="button" class="rm-invite-action-txt rm-invite-action-txt--soft" onclick='_rmShareResourceInvite(${JSON.stringify(resource.id)})' aria-label="Partager le lien">Partager</button>
-          </div>
-        </div>
-        <div class="rm-invite-row rm-invite-row--stack">
-          <div class="rm-invite-cell rm-invite-cell--fill">
-            <div class="rm-m-name">Code d'activation</div>
-            <input type="text" id="rm-invite-code-input" class="rm-invite-input-line rm-invite-input-line--code" value="${_rmEscapeHtml(viewModel.invite.inviteCode)}" maxlength="8" autocomplete="off" spellcheck="false" aria-label="Code d'activation">
-            <div class="lock-error rm-invite-line-err" id="rm-invite-code-error" role="alert"></div>
-          </div>
-          <button type="button" class="rm-p-btn-reject rm-invite-save-btn" onclick='_rmSaveInviteCode(${JSON.stringify(resource.id)})'>Enregistrer</button>
-        </div>
-        <div class="rm-invite-row rm-invite-row--stack">
-          <div class="rm-invite-cell rm-invite-cell--fill">
-            <div class="rm-m-name">Mot de passe</div>
-            <div class="rm-m-joined">4 chiffres pour valider les demandes</div>
-            <input type="text" id="rm-join-pin-field" class="rm-invite-input-line rm-invite-input-line--pin" value="${_rmEscapeHtml(viewModel.invite.joinPin || '')}" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" aria-label="Mot de passe à 4 chiffres">
-            <div class="lock-error rm-invite-line-err" id="rm-join-pin-error" role="alert"></div>
-          </div>
-          <button type="button" class="rm-p-btn-reject rm-invite-save-btn" onclick='_rmSaveJoinPin(${JSON.stringify(resource.id)})'>Enregistrer</button>
+      <div class="rm-invite-simple">
+        <div class="rm-invite-simple__title">Inviter un membre de la famille</div>
+        <p class="rm-invite-simple__subtitle">Partagez l'accès en un clic</p>
+        <div class="rm-invite-simple__inner">
+          <button type="button" class="rm-invite-simple__btn" onclick='_rmShareResourceInvite(${JSON.stringify(resource.id)})' aria-label="Partager l'invitation">
+            <span class="rm-invite-simple__btn-icon" aria-hidden="true">↗</span>
+            Partager
+          </button>
         </div>
       </div>`
     : '';
@@ -1565,22 +1611,6 @@ function _rmRenderPage(viewModel) {
     </div>`;
 }
 
-function _rmSetupJoinPinInputs() {
-  const field = document.getElementById('rm-join-pin-field');
-  if (!field) return;
-  field.addEventListener('input', () => {
-    const cleaned = String(field.value || '').replace(/\D/g, '').slice(0, 4);
-    if (field.value !== cleaned) field.value = cleaned;
-  });
-}
-
-function _rmCurrentInvite(resourceId) {
-  if (_resourceManageState.resourceId === resourceId && _resourceManageState.viewModel?.invite?.shareUrl) {
-    return _resourceManageState.viewModel.invite;
-  }
-  return null;
-}
-
 function hideResourceManagePage() {
   _resourceManageState = { resourceId: null, viewModel: null };
   document.getElementById('resource-manage-overlay')?.classList.add('hidden');
@@ -1612,71 +1642,9 @@ async function showResourceManagePage(resourceId) {
     const localResource = resources.find((item) => item.id === resourceId);
     if (localResource && viewModel.invite?.inviteCode) localResource.inviteCode = viewModel.invite.inviteCode;
     content.innerHTML = _rmRenderPage(viewModel);
-    _rmSetupJoinPinInputs();
   } catch (e) {
     console.error('Resource manage page error:', e);
     content.innerHTML = _rmErrorMarkup();
-  }
-}
-
-async function _rmSaveJoinPin(resourceId) {
-  const errEl = document.getElementById('rm-join-pin-error');
-  if (errEl) errEl.textContent = '';
-  const field = document.getElementById('rm-join-pin-field');
-  const pin = field ? String(field.value || '').replace(/\D/g, '').slice(0, 4) : '';
-  const resForFam = resources.find((r) => r.id === resourceId);
-  const familyIdForResource = resForFam?.famille_id || resForFam?.familleId || currentUser.familyId;
-  if (!familyIdForResource) {
-    if (errEl) errEl.textContent = 'Famille introuvable';
-    return;
-  }
-  try {
-    await resourceService.updateJoinPinForResource({
-      resourceId,
-      rawPin: pin,
-      currentUserId: currentUser.id,
-      familyId: familyIdForResource,
-    });
-    showToast(pin ? 'Mot de passe mis à jour ✓' : 'Mot de passe supprimé ✓');
-    await showResourceManagePage(resourceId);
-  } catch (e) {
-    const msg = e?.message || '';
-    if (errEl) {
-      errEl.textContent = msg === 'FORBIDDEN' ? 'Action non autorisée'
-        : msg === 'INVALID_PIN' ? 'Entrez 4 chiffres ou laissez vide pour supprimer'
-        : 'Erreur — réessayez';
-    }
-  }
-}
-
-async function _rmSaveInviteCode(resourceId) {
-  const input = document.getElementById('rm-invite-code-input');
-  const errEl = document.getElementById('rm-invite-code-error');
-  if (!input || !errEl) return;
-  errEl.textContent = '';
-  const resForFam = resources.find((r) => r.id === resourceId);
-  const familyIdForResource = resForFam?.famille_id || resForFam?.familleId || currentUser.familyId;
-  if (!familyIdForResource) {
-    errEl.textContent = 'Famille introuvable';
-    return;
-  }
-  try {
-    const code = await resourceService.updateInviteCodeForResource({
-      resourceId,
-      rawCode: input.value,
-      currentUserId: currentUser.id,
-      familyId: familyIdForResource,
-    });
-    const localResource = resources.find((item) => item.id === resourceId);
-    if (localResource) localResource.inviteCode = code;
-    showToast('Code mis à jour ✓');
-    await showResourceManagePage(resourceId);
-  } catch (e) {
-    const msg = e?.message || '';
-    errEl.textContent = msg === 'DUPLICATE' ? 'Ce code est déjà utilisé'
-      : msg === 'INVALID' ? 'Code invalide : 8 caractères (A-Z, 2-9)'
-      : msg === 'FORBIDDEN' ? 'Action non autorisée'
-      : 'Erreur — réessayez';
   }
 }
 
@@ -1696,26 +1664,47 @@ async function _rmReject(accessId, resourceId) {
   } catch(e) { showToast('Erreur — réessayez'); }
 }
 
+function _rmShareInviteClipboardText(payload) {
+  const name = payload.resourceName || 'Cette ressource';
+  return `${name} — ouvre ce lien pour demander l'accès sur FamResa :\n${payload.shareUrl}\n\nCode à saisir dans l'app : ${payload.joinPin}`;
+}
+
 async function _rmShareResourceInvite(resourceId) {
-  let currentInvite = _rmCurrentInvite(resourceId);
+  const resForFam = resources.find((r) => r.id === resourceId);
+  const familyIdForResource = resForFam?.famille_id || resForFam?.familleId || currentUser?.familyId;
+  if (!currentUser?.id || !familyIdForResource) {
+    showToast('Connexion requise');
+    return;
+  }
+  let payload;
   try {
-    if (!currentInvite?.shareUrl) {
-      currentInvite = await resourceService.ensureManageInviteInfo({
-        resourceId,
-        origin: location.origin,
-        pathname: location.pathname
-      });
-    }
-    const url = currentInvite?.shareUrl;
-    if (!url) {
-      showToast('Lien indisponible');
-      return;
-    }
+    payload = await resourceService.ensureJoinPinForShare({
+      resourceId,
+      currentUserId: currentUser.id,
+      familyId: familyIdForResource,
+    });
+  } catch (e) {
+    const msg = e?.message || '';
+    showToast(msg === 'FORBIDDEN' ? 'Action non autorisée' : 'Impossible de préparer le partage');
+    return;
+  }
+  if (_resourceManageState.resourceId === resourceId && _resourceManageState.viewModel?.invite) {
+    _resourceManageState.viewModel.invite.joinPin = payload.joinPin;
+    _resourceManageState.viewModel.invite.joinPinSet = true;
+  }
+  const url = payload.shareUrl;
+  if (!url) {
+    showToast('Lien indisponible');
+    return;
+  }
+  const resName = payload.resourceName || 'cette ressource';
+  const shareText = `${resName} — ouvre le lien pour demander l'accès sur FamResa. Code à saisir dans l'app : ${payload.joinPin}.`;
+  try {
     if (navigator.share) {
       await navigator.share({
-        title: 'FamResa — invitation ressource',
-        text: 'Rejoins cette ressource sur FamResa.',
-        url
+        title: `FamResa — ${resName}`,
+        text: shareText,
+        url,
       });
       return;
     }
@@ -1723,51 +1712,10 @@ async function _rmShareResourceInvite(resourceId) {
     if (e?.name === 'AbortError') return;
   }
   try {
-    const inv = _rmCurrentInvite(resourceId)
-      || await resourceService.ensureManageInviteInfo({
-        resourceId,
-        origin: location.origin,
-        pathname: location.pathname
-      });
-    await navigator.clipboard?.writeText(inv.shareUrl);
+    await navigator.clipboard?.writeText(_rmShareInviteClipboardText(payload));
     showToast('Lien copié !');
   } catch (e2) {
     showToast('Impossible de partager pour le moment');
-  }
-}
-
-async function _rmCopyInviteLink(resourceId) {
-  try {
-    const currentInvite = _rmCurrentInvite(resourceId)
-      || await resourceService.ensureManageInviteInfo({
-        resourceId,
-        origin: location.origin,
-        pathname: location.pathname
-      });
-    await navigator.clipboard?.writeText(currentInvite.shareUrl);
-    showToast('Lien copié !');
-  } catch (e) {
-    showToast('Impossible de copier le lien');
-  }
-}
-
-async function _rmSendInviteEmail(resourceId) {
-  const emailEl = document.getElementById(`rm-invite-email-${resourceId}`);
-  const email = (emailEl?.value || '').trim().toLowerCase();
-  if (!email || !email.includes('@')) { showToast('Email invalide'); return; }
-
-  try {
-    const currentInvite = _rmCurrentInvite(resourceId)
-      || await resourceService.ensureManageInviteInfo({
-        resourceId,
-        origin: location.origin,
-        pathname: location.pathname
-      });
-    await navigator.clipboard?.writeText(currentInvite.shareUrl);
-    showToast(`Lien copié — envoyez-le à ${email}`);
-    if (emailEl) emailEl.value = '';
-  } catch (e) {
-    showToast('Impossible de préparer le lien');
   }
 }
 

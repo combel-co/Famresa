@@ -172,6 +172,13 @@ document.addEventListener('click', function (e) {
 // ==========================================
 // TAB SWITCHING
 // ==========================================
+function scrollAppMainToTop() {
+  const main = document.getElementById('app-main');
+  if (main) main.scrollTop = 0;
+  const calBody = document.getElementById('cal-scroll-body');
+  if (calBody) calBody.scrollTop = 0;
+}
+
 function switchTab(tab) {
   const normalizedTab = (tab === 'resource')
     ? 'dashboard'
@@ -206,12 +213,15 @@ function switchTab(tab) {
   if (normalizedTab === 'profile') renderProfileTab();
   if (normalizedTab === 'calendar' && typeof renderCalendar === 'function') renderCalendar();
 
+  const tabChanged = prevTab !== normalizedTab;
   if (typeof requestAnimationFrame === 'function') {
     requestAnimationFrame(() => {
       if (typeof syncResourceTabsHeight === 'function') syncResourceTabsHeight();
+      if (tabChanged) scrollAppMainToTop();
     });
-  } else if (typeof syncResourceTabsHeight === 'function') {
-    syncResourceTabsHeight();
+  } else {
+    if (typeof syncResourceTabsHeight === 'function') syncResourceTabsHeight();
+    if (tabChanged) scrollAppMainToTop();
   }
 }
 

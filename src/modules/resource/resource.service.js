@@ -28,6 +28,15 @@ function _normalizeJoinPin(raw) {
   return s;
 }
 
+function _randomJoinPin4() {
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    return String(1000 + (buf[0] % 9000));
+  }
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
 function _resourceDate(dateLike) {
   if (!dateLike) return null;
   if (typeof dateLike.toDate === 'function') return dateLike.toDate();
@@ -283,6 +292,37 @@ const resourceService = {
     }
     await resourceRepository.setJoinPin(resourceId, normalized);
     return normalized;
+  },
+
+  /**
+   * Garantit un PIN 4 chiffres pour le partage (création si absent). Même contrôle que updateJoinPinForResource.
+   * @returns {{ shareUrl: string, inviteCode: string, joinPin: string, resourceName: string }}
+   */
+  async ensureJoinPinForShare({ resourceId, currentUserId, familyId }) {
+    const origin = typeof location !== 'undefined' ? location.origin : '';
+    const pathname = typeof location !== 'undefined' ? location.pathname : '/';
+    const vm = await this.getManagePageViewModel({
+      resourceId,
+      currentUserId,
+      familyId,
+      origin,
+      pathname,
+    });
+    if (!vm.permissions.canInvite) {
+      const err = new Error('FORBIDDEN');
+      throw err;
+    }
+    let joinPin = vm.invite.joinPin;
+    if (!joinPin || joinPin.length !== 4) {
+      joinPin = _randomJoinPin4();
+      await resourceRepository.setJoinPin(resourceId, joinPin);
+    }
+    return {
+      shareUrl: vm.invite.shareUrl,
+      inviteCode: vm.invite.inviteCode,
+      joinPin,
+      resourceName: vm.resource.name,
+    };
   },
 
   async approveManageAccess({ accessId, approverProfileId }) {

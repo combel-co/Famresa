@@ -568,6 +568,10 @@ function renderExperiencePanels() {
     return;
   }
 
+  if (typeof hideResourceDashboardOverlays === 'function') {
+    hideResourceDashboardOverlays();
+  }
+
   const monthEntries = getMonthBookingEntries();
   const res = resources.find(r => r.id === selectedResource);
   const isHouse = res && res.type === 'house';
