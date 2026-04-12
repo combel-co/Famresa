@@ -790,12 +790,7 @@ async function loginUser() {
 const _suState = { step: null, name: '', email: '', pin: '', emailExistsProfile: null, joinResourceId: null };
 
 function _suStepOrder() {
-  const steps = [];
-  if (_isInvitePreAuthFlow() && _pendingInviteResourceMeta && !_pendingInviteResourceMeta.invalid) {
-    steps.push('invite');
-  }
-  steps.push('name', 'email', 'pin');
-  return steps;
+  return ['name', 'email', 'pin'];
 }
 
 function _suStepIndex(stepName) {
@@ -804,7 +799,7 @@ function _suStepIndex(stepName) {
   const idx = order.indexOf(stepName);
   if (idx >= 0) return idx;
   // For steps not in the base order (e.g. 'access'), count based on DOM order
-  const allSteps = ['invite', 'name', 'email', 'pin', 'access'];
+  const allSteps = ['name', 'email', 'pin', 'access'];
   return allSteps.indexOf(stepName);
 }
 
@@ -866,22 +861,6 @@ function _suResetEmailStep() {
   _suState.emailExistsProfile = null;
 }
 
-function _suPopulateInviteCard() {
-  const meta = _pendingInviteResourceMeta || {};
-  const titleEl = document.getElementById('su-invite-title');
-  const emojiEl = document.getElementById('su-invite-emoji');
-  const resourceEl = document.getElementById('su-invite-resource');
-  const locationEl = document.getElementById('su-invite-location');
-  if (titleEl) {
-    titleEl.textContent = meta.adminFirstName
-      ? `${meta.adminFirstName} vous invite`
-      : 'Vous êtes invité';
-  }
-  if (emojiEl) emojiEl.textContent = meta.resourceType === 'house' ? '🏠' : '🚗';
-  if (resourceEl) resourceEl.textContent = meta.resourceName || 'Ressource';
-  if (locationEl) locationEl.textContent = meta.location || '';
-}
-
 function startSignup() {
   _resetSplashInviteMode();
   hideSplash();
@@ -907,11 +886,6 @@ function startSignup() {
   clearPinInputs('#su-user-pin input, #su-user-pin-confirm input, #su-access-pin input, #su-email-login-pin input');
   document.querySelectorAll('#signup-overlay .lock-error').forEach(el => el.textContent = '');
   _suResetEmailStep();
-
-  // Populate invite card if in invite flow
-  if (_isInvitePreAuthFlow()) {
-    _suPopulateInviteCard();
-  }
 
   // Reset track position instantly before showing
   const track = document.getElementById('su-track');
