@@ -2763,15 +2763,18 @@ html.ui-large {
   }
   .su-track > .su-step {
     min-width: 100%;
+    max-width: 100%;
     flex-shrink: 0;
     padding: 0 24px;
     box-sizing: border-box;
+    overflow: hidden;
   }
   .su-step-inner {
     display: flex;
     flex-direction: column;
     min-height: calc(100dvh - 40px);
     padding-top: 60px;
+    position: relative;
   }
   .su-title {
     font-size: calc(22px * var(--ui-text-scale));
