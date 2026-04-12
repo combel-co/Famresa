@@ -449,7 +449,15 @@ async function enterApp(targetTab) {
 let _pullToRefreshBound = false;
 let _ptrStartY = 0;
 let _ptrArmed = false;
-const _PTR_THRESHOLD = 160;
+/**
+ * Tirage (px) pour remplir l’indicateur à 100 %.
+ * Déclenchement un peu avant (ratio) pour ne pas exiger un geste au millimètre.
+ */
+const _PTR_PULL_FULL = 64;
+const _PTR_FIRE_RATIO = 0.82;
+const _PTR_FIRE_DELTA = Math.round(_PTR_PULL_FULL * _PTR_FIRE_RATIO);
+/** Hauteur max de la zone indicateur ; suit le progrès visuel 0→1. */
+const _PTR_INDICATOR_MAX_H = 52;
 const _PTR_CIRCUMFERENCE = 94.25; // 2 * π * 15
 
 function _isAppVisible() {
@@ -484,24 +492,41 @@ async function _runPtrSilentRefresh() {
 
 function _initPullToRefresh() {
   if (_pullToRefreshBound) return;
-  _pullToRefreshBound = true;
-
   const indicator = document.getElementById('ptr-indicator');
   const fillCircle = indicator?.querySelector('.ptr-fill');
+  if (!indicator || !fillCircle) return;
 
-  window.addEventListener('touchstart', (e) => {
+  _pullToRefreshBound = true;
+
+  const cap = true;
+
+  function _ptrReset() {
+    _ptrArmed = false;
+    indicator.classList.remove('active');
+    indicator.style.height = '0';
+    fillCircle.style.strokeDashoffset = _PTR_CIRCUMFERENCE;
+  }
+
+  document.addEventListener('touchstart', (e) => {
     if (!_isAppVisible()) { _ptrArmed = false; return; }
     if (document.querySelector('#overlay.open')) { _ptrArmed = false; return; }
     if (!_ptrAllowed()) { _ptrArmed = false; return; }
     const main = document.getElementById('app-main');
-    const atTop = main ? main.scrollTop <= 0 : (window.scrollY || 0) <= 0;
-    if (!atTop) { _ptrArmed = false; return; }
+    const t = e.target;
+    if (!main || !(t instanceof Node) || !main.contains(t)) {
+      _ptrArmed = false;
+      return;
+    }
+    if (main.scrollTop > 4) {
+      _ptrArmed = false;
+      return;
+    }
     _ptrStartY = e.touches?.[0]?.clientY || 0;
     _ptrArmed = true;
-  }, { passive: true });
+  }, { passive: true, capture: cap });
 
-  window.addEventListener('touchmove', (e) => {
-    if (!_ptrArmed || !indicator || !fillCircle) return;
+  document.addEventListener('touchmove', (e) => {
+    if (!_ptrArmed) return;
     if (!_ptrAllowed()) {
       indicator.style.height = '0';
       indicator.classList.remove('active');
@@ -517,35 +542,24 @@ function _initPullToRefresh() {
       return;
     }
 
-    // Block native overscroll (iOS bounce) while pulling
     e.preventDefault();
 
-    // Progress from 0 to 1 based on pull distance
-    const progress = Math.min(delta / _PTR_THRESHOLD, 1);
-    const indicatorH = Math.min(delta * 0.45, 48);
+    const progress = Math.min(delta / _PTR_PULL_FULL, 1);
+    const indicatorH = Math.round(progress * _PTR_INDICATOR_MAX_H);
     indicator.classList.add('active');
     indicator.style.height = indicatorH + 'px';
     fillCircle.style.strokeDashoffset = _PTR_CIRCUMFERENCE * (1 - progress);
 
-    if (progress >= 1) {
+    if (delta >= _PTR_FIRE_DELTA) {
       _ptrArmed = false;
       indicator.classList.remove('active');
       indicator.classList.remove('refreshing');
       indicator.style.height = '0';
-      if (fillCircle) fillCircle.style.strokeDashoffset = _PTR_CIRCUMFERENCE;
+      fillCircle.style.strokeDashoffset = _PTR_CIRCUMFERENCE;
       _runPtrSilentRefresh();
     }
-  }, { passive: false });
+  }, { passive: false, capture: cap });
 
-  function _ptrReset() {
-    _ptrArmed = false;
-    if (indicator) {
-      indicator.classList.remove('active');
-      indicator.style.height = '0';
-    }
-    if (fillCircle) fillCircle.style.strokeDashoffset = _PTR_CIRCUMFERENCE;
-  }
-
-  window.addEventListener('touchend', _ptrReset, { passive: true });
-  window.addEventListener('touchcancel', _ptrReset, { passive: true });
+  document.addEventListener('touchend', _ptrReset, { passive: true, capture: cap });
+  document.addEventListener('touchcancel', _ptrReset, { passive: true, capture: cap });
 }

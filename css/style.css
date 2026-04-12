@@ -356,7 +356,7 @@ html.ui-large {
   }
   .ptr-indicator.active { transition: none; }
   .ptr-indicator.refreshing {
-    height: 48px;
+    height: 52px;
     transition: height 0.25s ease;
   }
   .ptr-spinner {
