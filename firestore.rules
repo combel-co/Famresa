@@ -1,81 +1,136 @@
 rules_version = '2';
 // Déployer avec Firebase CLI : firebase deploy --only firestore:rules
 //
-// IMPORTANT — Sécurité actuelle (niveau 2/3) :
-// - Authentification requise pour tous les accès
-// - Validation des champs obligatoires sur les écritures
-// - Suppression restreinte aux documents du demandeur quand possible
-//
-// AMÉLIORATION RECOMMANDÉE (niveau 3/3) :
-// - Ajouter un champ `uid` (= auth.uid) dans chaque document profil/accès
-// - Utiliser ce champ pour restreindre les lectures/écritures à la famille du demandeur
-// - Implémenter une Cloud Function pour les opérations critiques (promotion admin, capacité maison)
+// IMPORTANT :
+// - Ces règles durcissent les écritures client (champs autorisés, champs immuables, enum stricts).
+// - Sans champ `uid` relié à `auth.uid` dans les documents métier, la séparation fine par utilisateur
+//   reste limitée. Pour un niveau maximal : migrer le schéma (uid/famille) + backend pour opérations sensibles.
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function changedOnly(allowed) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowed);
+    }
+
+    function roleIsValid(role) {
+      return role in ['admin', 'member', 'guest'];
+    }
+
+    function statusIsValid(status) {
+      return status in ['pending', 'accepted', 'rejected', 'revoked', 'disabled'];
+    }
+
     // ── Profils utilisateur ──
     match /profils/{profilId} {
-      allow read: if request.auth != null;
-      // Un utilisateur ne peut créer/modifier que son propre profil
-      allow create: if request.auth != null
+      allow read: if signedIn();
+      allow create: if signedIn()
         && request.resource.data.keys().hasAny(['email', 'nom', 'name']);
-      allow update: if request.auth != null;
-      // Suppression interdite côté client (Admin SDK / backend uniquement)
+      // Durcissement: seules les propriétés de profil usuelles peuvent être modifiées côté client.
+      allow update: if signedIn()
+        && changedOnly([
+          'nom', 'name', 'email', 'photo', 'avatar', 'phone', 'code_pin', 'pin',
+          'familyId', 'famille_id', 'updatedAt', 'lastSeenAt',
+          'isTestProfile', 'resetProfile', 'resetAt'
+        ]);
       allow delete: if false;
     }
 
     // ── Réservations ──
     match /reservations/{docId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
-        && request.resource.data.keys().hasAll(['ressource_id', 'profil_id', 'startDate', 'endDate']);
-      allow update: if request.auth != null;
-      // Suppression interdite côté client (Admin SDK / backend uniquement)
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll(['profil_id', 'startDate', 'endDate'])
+        && request.resource.data.keys().hasAny(['ressource_id', 'resourceId'])
+        && (!request.resource.data.keys().hasAny(['userId']) || request.resource.data.userId == request.resource.data.profil_id);
+      // Durcissement: pas de ré-attribution d'une réservation à un autre profil/ressource.
+      allow update: if signedIn()
+        && changedOnly([
+          'startDate', 'endDate', 'startHour', 'endHour', 'destination', 'destinations',
+          'motif', 'updatedAt', 'status', 'cancelledAt', 'cancelledBy',
+          'bookings', 'stayOccupancyByDate', 'resourceCapacity', 'peopleCount'
+        ])
+        && request.resource.data.profil_id == resource.data.profil_id
+        && (
+          (!resource.data.keys().hasAny(['ressource_id']) || request.resource.data.ressource_id == resource.data.ressource_id)
+          && (!resource.data.keys().hasAny(['resourceId']) || request.resource.data.resourceId == resource.data.resourceId)
+        );
       allow delete: if false;
     }
 
     // ── Ressources (voitures, maisons) ──
     match /ressources/{docId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
-        && request.resource.data.keys().hasAll(['nom', 'type', 'famille_id']);
-      allow update: if request.auth != null;
-      allow delete: if false; // suppression interdite côté client
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll(['nom', 'type'])
+        && request.resource.data.keys().hasAny(['famille_id', 'familyId']);
+      allow update: if signedIn()
+        && changedOnly([
+          'nom', 'emoji', 'description', 'photo', 'fuelLevel', 'capacity',
+          'join_pin', 'inviteCode', 'updatedAt', 'archived'
+        ])
+        // Les identifiants de rattachement restent immuables côté client.
+        && (!resource.data.keys().hasAny(['famille_id']) || request.resource.data.famille_id == resource.data.famille_id)
+        && (!resource.data.keys().hasAny(['familyId']) || request.resource.data.familyId == resource.data.familyId)
+        && (!resource.data.keys().hasAny(['type']) || request.resource.data.type == resource.data.type);
+      allow delete: if false;
     }
 
     // ── Accès ressource (rôles : admin, member, guest) ──
     match /acces_ressource/{docId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
-        && request.resource.data.keys().hasAll(['ressource_id', 'profil_id', 'role']);
-      // Changement de rôle : seuls les champs autorisés
-      allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['role', 'statut', 'accepted_at']);
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll(['profil_id', 'role'])
+        && request.resource.data.keys().hasAny(['ressource_id', 'resourceId'])
+        && roleIsValid(request.resource.data.role)
+        && (!request.resource.data.keys().hasAny(['statut']) || statusIsValid(request.resource.data.statut))
+        && (!request.resource.data.keys().hasAny(['status']) || statusIsValid(request.resource.data.status));
+      // Durcissement: seulement rôle/statut/date d'acceptation, pas de changement de cible profil/ressource.
+      allow update: if signedIn()
+        && changedOnly(['role', 'statut', 'status', 'accepted_at', 'acceptedAt', 'updatedAt'])
+        && (!request.resource.data.keys().hasAny(['role']) || roleIsValid(request.resource.data.role))
+        && (!request.resource.data.keys().hasAny(['statut']) || statusIsValid(request.resource.data.statut))
+        && (!request.resource.data.keys().hasAny(['status']) || statusIsValid(request.resource.data.status))
+        && request.resource.data.profil_id == resource.data.profil_id
+        && (
+          (!resource.data.keys().hasAny(['ressource_id']) || request.resource.data.ressource_id == resource.data.ressource_id)
+          && (!resource.data.keys().hasAny(['resourceId']) || request.resource.data.resourceId == resource.data.resourceId)
+        );
       allow delete: if false;
     }
 
     // ── Familles ──
     match /familles/{familleId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
+      allow read: if signedIn();
+      allow create: if signedIn()
         && request.resource.data.keys().hasAny(['nom', 'name']);
-      allow update: if request.auth != null;
+      allow update: if signedIn()
+        && changedOnly(['nom', 'name', 'inviteCode', 'updatedAt']);
       allow delete: if false;
 
       // Sous-collections legacy (bookings)
       match /bookings/{bookingId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null;
+        allow read: if signedIn();
+        // Legacy: écriture désactivée côté client pour éviter contournement des règles racine.
+        allow write: if false;
       }
     }
 
     // ── Membres de famille ──
     match /famille_membres/{docId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
+      allow read: if signedIn();
+      allow create: if signedIn()
         && request.resource.data.keys().hasAll(['famille_id', 'profil_id']);
-      allow update: if request.auth != null;
+      allow update: if signedIn()
+        && changedOnly(['role', 'statut', 'status', 'updatedAt'])
+        && request.resource.data.famille_id == resource.data.famille_id
+        && request.resource.data.profil_id == resource.data.profil_id
+        && (!request.resource.data.keys().hasAny(['role']) || roleIsValid(request.resource.data.role))
+        && (!request.resource.data.keys().hasAny(['statut']) || statusIsValid(request.resource.data.statut))
+        && (!request.resource.data.keys().hasAny(['status']) || statusIsValid(request.resource.data.status));
       allow delete: if false;
     }
 
