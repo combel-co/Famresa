@@ -409,17 +409,9 @@
       </div>
     </div>
 
-    <div id="planning-micro-prompt" class="planning-micro-prompt" style="display:none" role="status" aria-live="polite">
-      <span class="planning-micro-prompt-text" id="planning-micro-prompt-text"></span>
-      <div class="planning-micro-prompt-actions">
-        <button type="button" class="planning-micro-btn planning-micro-cancel" id="planning-micro-cancel">Annuler</button>
-        <button type="button" class="planning-micro-btn planning-micro-ok" id="planning-micro-ok">Oui</button>
-      </div>
-    </div>
-
     <div id="planning-action-bar" class="planning-action-bar" style="display:none">
       <button type="button" class="planning-action-left bm-reset-btn" id="planning-action-left" onclick="planningActionLeftClick()">Effacer</button>
-      <button type="button" class="planning-action-right btn-primary" id="planning-action-right" onclick="planningActionRightClick()">Suivant →</button>
+      <button type="button" class="planning-action-right btn-primary" id="planning-action-right" onclick="planningActionRightClick()">Réserver</button>
     </div>
   </section>
 
@@ -899,6 +891,35 @@
 <!-- Legacy onboarding wizard removed (v2) -->
 <div id="onboarding-overlay" class="ob-overlay hidden" aria-hidden="true"></div>
 
+<!-- PWA install banner -->
+<div id="pwa-install-banner" class="pwa-install-banner" style="display:none">
+  <span class="pwa-install-banner-text">Installer FamResa sur votre appareil</span>
+  <div class="pwa-install-banner-actions">
+    <button onclick="pwaInstallAccept()" class="pwa-install-btn-accept">Installer</button>
+    <button onclick="pwaInstallDismiss()" class="pwa-install-btn-dismiss" aria-label="Fermer">&times;</button>
+  </div>
+</div>
+
+<!-- PWA iOS install instructions -->
+<div id="pwa-ios-overlay" class="pwa-ios-overlay" onclick="pwaIosClose()">
+  <div class="pwa-ios-sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="pwa-ios-content">
+      <div class="pwa-ios-icon">
+        <img src="icons/icon-192.png?v=4" width="64" height="64" alt="FamResa" style="border-radius:14px">
+      </div>
+      <h3 class="pwa-ios-title">Installer FamResa</h3>
+      <p class="pwa-ios-subtitle">Ajoutez l'app sur votre écran d'accueil</p>
+      <ol class="pwa-ios-steps">
+        <li>Appuyez sur <strong>Partager</strong> <svg class="pwa-ios-share-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> en bas de Safari</li>
+        <li>Faites défiler et appuyez sur <strong>Sur l'écran d'accueil</strong></li>
+        <li>Appuyez sur <strong>Ajouter</strong> en haut à droite</li>
+      </ol>
+      <button onclick="pwaIosDismiss()" class="btn btn-primary" style="margin-top:16px;width:100%">J'ai compris</button>
+    </div>
+  </div>
+</div>
+
 <!-- Update banner -->
 <div id="sw-update-banner" style="display:none;position:fixed;bottom:80px;left:12px;right:12px;z-index:9999;background:#1a1a1a;color:#fff;border-radius:14px;padding:14px 16px;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.25);">
   <span style="font-size: calc(14px * var(--ui-text-scale));font-weight:500">Nouvelle version disponible</span>
@@ -948,6 +969,7 @@
 <script src="js/events.js?v=4" defer></script>
 <script src="js/guide.js?v=4" defer></script>
 <script src="js/migration.js?v=5" defer></script>
+<script src="js/pwa-install.js?v=1" defer></script>
 
 <script>
 window.__startupCacheCheckPending = true;

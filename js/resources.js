@@ -1522,12 +1522,10 @@ function _rmRenderPage(viewModel) {
       <div class="rm-invite-simple">
         <div class="rm-invite-simple__title">Inviter un membre de la famille</div>
         <p class="rm-invite-simple__subtitle">Partagez l'accès en un clic</p>
-        <div class="rm-invite-simple__inner">
-          <button type="button" class="rm-invite-simple__btn" onclick='_rmShareResourceInvite(${JSON.stringify(resource.id)})' aria-label="Partager l'invitation">
-            <span class="rm-invite-simple__btn-icon" aria-hidden="true">↗</span>
-            Partager
-          </button>
-        </div>
+        <button type="button" class="rm-invite-simple__btn" onclick='_rmShareResourceInvite(${JSON.stringify(resource.id)})' aria-label="Partager l'invitation">
+          <span class="rm-invite-simple__btn-icon" aria-hidden="true">↗</span>
+          Partager
+        </button>
       </div>`
     : '';
 

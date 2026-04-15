@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v28';
+const CACHE_VERSION = 'v29';
 const CACHE_NAME = 'famresa-' + CACHE_VERSION;
 
 function getBasePath() {
@@ -41,7 +41,8 @@ self.addEventListener('install', event => {
         withBase('icons/favicon-32.png'),
         withBase('icons/favicon-16.png'),
         withBase('icons/icon-192.png'),
-        withBase('icons/icon-512.png')
+        withBase('icons/icon-512.png'),
+        withBase('js/pwa-install.js')
       ]);
     })
   );

@@ -18,7 +18,7 @@ let fuelReportsByBooking = {};
 let pendingFuelPromptBookingId = null;
 let suPendingFamilyId = null;
 window._legacyFallbackAllowed = true;
-/** Set from dashboard "Réserver" — consumed on first free-day tap in planning (skip micro-prompt). */
+/** Set from dashboard "Réserver" — consumed on first free-day tap in planning (entre direct en flux réservation). */
 window._planningBookingMode = false;
 
 function switchToBookingMode() {

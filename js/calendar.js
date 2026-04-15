@@ -5,8 +5,6 @@ const CAL_HORIZON_MONTHS = 13;
 
 let _planningPhase = 'consult';
 let _planningCalendarCollapsed = false;
-let _microPromptTimer = null;
-let _pendingMicroDate = null;
 
 function getPlanningPhase() {
   return _planningPhase;
@@ -59,7 +57,7 @@ function syncPlanningShellChrome() {
 }
 
 /**
- * Phase reserve : en-tête « Arrivée / Départ » + même scroll que la consult ; pied (Réinitialiser / Suivant beige).
+ * Phase reserve : en-tête « Arrivée / Départ » + même scroll que la consult ; pied (Réinitialiser / Réserver beige ou vert si plage complète).
  * Phase wizard : masque le shell ; phase consult : shell en flux sans en-tête modal.
  */
 function syncPlanningReserveModalUi() {
@@ -80,6 +78,7 @@ function syncPlanningReserveModalUi() {
     header.setAttribute('hidden', '');
     if (bar) bar.classList.remove('planning-action-bar--reserve');
     if (left) left.classList.remove('bm-reset-btn');
+    if (right) right.classList.remove('planning-action-right--ready');
     if (closeBtn) closeBtn.onclick = null;
     return;
   }
@@ -95,7 +94,7 @@ function syncPlanningReserveModalUi() {
       left.textContent = 'Réinitialiser';
     }
     if (right) {
-      right.textContent = 'Suivant';
+      right.textContent = 'Réserver';
     }
     if (closeBtn) closeBtn.onclick = () => planningActionEffacer();
     return;
@@ -107,6 +106,7 @@ function syncPlanningReserveModalUi() {
   header.setAttribute('hidden', '');
   if (bar) bar.classList.remove('planning-action-bar--reserve');
   if (left) left.classList.remove('bm-reset-btn');
+  if (right) right.classList.remove('planning-action-right--ready');
   if (closeBtn) closeBtn.onclick = null;
 }
 
@@ -155,7 +155,6 @@ function enterPlanningEditMode() {
 function exitPlanningUnifiedMode() {
   _planningPhase = 'consult';
   _planningCalendarCollapsed = false;
-  hidePlanningMicroPrompt();
   const w = document.getElementById('planning-wizard-wrap');
   if (w) {
     w.style.display = 'none';
@@ -185,40 +184,6 @@ function finishPlanningAfterCelebrate(startDateStr) {
   if (typeof switchTab === 'function') switchTab('planning');
   scrollPlanningToDate(ds);
   if (typeof showToast === 'function') showToast('Réservation ajoutée');
-}
-
-function hidePlanningMicroPrompt() {
-  const el = document.getElementById('planning-micro-prompt');
-  if (el) el.style.display = 'none';
-  if (_microPromptTimer) {
-    clearTimeout(_microPromptTimer);
-    _microPromptTimer = null;
-  }
-  _pendingMicroDate = null;
-}
-
-function showPlanningMicroPrompt(dateStr) {
-  const el = document.getElementById('planning-micro-prompt');
-  const tx = document.getElementById('planning-micro-prompt-text');
-  if (!el || !tx) return;
-  const d = new Date(dateStr + 'T00:00:00');
-  const label = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-  tx.textContent = `Réserver à partir du ${label} ?`;
-  el.style.display = 'flex';
-  _pendingMicroDate = dateStr;
-  if (_microPromptTimer) clearTimeout(_microPromptTimer);
-  _microPromptTimer = setTimeout(() => hidePlanningMicroPrompt(), 4000);
-  const ok = document.getElementById('planning-micro-ok');
-  const cancel = document.getElementById('planning-micro-cancel');
-  if (ok) {
-    ok.onclick = () => {
-      hidePlanningMicroPrompt();
-      enterPlanningReserveFromPrompt(_pendingMicroDate || dateStr);
-    };
-  }
-  if (cancel) {
-    cancel.onclick = () => hidePlanningMicroPrompt();
-  }
 }
 
 function enterPlanningReserveFromPrompt(dateStr) {
@@ -252,7 +217,6 @@ function enterPlanningReserveFromPrompt(dateStr) {
 }
 
 function planningActionEffacer() {
-  hidePlanningMicroPrompt();
   if (typeof resetBookingWizardState === 'function') resetBookingWizardState();
   exitPlanningUnifiedMode();
   renderCalendar();
@@ -328,7 +292,22 @@ function planningActionRightClick() {
 function onPlanningDatesChanged() {
   const hint = document.getElementById('planning-hint');
   const subEl = document.getElementById('planning-reserve-subtitle');
-  if (!hint) return;
+  const right = document.getElementById('planning-action-right');
+
+  const syncReserveActionRightReady = () => {
+    if (!right) return;
+    if (_planningPhase !== 'reserve' || typeof bmGetSelection !== 'function') {
+      right.classList.remove('planning-action-right--ready');
+      return;
+    }
+    const sel = bmGetSelection();
+    right.classList.toggle('planning-action-right--ready', !!(sel.startDate && sel.endDate));
+  };
+
+  if (!hint) {
+    syncReserveActionRightReady();
+    return;
+  }
 
   if (_planningPhase !== 'reserve' || typeof bmGetSelection !== 'function') {
     hint.textContent = '';
@@ -336,17 +315,22 @@ function onPlanningDatesChanged() {
       subEl.textContent = 'Sélectionnez votre date de départ';
       subEl.removeAttribute('hidden');
     }
+    syncReserveActionRightReady();
     return;
   }
 
   hint.textContent = '';
 
   const sel = bmGetSelection();
-  if (!subEl) return;
+  if (!subEl) {
+    syncReserveActionRightReady();
+    return;
+  }
 
   if (!sel.startDate) {
     subEl.textContent = 'Sélectionnez votre date de départ';
     subEl.removeAttribute('hidden');
+    syncReserveActionRightReady();
     return;
   }
 
@@ -355,6 +339,7 @@ function onPlanningDatesChanged() {
     const depart = sd.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
     subEl.textContent = `Sélectionnez votre date de fin — départ le ${depart}`;
     subEl.removeAttribute('hidden');
+    syncReserveActionRightReady();
     return;
   }
 
@@ -368,6 +353,7 @@ function onPlanningDatesChanged() {
       ? `1 nuit · ${a}`
       : `${n} nuit${n > 1 ? 's' : ''} · ${a} → ${b}`;
   subEl.removeAttribute('hidden');
+  syncReserveActionRightReady();
 }
 
 function renderCalendar() {
@@ -519,7 +505,7 @@ function planningOnConsultDayClick(dateStr, isPast) {
     enterPlanningReserveFromPrompt(dateStr);
     return;
   }
-  showPlanningMicroPrompt(dateStr);
+  enterPlanningReserveFromPrompt(dateStr);
 }
 
 function planningOnReserveDayClick(dateStr) {

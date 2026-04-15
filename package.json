@@ -6,8 +6,13 @@
     "icons:gen": "python3 scripts/gen_logo_icons.py",
     "cleanup:acces": "node scripts/cleanup-acces-ressource.mjs",
     "cleanup:acces:apply": "node scripts/cleanup-acces-ressource.mjs --apply",
+    "cleanup:profils": "node scripts/cleanup-orphan-profils.mjs",
+    "cleanup:profils:apply": "node scripts/cleanup-orphan-profils.mjs --apply",
+    "cleanup:test-profils": "node scripts/cleanup-test-profils.mjs",
+    "cleanup:test-profils:apply": "node scripts/cleanup-test-profils.mjs --apply",
     "reset:test-profile": "node scripts/reset-test-profile.mjs --profile-id=TEST_PROFILE_ID",
-    "reset:test-profile:apply": "node scripts/reset-test-profile.mjs --profile-id=TEST_PROFILE_ID --apply"
+    "reset:test-profile:apply": "node scripts/reset-test-profile.mjs --profile-id=TEST_PROFILE_ID --apply",
+    "audit:user:create": "node scripts/create-profiles-audit-auth-user.mjs"
   },
   "devDependencies": {
     "firebase-admin": "^13.0.0"

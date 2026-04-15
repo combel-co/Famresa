@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FamResa — Audit des profils</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --card: #fff;
+      --text: #1a1a1a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --accent: #2563eb;
+      --warn-bg: #fffbeb;
+      --warn-border: #fcd34d;
+      --idle-bg: #f1f5f9;
+      --ok-bg: #ecfdf5;
+      --danger-bg: #fef2f2;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      font-size: 15px;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+    h1 { font-size: 1.35rem; font-weight: 700; margin: 0 0 8px; }
+    .lead { color: var(--muted); font-size: 0.92rem; margin: 0 0 20px; max-width: 720px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 16px;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    button {
+      font: inherit;
+      cursor: pointer;
+      border-radius: 8px;
+      padding: 10px 16px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      font-weight: 600;
+    }
+    button.primary {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+    input[type="email"], input[type="password"], input[type="text"] {
+      width: 100%;
+      max-width: 320px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+    }
+    .field { margin-bottom: 12px; }
+    #status { font-size: 0.88rem; color: var(--muted); margin-top: 12px; white-space: pre-wrap; }
+    #status.err { color: #b91c1c; }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .filters button {
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .filters button.on {
+      background: #1e293b;
+      color: #fff;
+      border-color: #1e293b;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .summary div {
+      background: var(--idle-bg);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.85rem;
+    }
+    .summary strong { display: block; font-size: 1.25rem; color: var(--text); }
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .danger {
+      background: #dc2626;
+      color: #fff;
+      border-color: #dc2626;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    tr.row-test { background: var(--warn-bg); }
+    tr.row-idle { background: var(--idle-bg); }
+    tr.row-orphan { background: var(--ok-bg); }
+    tr.row-blocked { background: var(--danger-bg); }
+    tr.hidden { display: none; }
+    code { font-size: 0.8em; background: var(--idle-bg); padding: 2px 6px; border-radius: 4px; word-break: break-all; }
+    .pill {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin: 2px 4px 2px 0;
+      background: #e2e8f0;
+      color: #334155;
+    }
+    .pill.test { background: #fde68a; color: #92400e; }
+    .pill.idle { background: #cbd5e1; color: #1e293b; }
+    .pill.okdel { background: #6ee7b7; color: #065f46; }
+    .pill.block { background: #fecaca; color: #991b1b; }
+    .btn-del-row {
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      border: 1px solid #dc2626;
+      color: #dc2626;
+      background: #fff;
+      font-weight: 700;
+    }
+    .muted { color: var(--muted); font-size: 0.85rem; }
+    @media (max-width: 720px) {
+      table { display: block; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Audit des profils</h1>
+    <p class="lead">
+      Outil local pour voir <strong>tous</strong> les documents <code>profils</code>, repérer les noms « test », les profils
+      <strong>sans activité</strong> (aucune ligne <code>famille_membres</code> ni <code>acces_ressource</code>), et ceux que le script
+      <code>cleanup-orphan-profils.mjs</code> pourrait supprimer (sans réservation liée). Aucune suppression depuis cette page.
+    </p>
+
+    <div class="card">
+      <p class="muted" style="margin:0 0 14px;font-size:0.88rem">
+        Les règles Firestore du projet exigent un utilisateur Firebase connecté (<code>request.auth != null</code>).
+        Un simple code tapé dans la page <strong>ne peut pas</strong> remplacer ça côté Firestore. En pratique, votre
+        <strong>« code secret »</strong> = le <strong>mot de passe</strong> d’un compte Firebase que vous créez uniquement pour l’admin (voir ci-dessous).
+      </p>
+      <div class="field">
+        <label for="audit-email">E-mail du compte Firebase (admin)</label>
+        <input type="email" id="audit-email" autocomplete="username" placeholder="ex. admin-audit@votredomaine.com">
+      </div>
+      <div class="field">
+        <label for="audit-password">Mot de passe (= votre code secret)</label>
+        <input type="password" id="audit-password" autocomplete="current-password" placeholder="Mot de passe fort">
+      </div>
+      <div class="field" id="wrap-admin-code" style="display:none">
+        <label for="audit-famresa-code">Code admin FamResa (requis sur ce navigateur)</label>
+        <input type="password" id="audit-famresa-code" autocomplete="off" placeholder="Même code que le dashboard erreurs">
+        <p class="muted" style="margin:6px 0 0;font-size:0.78rem">
+          Ce navigateur a un code enregistré (<code>famresa_diag_admin_code</code>). Saisissez le même code que pour le diagnostic admin dans l’app, ou videz ce stockage.
+        </p>
+      </div>
+      <div class="row">
+        <button type="button" class="primary" id="btn-load">Se connecter et charger</button>
+        <span class="muted">Même origine que l’app, pas <code>file://</code> — <code>firebase-config.js</code> à la racine.</span>
+      </div>
+      <details class="muted" style="margin-top:14px;font-size:0.82rem">
+        <summary style="cursor:pointer;font-weight:600;color:var(--text)">Créer le compte admin (une fois)</summary>
+        <p style="margin:10px 0 8px"><strong>Option A — script (recommandé)</strong> : avec la clé Admin du projet, à la racine du dépôt :</p>
+        <pre style="background:var(--idle-bg);padding:10px 12px;border-radius:8px;overflow:auto;font-size:0.78rem;margin:0 0 12px">npm run audit:user:create -- --email=votre-audit@exemple.com
+npm run audit:user:create -- --email=votre-audit@exemple.com --reset-link</pre>
+        <p class="muted" style="margin:0 0 10px">Le script crée l’utilisateur <strong>sans</strong> mot de passe ; avec <code>--reset-link</code>, collez le lien affiché dans le navigateur pour <strong>choisir votre mot de passe</strong>. Sinon, définissez-le dans la console (Utilisateurs → ⋮).</p>
+        <p style="margin:0 0 8px"><strong>Option B — console Firebase</strong></p>
+        <ol style="margin:0;padding-left:1.2rem;line-height:1.5">
+          <li>Authentication → activer <strong>E-mail / Mot de passe</strong> si besoin.</li>
+          <li>Onglet <strong>Utilisateurs</strong> → <strong>Ajouter un utilisateur</strong> : e-mail + mot de passe que vous choisissez.</li>
+          <li>Revenir ici et remplir les champs, puis <strong>Se connecter et charger</strong>.</li>
+        </ol>
+      </details>
+      <div id="status"></div>
+    </div>
+
+    <div class="card" id="panel-data" style="display:none">
+      <div class="summary" id="summary"></div>
+      <div class="filters" id="filters">
+        <button type="button" class="on" data-filter="all">Tous</button>
+        <button type="button" data-filter="test">Test (nom ou flag)</button>
+        <button type="button" data-filter="idle">Sans activité</button>
+        <button type="button" data-filter="orphan">Comme le script (orphelin sûr)</button>
+        <button type="button" data-filter="blocked">Sans activité mais réservations</button>
+      </div>
+      <div style="overflow:auto;margin-top:14px">
+        <table>
+          <thead>
+            <tr>
+              <th>Nom / email</th>
+              <th>Id</th>
+              <th>Indicateurs</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script>
+(function () {
+  const statusEl = document.getElementById('status');
+  const btnLoad = document.getElementById('btn-load');
+  const panelData = document.getElementById('panel-data');
+  const tbody = document.getElementById('tbody');
+  const summaryEl = document.getElementById('summary');
+  const filtersEl = document.getElementById('filters');
+  const inputEmail = document.getElementById('audit-email');
+  const inputPassword = document.getElementById('audit-password');
+  const inputFamresaCode = document.getElementById('audit-famresa-code');
+  const wrapFamresaCode = document.getElementById('wrap-admin-code');
+
+  let currentFilter = 'all';
+
+  try {
+    if (localStorage.getItem('famresa_diag_admin_code')) {
+      wrapFamresaCode.style.display = 'block';
+    }
+  } catch (_) {}
+
+  try {
+    const q = new URLSearchParams(window.location.search).get('email');
+    if (q) inputEmail.value = decodeURIComponent(q.trim());
+  } catch (_) {}
+
+  function setStatus(msg, isErr) {
+    statusEl.textContent = msg;
+    statusEl.className = isErr ? 'err' : '';
+  }
+
+  async function paginateCollection(db, name, pageSize, onPage) {
+    const FieldPath = firebase.firestore.FieldPath;
+    let last = null;
+    let total = 0;
+    for (;;) {
+      let q = db.collection(name).orderBy(FieldPath.documentId()).limit(pageSize);
+      if (last) q = q.startAfter(last);
+      const snap = await q.get();
+      if (snap.empty) break;
+      await onPage(snap.docs);
+      total += snap.docs.length;
+      last = snap.docs[snap.docs.length - 1];
+      if (snap.size < pageSize) break;
+    }
+    return total;
+  }
+
+  function membreRefs(data) {
+    const out = [];
+    for (const key of ['profil_id', 'profileId']) {
+      const v = data[key];
+      if (v == null) continue;
+      const s = String(v).trim();
+      if (s) out.push(s);
+    }
+    return out;
+  }
+
+  function accessProfileId(data) {
+    const v = data.profil_id ?? data.profileId ?? '';
+    const s = String(v).trim();
+    return s || null;
+  }
+
+  function reservationRefs(data) {
+    const out = [];
+    for (const key of ['profil_id', 'profileId', 'userId']) {
+      const v = data[key];
+      if (v == null) continue;
+      const s = String(v).trim();
+      if (s) out.push(s);
+    }
+    return out;
+  }
+
+  function displayName(data) {
+    return (data.nom || data.name || '').trim() || '—';
+  }
+
+  function checkFamresaAdminGate() {
+    let expected = null;
+    try {
+      expected = localStorage.getItem('famresa_diag_admin_code');
+    } catch (_) {}
+    if (!expected) return true;
+    try {
+      if (sessionStorage.getItem('famresa_diag_admin_unlocked') === '1') return true;
+    } catch (_) {}
+    const entered = String(inputFamresaCode.value || '').trim();
+    return entered === String(expected).trim();
+  }
+
+  async function ensureFirestoreReadable(db, auth) {
+    try {
+      await db.collection('profils').limit(1).get();
+      return 'none';
+    } catch (e) {
+      const code = String(e && e.code ? e.code : '');
+      if (!code.includes('permission-denied')) throw e;
+    }
+
+    const email = String(inputEmail.value || '').trim();
+    const password = String(inputPassword.value || '');
+    if (!email || !password) {
+      throw new Error(
+        'Accès Firestore refusé sans session. Renseignez e-mail + mot de passe du compte Firebase admin (voir « Créer le compte admin »), ou assouplissez temporairement les règles en dev.'
+      );
+    }
+    await auth.signInWithEmailAndPassword(email, password);
+    return 'email';
+  }
+
+  btnLoad.addEventListener('click', async () => {
+    btnLoad.disabled = true;
+    setStatus('Connexion…');
+    panelData.style.display = 'none';
+    tbody.innerHTML = '';
+
+    try {
+      if (!window.__firebaseConfig) {
+        throw new Error('firebase-config.js manquant ou sans window.__firebaseConfig');
+      }
+      if (!firebase.apps.length) {
+        firebase.initializeApp(window.__firebaseConfig);
+      }
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+
+      if (!checkFamresaAdminGate()) {
+        throw new Error(
+          'Code admin FamResa incorrect (ou ouvrez d’abord le diagnostic admin dans l’app sur ce navigateur).'
+        );
+      }
+
+      const how = await ensureFirestoreReadable(db, auth);
+      if (how === 'email') {
+        setStatus('Connecté — lecture des collections…');
+      } else if (auth.currentUser) {
+        setStatus('Session Firebase active — lecture des collections…');
+      } else {
+        setStatus('Lecture sans connexion (règles très ouvertes en dev ?) — chargement…');
+      }
+
+      const inMembres = new Set();
+      const inAccess = new Set();
+      const inReservations = new Set();
+
+      const nMem = await paginateCollection(db, 'famille_membres', 300, (docs) => {
+        docs.forEach((doc) => {
+          membreRefs(doc.data() || {}).forEach((id) => inMembres.add(id));
+        });
+      });
+
+      const nAcc = await paginateCollection(db, 'acces_ressource', 300, (docs) => {
+        docs.forEach((doc) => {
+          const pid = accessProfileId(doc.data() || {});
+          if (pid) inAccess.add(pid);
+        });
+      });
+
+      const nRes = await paginateCollection(db, 'reservations', 300, (docs) => {
+        docs.forEach((doc) => {
+          reservationRefs(doc.data() || {}).forEach((id) => inReservations.add(id));
+        });
+      });
+
+      const profiles = [];
+      const nProf = await paginateCollection(db, 'profils', 300, (docs) => {
+        docs.forEach((d) => profiles.push({ id: d.id, data: d.data() || {} }));
+      });
+
+      profiles.sort((a, b) => displayName(a.data).localeCompare(displayName(b.data), 'fr'));
+
+      let cTest = 0;
+      let cIdle = 0;
+      let cOrphan = 0;
+      let cBlocked = 0;
+
+      const frag = document.createDocumentFragment();
+      profiles.forEach(({ id, data }) => {
+        const name = displayName(data);
+        const email = (data.email || '').trim();
+        const isFlagTest = data.isTestProfile === true;
+        const nameTest = /test/i.test(name);
+        const isTest = isFlagTest || nameTest;
+
+        const hasMembre = inMembres.has(id);
+        const hasAccess = inAccess.has(id);
+        const hasResa = inReservations.has(id);
+        const noActivity = !hasMembre && !hasAccess;
+        const orphanSafe = noActivity && !hasResa;
+        const blocked = noActivity && hasResa;
+
+        if (isTest) cTest += 1;
+        if (noActivity) cIdle += 1;
+        if (orphanSafe) cOrphan += 1;
+        if (blocked) cBlocked += 1;
+
+        const pills = [];
+        if (isFlagTest) pills.push('<span class="pill test">isTestProfile</span>');
+        if (nameTest) pills.push('<span class="pill test">nom « test »</span>');
+        if (hasMembre) pills.push('<span class="pill">famille</span>');
+        if (hasAccess) pills.push('<span class="pill">accès ressource</span>');
+        if (hasResa) pills.push('<span class="pill">réservations</span>');
+        if (noActivity) pills.push('<span class="pill idle">sans activité</span>');
+        if (orphanSafe) pills.push('<span class="pill okdel">= supprimable par le script</span>');
+        if (blocked) pills.push('<span class="pill block">script refuse (résas)</span>');
+
+        const tr = document.createElement('tr');
+        tr.dataset.filterTest = isTest ? '1' : '0';
+        tr.dataset.filterIdle = noActivity ? '1' : '0';
+        tr.dataset.filterOrphan = orphanSafe ? '1' : '0';
+        tr.dataset.filterBlocked = blocked ? '1' : '0';
+
+        let rowClass = '';
+        if (blocked) rowClass = 'row-blocked';
+        else if (orphanSafe) rowClass = 'row-orphan';
+        else if (noActivity) rowClass = 'row-idle';
+        else if (isTest) rowClass = 'row-test';
+        tr.className = rowClass;
+
+        tr.innerHTML =
+          '<td><strong>' +
+          escapeHtml(name) +
+          '</strong><br><span class="muted">' +
+          escapeHtml(email || '—') +
+          '</span></td>' +
+          '<td><code>' +
+          escapeHtml(id) +
+          '</code></td>' +
+          '<td>' +
+          pills.join('') +
+          '</td>';
+        frag.appendChild(tr);
+      });
+
+      tbody.appendChild(frag);
+      applyFilter();
+
+      summaryEl.innerHTML =
+        '<div><strong>' +
+        nProf +
+        '</strong> profils</div>' +
+        '<div><strong>' +
+        cTest +
+        '</strong> test (nom ou flag)</div>' +
+        '<div><strong>' +
+        cIdle +
+        '</strong> sans activité</div>' +
+        '<div><strong>' +
+        cOrphan +
+        '</strong> orphelin sûr (script)</div>' +
+        '<div><strong>' +
+        cBlocked +
+        '</strong> bloqué par résas</div>' +
+        '<div class="muted" style="grid-column:1/-1;padding-top:4px">Scans : famille_membres ' +
+        nMem +
+        ', acces_ressource ' +
+        nAcc +
+        ', reservations ' +
+        nRes +
+        '</div>';
+
+      const u = firebase.auth().currentUser;
+      setStatus(
+        u
+          ? 'OK — Firebase uid: ' + u.uid + (u.email ? ' (' + u.email + ')' : '')
+          : 'OK — lecture autorisée sans utilisateur Firebase (vérifiez que c’est bien voulu en production).'
+      );
+      panelData.style.display = 'block';
+    } catch (e) {
+      console.error(e);
+      let msg = (e && e.message) || String(e);
+      const ac = e && e.code ? String(e.code) : '';
+      if (ac.includes('auth/wrong-password') || ac.includes('auth/user-not-found') || ac.includes('auth/invalid-credential')) {
+        msg = 'E-mail ou mot de passe Firebase incorrect. Vérifiez l’utilisateur dans Authentication → Utilisateurs.';
+      }
+      setStatus(msg, true);
+    } finally {
+      btnLoad.disabled = false;
+    }
+  });
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function applyFilter() {
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach((tr) => {
+      let show = true;
+      if (currentFilter === 'test') show = tr.dataset.filterTest === '1';
+      else if (currentFilter === 'idle') show = tr.dataset.filterIdle === '1';
+      else if (currentFilter === 'orphan') show = tr.dataset.filterOrphan === '1';
+      else if (currentFilter === 'blocked') show = tr.dataset.filterBlocked === '1';
+      tr.classList.toggle('hidden', !show);
+    });
+  }
+
+  filtersEl.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('button[data-filter]');
+    if (!btn) return;
+    currentFilter = btn.getAttribute('data-filter');
+    filtersEl.querySelectorAll('button[data-filter]').forEach((b) => b.classList.toggle('on', b === btn));
+    applyFilter();
+  });
+})();
+  </script>
+</body>
+</html>
