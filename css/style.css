@@ -2959,6 +2959,16 @@ html.ui-large {
     opacity: 0.45;
     cursor: not-allowed;
   }
+  .fro-skip {
+    display: block;
+    margin: 12px auto 0;
+    background: none;
+    border: none;
+    color: #999;
+    font-size: calc(14px * var(--ui-text-scale));
+    cursor: pointer;
+    padding: 6px 12px;
+  }
   .fro-progress {
     display: flex;
     justify-content: center;

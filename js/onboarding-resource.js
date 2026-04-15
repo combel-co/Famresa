@@ -105,6 +105,11 @@ function froIntroNext() {
   _froShowOnly('fro-step-family');
 }
 
+function froSkipOnboarding() {
+  document.getElementById('first-resource-onboarding')?.classList.add('hidden');
+  enterApp('dashboard');
+}
+
 function froBackToIntro() {
   const err = document.getElementById('fro-family-error');
   if (err) err.textContent = '';

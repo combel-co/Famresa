@@ -51,7 +51,8 @@ service cloud.firestore {
         && changedOnly([
           'startDate', 'endDate', 'startHour', 'endHour', 'destination', 'destinations',
           'motif', 'updatedAt', 'status', 'cancelledAt', 'cancelledBy',
-          'bookings', 'stayOccupancyByDate', 'resourceCapacity', 'peopleCount'
+          'bookings', 'stayOccupancyByDate', 'resourceCapacity', 'peopleCount',
+          'fuelReturnLevel', 'fuelUpdatedAt'
         ])
         && request.resource.data.profil_id == resource.data.profil_id
         && (
@@ -70,7 +71,11 @@ service cloud.firestore {
       allow update: if signedIn()
         && changedOnly([
           'nom', 'emoji', 'description', 'photo', 'fuelLevel', 'capacity',
-          'join_pin', 'inviteCode', 'updatedAt', 'archived'
+          'join_pin', 'joinPin', 'inviteCode', 'updatedAt', 'archived',
+          'name', 'plaque', 'carLocation', 'lieu', 'assurance', 'observations',
+          'seatCount', 'fuelType', 'mileageKm', 'carBluetooth', 'photoUrl',
+          'address', 'address_street', 'address_city', 'address_postal_code', 'address_country',
+          'capacite', 'rooms', 'vehicleStatus'
         ])
         // Les identifiants de rattachement restent immuables côté client.
         && (!resource.data.keys().hasAny(['famille_id']) || request.resource.data.famille_id == resource.data.famille_id)
@@ -90,7 +95,7 @@ service cloud.firestore {
         && (!request.resource.data.keys().hasAny(['status']) || statusIsValid(request.resource.data.status));
       // Durcissement: seulement rôle/statut/date d'acceptation, pas de changement de cible profil/ressource.
       allow update: if signedIn()
-        && changedOnly(['role', 'statut', 'status', 'accepted_at', 'acceptedAt', 'updatedAt'])
+        && changedOnly(['role', 'statut', 'status', 'accepted_at', 'acceptedAt', 'updatedAt', 'invited_at', 'famille_id', 'familyId'])
         && (!request.resource.data.keys().hasAny(['role']) || roleIsValid(request.resource.data.role))
         && (!request.resource.data.keys().hasAny(['statut']) || statusIsValid(request.resource.data.statut))
         && (!request.resource.data.keys().hasAny(['status']) || statusIsValid(request.resource.data.status))
@@ -108,7 +113,7 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.keys().hasAny(['nom', 'name']);
       allow update: if signedIn()
-        && changedOnly(['nom', 'name', 'inviteCode', 'updatedAt']);
+        && changedOnly(['nom', 'name', 'inviteCode', 'updatedAt', 'created_by']);
       allow delete: if false;
 
       // Sous-collections legacy (bookings)
@@ -125,7 +130,7 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.keys().hasAll(['famille_id', 'profil_id']);
       allow update: if signedIn()
-        && changedOnly(['role', 'statut', 'status', 'updatedAt'])
+        && changedOnly(['role', 'statut', 'status', 'updatedAt', 'nom', 'name', 'email', 'photo'])
         && request.resource.data.famille_id == resource.data.famille_id
         && request.resource.data.profil_id == resource.data.profil_id
         && (!request.resource.data.keys().hasAny(['role']) || roleIsValid(request.resource.data.role))
