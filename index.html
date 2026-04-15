@@ -936,14 +936,14 @@
 
 <!-- JS modules (defer = non-blocking, preserves order) -->
 <script src="firebase-config.js?v=2" defer></script>
-<script src="src/infra/firebase/firebase.client.js?v=9" defer></script>
+<script src="src/infra/firebase/firebase.client.js?v=10" defer></script>
 <script src="src/infra/firebase/firebase.mapper.js?v=5" defer></script>
 <script src="js/firebase.js?v=9" defer></script>
 <script src="js/app.js?v=15" defer></script>
 <script src="js/ui.js?v=12" defer></script>
 <script src="js/xp.js?v=4" defer></script>
 <script src="js/celebration.js?v=8" defer></script>
-<script src="js/auth.js?v=25" defer></script>
+<script src="js/auth.js?v=26" defer></script>
 <script src="js/fuel.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.repository.js?v=4" defer></script>
 <script src="src/modules/reservation/reservation.service.js?v=5" defer></script>
@@ -996,7 +996,7 @@ window.__startupHideSplashRequested = false;
     return;
   }
 
-  const APP_BUILD = 'famresa-build-20260328-8';
+  const APP_BUILD = 'famresa-build-20260415-9';
 
   async function purgeAppRuntime() {
     const regs = await navigator.serviceWorker.getRegistrations();

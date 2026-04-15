@@ -556,6 +556,20 @@ async function loginUser() {
   const diag = { flow: 'loginUser', email, stage };
   try {
     stage = 'firebase_ready_check'; diag.stage = stage;
+    // Wait for Firebase to finish initializing (handles slow CDN load in PWA standalone).
+    // Zero delay when already ready (normal case).
+    {
+      const maxWaitMs = 4000;
+      const intervalMs = 500;
+      let waited = 0;
+      while (waited < maxWaitMs) {
+        const st = window.__firebaseInitState || {};
+        if (st.status === 'ready' || st.status === 'error') break;
+        await new Promise(r => setTimeout(r, intervalMs));
+        waited += intervalMs;
+      }
+    }
+
     // Use window.* only to avoid Safari TDZ errors in partial/stale PWA runtimes.
     const initState = window.__firebaseInitState || {};
     const hasFirebase = !!window.firebase && typeof window.firebase.firestore === 'function';

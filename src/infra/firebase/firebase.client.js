@@ -5,11 +5,7 @@
 // Loaded via <script> before js/firebase.js.
 // Exposes globals: db, ts, __firebaseInitState
 
-// Firebase config is loaded from firebase-config.js (gitignored).
-// See firebase-config.example.js for the template.
-const firebaseConfig = window.__firebaseConfig;
-if (!firebaseConfig) throw new Error('Firebase config introuvable — copier firebase-config.example.js vers firebase-config.js et remplir les valeurs.');
-
+// Always set init state FIRST so downstream code (auth.js) never sees undefined.
 window.__firebaseInitState = {
   status: 'booting',
   startedAt: new Date().toISOString(),
@@ -21,6 +17,11 @@ window.__firebaseInitState = {
 };
 
 try {
+  // Firebase config is loaded from firebase-config.js (gitignored).
+  // See firebase-config.example.js for the template.
+  const firebaseConfig = window.__firebaseConfig;
+  if (!firebaseConfig) throw new Error('Firebase config introuvable — copier firebase-config.example.js vers firebase-config.js et remplir les valeurs.');
+
   const sdk = window.firebase;
   window.__firebaseInitState.sdkPresent = !!sdk;
   if (!sdk) throw new Error('Firebase SDK introuvable (window.firebase absent)');

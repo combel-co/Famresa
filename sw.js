@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v30';
+const CACHE_VERSION = 'v31';
 const CACHE_NAME = 'famresa-' + CACHE_VERSION;
 
 function getBasePath() {
@@ -47,6 +47,7 @@ self.addEventListener('install', event => {
         withBase('index.html'),
         withBase('manifest.json'),
         withBase('css/style.css'),
+        withBase('firebase-config.js'),
         withBase('icons/logo.svg'),
         withBase('icons/apple-touch-icon.png'),
         withBase('icons/favicon-32.png'),
@@ -57,6 +58,14 @@ self.addEventListener('install', event => {
       ]);
     })
   );
+  // Precache Firebase CDN (non-blocking — don't break install if CDN unreachable)
+  caches.open(CACHE_NAME).then(cache => {
+    cache.addAll([
+      'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
+      'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js',
+    ]).catch(err => console.warn('[sw] Firebase CDN precache skipped:', err));
+  });
+
   // Activate immediately (don't wait for old SW to finish)
   self.skipWaiting();
 });
