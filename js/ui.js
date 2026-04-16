@@ -528,6 +528,12 @@ function _initPullToRefresh() {
       _ptrArmed = false;
       return;
     }
+    // Ne pas armer si le touch est dans un conteneur fils scrollé
+    let ancestor = t instanceof Node ? t.parentElement : null;
+    while (ancestor && ancestor !== main) {
+      if (ancestor.scrollTop > 0) { _ptrArmed = false; return; }
+      ancestor = ancestor.parentElement;
+    }
     _ptrStartY = e.touches?.[0]?.clientY || 0;
     _ptrArmed = true;
   }, { passive: true, capture: cap });
