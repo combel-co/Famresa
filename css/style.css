@@ -567,6 +567,86 @@ html.ui-large {
   }
   .login-sheet p { color: var(--text-secondary); font-size: calc(14px * var(--ui-text-scale)); margin-bottom: 28px; }
 
+  /* FAQ feuille : raccourci écran d’accueil (étapes numérotées, sans emoji ni picto système) */
+  .faq-install { margin-top: 18px; text-align: left; }
+  .faq-install-title {
+    font-size: calc(15px * var(--ui-text-scale));
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+  }
+  .faq-install-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  @media (min-width: 400px) {
+    .faq-install-grid { grid-template-columns: 1fr 1fr; }
+  }
+  .faq-install-path {
+    border: 0.5px solid #e5e4df;
+    border-radius: 14px;
+    padding: 12px 12px 12px 14px;
+    background: #fff;
+    border-left: 4px solid #2d6a4f;
+  }
+  .faq-install-path--android { border-left-color: #64748b; }
+  .faq-install-path-h {
+    font-size: calc(11px * var(--ui-text-scale));
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-bottom: 10px;
+  }
+  .faq-install-step {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    font-size: calc(12px * var(--ui-text-scale));
+    line-height: 1.45;
+    color: #3f3f46;
+  }
+  .faq-install-step:last-child { margin-bottom: 0; }
+  .faq-install-num {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #eef2f0;
+    color: #1f2937;
+    font-size: calc(11px * var(--ui-text-scale));
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .faq-install-notes {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: #f6f5f2;
+    border-radius: 12px;
+    border: 0.5px solid #e8e6e0;
+    font-size: calc(11px * var(--ui-text-scale));
+    color: #6b6560;
+    line-height: 1.5;
+  }
+  .faq-install-notes ul { margin: 8px 0 0; padding-left: 18px; }
+  .faq-install-notes li { margin-bottom: 6px; }
+  .faq-install-notes li:last-child { margin-bottom: 0; }
+  .pf-promo-icon.faq-pf-icon-text {
+    font-size: calc(9px * var(--ui-text-scale));
+    font-weight: 700;
+    color: #166534;
+    letter-spacing: 0.03em;
+    line-height: 1.1;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
   .input-group { margin-bottom: 14px; text-align: left; }
   .input-group label { display: block; font-size: calc(13px * var(--ui-text-scale)); font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; }
   .input-group input, .input-group select {
@@ -752,7 +832,8 @@ html.ui-large {
   /* ---- TOAST ---- */
   .toast {
     position: fixed; bottom: 30px; left: 50%;
-    transform: translateX(-50%) translateY(80px);
+    /* Masqué : descend plus bas qu’avant (80px) pour mieux sortir de l’écran à la fermeture */
+    transform: translateX(-50%) translateY(160px);
     background: var(--text); color: white; padding: 14px 24px;
     border-radius: 14px; font-size: calc(15px * var(--ui-text-scale)); font-weight: 500;
     z-index: 300; transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);

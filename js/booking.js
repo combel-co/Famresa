@@ -139,10 +139,12 @@ function renderBmSteps() {
   const memberDisplay = document.getElementById('bm-personnes-member-display');
   if (memberDisplay) {
     if (isEditing && isHouse && !isAdmin && currentUser) {
-      const avatar = currentUser.photo
-        ? `<img src="${currentUser.photo}" alt="">`
+      const editingBooking = (typeof bookingsById !== 'undefined' && _editingBookingId) ? bookingsById[_editingBookingId] : null;
+      const photo = editingBooking?._currentPhoto || editingBooking?.photo || currentUser.photo || null;
+      const avatar = photo
+        ? `<img src="${photo}" alt="">`
         : getInitials(currentUser.name || '?');
-      memberDisplay.innerHTML = `<div class="bm-member-row" style="pointer-events:none">
+      memberDisplay.innerHTML = `<div class="bm-member-row">
         <div class="bm-member-avatar">${avatar}</div>
         <div class="bm-member-name">${bmFirstName(currentUser.name)}</div>
       </div>`;
@@ -1169,6 +1171,32 @@ function openEditBookingModal(bookingId) {
   bm.personTotal = Math.max(1, Number(pc) || 1);
   const mi = document.getElementById('bm-motif-input');
   if (mi) mi.value = booking.motif || '';
+
+  // Pré-remplir la composition depuis tous les séjours chevauchant la période (admin)
+  if (booking.reservationGroupId && typeof bookingsById !== 'undefined') {
+    const editStart = booking.startDate;
+    const editEnd   = booking.endDate || editStart;
+    const seen = new Set();
+    bm.participatesByMemberId = {};
+    bm.guestsByMemberId = {};
+    // Priorité 1 : docs du même groupe (édition directe)
+    // Priorité 2 : autres membres avec réservation chevauchante sur la même ressource
+    const allDocs = Object.values(bookingsById).filter((b) => {
+      if (!b || !b.userId || b.ressource_id !== selectedResource) return false;
+      const bStart = b.startDate || b.date_debut;
+      const bEnd   = b.endDate || b.date_fin || bStart;
+      return bStart && bEnd && bStart <= editEnd && bEnd >= editStart;
+    });
+    for (const doc of allDocs) {
+      const uid = doc.userId;
+      if (uid && !seen.has(uid)) {
+        seen.add(uid);
+        bm.participatesByMemberId[uid] = true;
+        bm.guestsByMemberId[uid] = Math.max(0, Number(doc.guestCount ?? doc.companions) || 0);
+      }
+    }
+    bm.primaryProfileId = booking.profil_id || booking.userId || null;
+  }
 
   switchTab('planning');
   setTimeout(() => {

@@ -48,20 +48,37 @@ function showFaqSheet() {
     <div class="login-sheet">
       <h2>Aide &amp; FAQ</h2>
       <div class="pf-promo-card" onclick="shareApp()" role="button" tabindex="0" style="margin-top:12px;margin-bottom:0">
-        <div class="pf-promo-icon">📤</div>
+        <div class="pf-promo-icon faq-pf-icon-text" aria-hidden="true">Inviter</div>
         <div class="pf-promo-text">
           <div class="pf-promo-title">Comment faire découvrir l'application à un ami&nbsp;?</div>
-          <div class="pf-promo-desc">Simple, cliquer sur le bouton partager ci-dessous</div>
+          <div class="pf-promo-desc">Touchez cette ligne pour ouvrir le partage ou copier le lien.</div>
         </div>
         <div class="pf-promo-chevron">›</div>
       </div>
-      <div style="margin-top:18px;padding:14px;background:#fff;border:0.5px solid #e5e4df;border-radius:16px;text-align:left">
-        <div style="font-size: calc(13px * var(--ui-text-scale));font-weight:600;color:var(--text);margin-bottom:10px">Raccourci sur l'écran d'accueil</div>
-        <p style="font-size: calc(12px * var(--ui-text-scale));color:#4b5563;line-height:1.45;margin:0 0 10px"><strong>iPhone (Safari)</strong> : touchez <strong>Partager</strong>, puis « Sur l'écran d'accueil ».</p>
-        <p style="font-size: calc(12px * var(--ui-text-scale));color:#4b5563;line-height:1.45;margin:0 0 10px"><strong>Android (Chrome)</strong> : menu <strong>⋮</strong> → « Ajouter à l'écran d'accueil » ou « Installer l'application ».</p>
-        <p style="font-size: calc(11px * var(--ui-text-scale));color:#9b9b9b;line-height:1.4;margin:0 0 10px">Sur <strong>iPhone</strong>, si vous utilisez <strong>Chrome</strong>, ouvrez plutôt FamResa dans <strong>Safari</strong> pour ajouter le raccourci à l'écran d'accueil (méthode la plus fiable).</p>
-        <p style="font-size: calc(11px * var(--ui-text-scale));color:#9b9b9b;line-height:1.4;margin:0 0 8px">Sur <strong>iPhone</strong>, l'icône du raccourci est enregistrée une seule fois au moment de l'ajout : elle ne se met pas à jour toute seule quand FamResa change d'image. Pour voir la nouvelle icône, supprimez le raccourci puis ajoutez-le à nouveau depuis Safari.</p>
-        <p style="font-size: calc(11px * var(--ui-text-scale));color:#9b9b9b;line-height:1.4;margin:0">En navigation privée, le stockage local peut être limité : reconnectez-vous si une session disparaît.</p>
+      <div class="faq-install">
+        <div class="faq-install-title">Raccourci sur l'écran d'accueil</div>
+        <div class="faq-install-grid">
+          <div class="faq-install-path">
+            <div class="faq-install-path-h">iPhone · Safari</div>
+            <div class="faq-install-step"><span class="faq-install-num">1</span><span>Ouvrir FamResa dans Safari (pas dans un autre navigateur pour cette étape).</span></div>
+            <div class="faq-install-step"><span class="faq-install-num">2</span><span>Utiliser le bouton <strong>Partager</strong> du navigateur (barre du bas).</span></div>
+            <div class="faq-install-step"><span class="faq-install-num">3</span><span>Choisir <strong>Sur l'écran d'accueil</strong>, puis valider.</span></div>
+          </div>
+          <div class="faq-install-path faq-install-path--android">
+            <div class="faq-install-path-h">Android · Chrome</div>
+            <div class="faq-install-step"><span class="faq-install-num">1</span><span>Ouvrir FamResa dans Chrome.</span></div>
+            <div class="faq-install-step"><span class="faq-install-num">2</span><span>Ouvrir le <strong>menu du navigateur</strong> (trois points, en haut à droite).</span></div>
+            <div class="faq-install-step"><span class="faq-install-num">3</span><span>Choisir <strong>Ajouter à l'écran d'accueil</strong> ou <strong>Installer l'application</strong>.</span></div>
+          </div>
+        </div>
+        <div class="faq-install-notes">
+          <strong>Bon à savoir</strong>
+          <ul>
+            <li>Sur iPhone avec Chrome : ouvrir le même lien dans Safari pour poser le raccourci.</li>
+            <li>L'icône sur l'écran d'accueil ne se met pas à jour seule : supprimer le raccourci puis l'ajouter à nouveau si l'image FamResa change.</li>
+            <li>En navigation privée, la session peut être limitée : se reconnecter si besoin.</li>
+          </ul>
+        </div>
       </div>
       <button type="button" class="btn" style="background:#f5f5f5;color:var(--text);margin-top:16px;width:100%" onclick="closeSheet()">Fermer</button>
     </div>`;
