@@ -33,7 +33,7 @@ function bmGetContext() {
 
 function bmBuildStepConfig() {
   const { isHouse, isAdmin, isEditing } = bmGetContext();
-  if (isEditing) return isHouse ? ['personnes', 'destination'] : ['destination'];
+  if (isEditing) return isHouse ? (isAdmin ? ['booker', 'destination'] : ['personnes', 'destination']) : ['destination'];
   if (isHouse) return isAdmin ? ['booker', 'destination'] : ['personnes', 'destination'];
   return isAdmin ? ['hours', 'booker', 'destination'] : ['hours', 'destination'];
 }
@@ -106,7 +106,7 @@ function bmScrollToStep(step) {
 
 function renderBmSteps() {
   const steps = bmBuildStepConfig();
-  const { isHouse, isEditing } = bmGetContext();
+  const { isHouse, isEditing, isAdmin } = bmGetContext();
   const currentIndex = Math.max(0, steps.indexOf(bmCurrentStep));
   bmCurrentStep = steps[currentIndex] || steps[0];
 
@@ -135,6 +135,22 @@ function renderBmSteps() {
     plab.textContent = n <= 1 ? 'personne' : 'personnes';
   }
   bmSyncPersonnesCapacityHint();
+
+  const memberDisplay = document.getElementById('bm-personnes-member-display');
+  if (memberDisplay) {
+    if (isEditing && isHouse && !isAdmin && currentUser) {
+      const avatar = currentUser.photo
+        ? `<img src="${currentUser.photo}" alt="">`
+        : getInitials(currentUser.name || '?');
+      memberDisplay.innerHTML = `<div class="bm-member-row" style="pointer-events:none">
+        <div class="bm-member-avatar">${avatar}</div>
+        <div class="bm-member-name">${bmFirstName(currentUser.name)}</div>
+      </div>`;
+      memberDisplay.style.display = '';
+    } else {
+      memberDisplay.style.display = 'none';
+    }
+  }
 
   const bookerVal = document.getElementById('bm-mini-booker-val');
   if (bookerVal) {
@@ -1126,7 +1142,8 @@ async function confirmEarlyReturn(bookingId, resourceId) {
 var _editingBookingId = null;
 
 function openEditBookingModal(bookingId) {
-  const booking = Object.values(bookings).find((b) => b && b.id === bookingId);
+  const booking = (typeof bookingsById !== 'undefined' && bookingsById[bookingId])
+    || Object.values(bookings).find((b) => b && b.id === bookingId);
   if (!booking) {
     showToast('Réservation introuvable');
     return;
@@ -1167,7 +1184,8 @@ function openEditBookingModal(bookingId) {
 async function saveEditedBooking() {
   if (!_editingBookingId) return;
   try {
-    const booking = Object.values(bookings).find((b) => b && b.id === _editingBookingId);
+    const booking = (typeof bookingsById !== 'undefined' && bookingsById[_editingBookingId])
+      || Object.values(bookings).find((b) => b && b.id === _editingBookingId);
     const res = resources.find((r) => r.id === selectedResource);
     const isHouse = res && res.type === 'house';
 

@@ -648,9 +648,12 @@ function subscribeBookings() {
 
   function _rebuild() {
     bookings = {};
+    bookingsById = {};
     // Legacy first, new data takes precedence (overwrites same dates)
     Object.entries(_bookingsLegacy).forEach(([k, v]) => { bookings[k] = v; });
     Object.entries(_bookingsNew).forEach(([k, v]) => { bookings[k] = v; });
+    for (const d of _allDocsLegacy) { if (d.id) bookingsById[d.id] = d; }
+    for (const d of _allDocsNew)    { if (d.id) bookingsById[d.id] = d; }
 
     const res = resources.find((r) => r.id === selectedResource);
     if (res && res.type === 'house') {

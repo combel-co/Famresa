@@ -971,10 +971,17 @@ html.ui-large {
   .celebration-invite-footer {
     margin-top: 28px;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+    max-width: 280px;
+    margin-left: auto;
+    margin-right: auto;
   }
   .celebration-invite-cta {
-    min-width: 240px;
+    min-width: 0;
+    width: 100%;
     padding: 14px 22px !important;
     background: #fff !important;
     color: #1e3d2f !important;
@@ -982,6 +989,16 @@ html.ui-large {
     font-weight: 600 !important;
     border-radius: 14px !important;
     box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  }
+  .celebration-invite-secondary {
+    width: 100%;
+    padding: 14px 22px !important;
+    background: transparent !important;
+    color: #fff !important;
+    border: 2px solid rgba(255,255,255,0.85) !important;
+    font-weight: 600 !important;
+    border-radius: 14px !important;
+    box-shadow: none !important;
   }
   .celebration-recap-card {
     margin: 18px auto 0;
@@ -1727,47 +1744,6 @@ html.ui-large {
   .pf-promo-title { font-size: calc(13px * var(--ui-text-scale)); font-weight:500; color:var(--text); }
   .pf-promo-desc { font-size: calc(11px * var(--ui-text-scale)); color:#6b6b6b; margin-top:2px; line-height:1.4; }
   .pf-promo-chevron { font-size: calc(14px * var(--ui-text-scale)); color:#9b9b9b; }
-  .pf-install-card {
-    background: #fff;
-    border: 0.5px solid #e5e4df;
-    border-radius: 16px;
-    padding: 14px;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    margin-bottom: 10px;
-  }
-  .pf-install-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: #f0f4ff;
-    border: 0.5px solid #c7d2fe;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(20px * var(--ui-text-scale));
-    flex-shrink: 0;
-  }
-  .pf-install-body { flex: 1; min-width: 0; text-align: left; }
-  .pf-install-title {
-    font-size: calc(13px * var(--ui-text-scale));
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 8px;
-  }
-  .pf-install-line {
-    font-size: calc(12px * var(--ui-text-scale));
-    color: #4b5563;
-    line-height: 1.45;
-    margin: 0 0 8px;
-  }
-  .pf-install-note {
-    font-size: calc(11px * var(--ui-text-scale));
-    color: #9b9b9b;
-    line-height: 1.4;
-    margin: 4px 0 0;
-  }
   .pf-settings-group { background:#fff; border:0.5px solid #e5e4df; border-radius:16px; overflow:hidden; margin-bottom:10px; }
   .pf-settings-row { display:flex; align-items:center; gap:12px; padding:14px; border-bottom:0.5px solid #e5e4df; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .pf-settings-row:last-child { border-bottom:none; }
@@ -4028,148 +4004,3 @@ html.ui-large {
   .famresa-kpi-dot--ok { background: #16a34a; }
   .famresa-kpi-dot--warn { background: #ea580c; }
   .famresa-kpi-dot--grey { background: #9ca3af; }
-
-/* ═══════════════════════════════════════════
-   PWA INSTALL PROMPT
-   ═══════════════════════════════════════════ */
-
-.pwa-install-banner {
-  position: fixed;
-  bottom: 80px;
-  left: 12px;
-  right: 12px;
-  z-index: 9999;
-  background: #1a1a1a;
-  color: #fff;
-  border-radius: 14px;
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-  animation: pwaSlideUp 0.3s ease-out;
-}
-
-@keyframes pwaSlideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
-}
-
-.pwa-install-banner-text {
-  font-size: calc(14px * var(--ui-text-scale));
-  font-weight: 500;
-  flex: 1;
-  min-width: 0;
-}
-
-.pwa-install-banner-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.pwa-install-btn-accept {
-  background: #56E800;
-  color: #1a1a1a;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: calc(13px * var(--ui-text-scale));
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.pwa-install-btn-dismiss {
-  background: none;
-  border: none;
-  color: #888;
-  font-size: calc(20px * var(--ui-text-scale));
-  cursor: pointer;
-  padding: 4px 8px;
-  line-height: 1;
-}
-
-/* -- iOS bottom-sheet -- */
-.pwa-ios-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.3);
-  z-index: 1200;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.25s, visibility 0.25s;
-}
-
-.pwa-ios-overlay.open {
-  opacity: 1;
-  visibility: visible;
-}
-
-.pwa-ios-sheet {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--bg, white);
-  border-radius: 20px 20px 0 0;
-  padding: 28px 24px calc(40px + env(safe-area-inset-bottom));
-  z-index: 1201;
-  transform: translateY(100%);
-  transition: transform 0.3s ease;
-  max-width: 520px;
-  margin: 0 auto;
-}
-
-.pwa-ios-overlay.open .pwa-ios-sheet {
-  transform: translateY(0);
-}
-
-.pwa-ios-content {
-  text-align: center;
-}
-
-.pwa-ios-icon {
-  margin-bottom: 16px;
-}
-
-.pwa-ios-title {
-  font-size: calc(20px * var(--ui-text-scale));
-  font-weight: 600;
-  color: var(--text, #1a1a1a);
-  margin: 0 0 4px;
-}
-
-.pwa-ios-subtitle {
-  font-size: calc(14px * var(--ui-text-scale));
-  color: var(--text-secondary, #888);
-  margin: 0 0 20px;
-}
-
-.pwa-ios-steps {
-  text-align: left;
-  padding-left: 20px;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  font-size: calc(15px * var(--ui-text-scale));
-  color: var(--text, #1a1a1a);
-  line-height: 1.5;
-}
-
-.pwa-ios-share-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  vertical-align: middle;
-}
-
-/* Hide install banner when iOS modal is open (safety — applied via JS) */
-body.pwa-ios-open .pwa-install-banner {
-  display: none !important;
-}

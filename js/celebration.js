@@ -177,11 +177,18 @@ function celebrateInviteWelcome({ resourceName, resourceId, isHouse }) {
 
   const inviteFoot = document.getElementById('cel-invite-footer');
   const cta = document.getElementById('cel-invite-cta');
-  if (inviteFoot) inviteFoot.style.display = 'block';
+  const continueBtn = document.getElementById('cel-invite-continue');
+  if (inviteFoot) inviteFoot.style.display = 'flex';
   if (cta) {
     cta.textContent = 'Voir le planning →';
     cta.onclick = () => {
       finishInviteWelcomeCelebration(resourceId, !!isHouse);
+    };
+  }
+  if (continueBtn) {
+    continueBtn.textContent = 'Continuer';
+    continueBtn.onclick = () => {
+      finishInviteWelcomeToHome(resourceId, !!isHouse);
     };
   }
 
@@ -298,6 +305,15 @@ function finishInviteWelcomeCelebration(resourceId, isHouse) {
   if (resourceId && typeof selectResource === 'function') selectResource(resourceId);
   if (typeof enterApp === 'function') {
     enterApp('calendar');
+  }
+}
+
+/** Fermeture écran bienvenue invité → accueil (dashboard). */
+function finishInviteWelcomeToHome(resourceId, isHouse) {
+  _closeCelebrationCommon();
+  if (resourceId && typeof selectResource === 'function') selectResource(resourceId);
+  if (typeof enterApp === 'function') {
+    enterApp('dashboard');
   }
 }
 

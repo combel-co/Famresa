@@ -98,8 +98,10 @@ SW sert un ancien `index.html` qui charge des versions de scripts différentes d
 
 ## Incident C — Prompt d'installation absent
 
+> **Note (build récent)** : le bandeau Android / modal iOS automatiques et le script `js/pwa-install.js` ont été retirés. Les instructions « raccourci écran d'accueil » sont dans **Profil → Aide & FAQ**. Les clés `localStorage` `famresa_pwa_install_*` ne sont plus écrites par l'app ; elles peuvent subsister chez d'anciennes sessions sans effet.
+
 ### Symptômes
-- L'utilisateur ne voit pas la bannière d'installation (Android) ni le modal iOS.
+- L'utilisateur cherche encore une bannière / pop-up d'installation automatique (comportement historique).
 
 ### Diagnostic
 
@@ -116,7 +118,7 @@ SW sert un ancien `index.html` qui charge des versions de scripts différentes d
    localStorage.getItem('famresa_pwa_install_accepted')   // '1' = accepted
    localStorage.getItem('famresa_pwa_install_dismissed')   // timestamp
    ```
-   - Si `accepted='1'` mais pas en standalone → le `checkUninstallReset()` aurait dû clear. Vérifier que `pwa-install.js` est à jour.
+   - (Historique) Si `accepted='1'` mais pas en standalone : anciennes versions utilisaient `pwa-install.js` pour réinitialiser ; ignorer si build sans ce script.
    - Si `dismissed` récent (< 30 jours) → le prompt est en cooldown. Attendre ou :
      ```js
      localStorage.removeItem('famresa_pwa_install_dismissed')
