@@ -1482,10 +1482,13 @@ const _resourceJoinCodeFromUrl = new URLSearchParams(location.search).get('resou
 let _pendingResourceJoinCode = _resourceJoinCodeFromUrl || null;
 
 document.addEventListener('DOMContentLoaded', async () => {
+  const entryTimeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('entry_routing_timeout')), 15000)
+  );
   try {
-    await _runEntryRouting();
+    await Promise.race([_runEntryRouting(), entryTimeout]);
   } catch (e) {
-    console.error('Entry routing error:', e);
+    console.error('Entry routing error:', e.message);
     hideSkeleton();
     showWelcomeScreen();
   }
