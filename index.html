@@ -949,6 +949,15 @@
 window.__startupCacheCheckPending = true;
 window.__startupHideSplashRequested = false;
 
+// Safety net: never block the splash screen more than 10 seconds regardless of SW state
+setTimeout(function () {
+  if (!window.__startupCacheCheckPending) return;
+  window.__startupCacheCheckPending = false;
+  if (window.__startupHideSplashRequested && typeof window.hideSplash === 'function') {
+    window.hideSplash();
+  }
+}, 10000);
+
 // Prevent browser zoom gestures in the app shell (mobile webview/PWA).
 (function preventAppZoom() {
   document.addEventListener('gesturestart', function (e) {
@@ -992,7 +1001,7 @@ window.__startupHideSplashRequested = false;
     // One-time forced cleanup when build changes (keeps users fresh after deploys)
     const previousBuild = localStorage.getItem('famresa_app_build');
     if (previousBuild !== APP_BUILD) {
-      await purgeAppRuntime();
+      await Promise.race([purgeAppRuntime(), new Promise(resolve => setTimeout(resolve, 5000))]);
       localStorage.setItem('famresa_app_build', APP_BUILD);
       const reloadUrl = new URL(location.href);
       reloadUrl.searchParams.set('cache_bust', Date.now().toString());
@@ -1002,7 +1011,7 @@ window.__startupHideSplashRequested = false;
 
     // Emergency mode: unregister SW and purge app caches once, then reload clean URL.
     if (isSafeMode && sessionStorage.getItem('famresa_safe_mode_done') !== '1') {
-      await purgeAppRuntime();
+      await Promise.race([purgeAppRuntime(), new Promise(resolve => setTimeout(resolve, 5000))]);
       sessionStorage.setItem('famresa_safe_mode_done', '1');
       const cleanUrl = new URL(location.href);
       cleanUrl.searchParams.delete('safe_mode');
@@ -1013,8 +1022,8 @@ window.__startupHideSplashRequested = false;
 
     const reg = await navigator.serviceWorker.register('./sw.js');
 
-    // Check for updates on every page load
-    await reg.update();
+    // Check for updates on every page load (5s timeout guards against network stalls on iOS PWA)
+    await Promise.race([reg.update(), new Promise(resolve => setTimeout(resolve, 5000))]);
 
     // If a worker is already waiting, apply it now
     if (reg.waiting) reg.waiting.postMessage('skipWaiting');
