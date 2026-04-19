@@ -450,14 +450,14 @@ async function enterApp(targetTab) {
     });
   });
   initPTR({
-    container: document.getElementById(‘app-main’),
+    container: document.getElementById('app-main'),
     onRefresh: refreshAppDataSilently,
     isAllowed: () => {
-      if (typeof activeTab === ‘undefined’) return false;
-      if (activeTab !== ‘dashboard’ && activeTab !== ‘calendar’) return false;
-      const rm = document.getElementById(‘resource-manage-overlay’);
-      if (rm && !rm.classList.contains(‘hidden’)) return false;
-      if (document.querySelector(‘#overlay.open’)) return false;
+      if (typeof activeTab === 'undefined') return false;
+      if (activeTab !== 'dashboard' && activeTab !== 'calendar') return false;
+      const rm = document.getElementById('resource-manage-overlay');
+      if (rm && !rm.classList.contains('hidden')) return false;
+      if (document.querySelector('#overlay.open')) return false;
       return true;
     }
   });
