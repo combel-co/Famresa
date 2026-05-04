@@ -605,6 +605,7 @@ function buildHouseStaySheetRowsByDate(allDocs) {
       reservationGroupId: doc.reservationGroupId || '',
       startDate: doc.startDate || doc.date_debut || doc.date,
       endDate: doc.endDate || doc.date_fin || doc.startDate || doc.date_debut || doc.date,
+      motif: doc.motif || null,
     }));
     rows.sort((a, b) =>
       (a.userName || '').localeCompare(b.userName || '', 'fr', { sensitivity: 'base' })

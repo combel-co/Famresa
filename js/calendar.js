@@ -636,10 +636,10 @@ function showOccupiedDaySheetH4(dateStr, booking) {
         const rowGid = _h4SafeOnclickId(row.reservationGroupId);
         const rowBid = _h4SafeOnclickId(row.bookingId);
         const adminRowActions = isAdmin
-          ? `<div style="display:flex;gap:16px;padding:2px 0 4px 48px"><button type="button" style="background:none;border:none;color:#2d6a4f;font-size:12px;cursor:pointer;padding:0;text-decoration:underline" onclick="showEditStayFromSheet('${rowGid}','${rowBid}')">Modifier</button><button type="button" style="background:none;border:none;color:#c0392b;font-size:12px;cursor:pointer;padding:0;text-decoration:underline" onclick="showCancelStayConfirmSheet('${rowGid}','${rowBid}','${rs}','${re}',true)">Annuler</button></div>`
+          ? `<div style="display:flex;gap:20px;padding:6px 4px 2px"><button type="button" style="background:none;border:none;color:#2d6a4f;font-size:13px;cursor:pointer;padding:0;text-decoration:underline" onclick="showEditStayFromSheet('${rowGid}','${rowBid}')">Modifier</button><button type="button" style="background:none;border:none;color:#c0392b;font-size:13px;cursor:pointer;padding:0;text-decoration:underline" onclick="showCancelStayConfirmSheet('${rowGid}','${rowBid}','${rs}','${re}',true)">Annuler</button></div>`
           : '';
 
-        return `<div class="h4-stay-row-outer"><div class="h4-stay-row-card"><div class="h4-stay-row-main"><div class="h4-avatar-wrap${meWrap}">${av}</div><div class="h4-stay-row-text"><div class="h4-stay-row-name">${nameEsc}</div><div class="h4-stay-row-dates">${subRow}</div>${rowMotif}</div></div></div>${pill ? `<div class="h4-stay-row-pill-wrap">${pill}</div>` : ''}${adminRowActions}</div>`;
+        return `<div><div class="h4-stay-row-outer"><div class="h4-stay-row-card"><div class="h4-stay-row-main"><div class="h4-avatar-wrap${meWrap}">${av}</div><div class="h4-stay-row-text"><div class="h4-stay-row-name">${nameEsc}</div><div class="h4-stay-row-dates">${subRow}</div>${rowMotif}</div></div></div>${pill ? `<div class="h4-stay-row-pill-wrap">${pill}</div>` : ''}</div>${adminRowActions}</div>`;
       })
       .join('');
 
