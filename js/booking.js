@@ -1203,7 +1203,11 @@ function openEditBookingModal(bookingId) {
   const pc = booking.peopleCount || 1 + (Number(booking.guestCount) || Number(booking.companions) || 0);
   bm.personTotal = Math.max(1, Number(pc) || 1);
   const mi = document.getElementById('bm-motif-input');
-  if (mi) mi.value = booking.motif || '';
+  if (mi) {
+    mi.value = booking.motif || '';
+    const mc = document.getElementById('bm-motif-count');
+    if (mc) mc.textContent = mi.value.length;
+  }
 
   // Pré-remplir la composition depuis tous les séjours chevauchant la période (admin)
   if (booking.reservationGroupId && typeof bookingsById !== 'undefined') {

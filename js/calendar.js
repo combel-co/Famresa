@@ -619,6 +619,7 @@ function showOccupiedDaySheetH4(dateStr, booking) {
           rs === re
             ? d1.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
             : `${d1.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} → ${d2.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
+        const rowMotif = row.motif ? `<div style="font-size:12px;color:#7c7269;margin-top:2px;font-style:italic">"${_h4EscapeHtml(row.motif)}"</div>` : '';
 
         const av = photo
           ? `<div class="h4-avatar h4-avatar--img"><img src="${String(photo).replace(/"/g, '&quot;')}" alt=""></div>`
@@ -638,7 +639,7 @@ function showOccupiedDaySheetH4(dateStr, booking) {
           ? `<div style="display:flex;gap:16px;padding:2px 0 4px 48px"><button type="button" style="background:none;border:none;color:#2d6a4f;font-size:12px;cursor:pointer;padding:0;text-decoration:underline" onclick="showEditStayFromSheet('${rowGid}','${rowBid}')">Modifier</button><button type="button" style="background:none;border:none;color:#c0392b;font-size:12px;cursor:pointer;padding:0;text-decoration:underline" onclick="showCancelStayConfirmSheet('${rowGid}','${rowBid}','${rs}','${re}',true)">Annuler</button></div>`
           : '';
 
-        return `<div class="h4-stay-row-outer"><div class="h4-stay-row-card"><div class="h4-stay-row-main"><div class="h4-avatar-wrap${meWrap}">${av}</div><div class="h4-stay-row-text"><div class="h4-stay-row-name">${nameEsc}</div><div class="h4-stay-row-dates">${subRow}</div></div></div></div>${pill ? `<div class="h4-stay-row-pill-wrap">${pill}</div>` : ''}${adminRowActions}</div>`;
+        return `<div class="h4-stay-row-outer"><div class="h4-stay-row-card"><div class="h4-stay-row-main"><div class="h4-avatar-wrap${meWrap}">${av}</div><div class="h4-stay-row-text"><div class="h4-stay-row-name">${nameEsc}</div><div class="h4-stay-row-dates">${subRow}</div>${rowMotif}</div></div></div>${pill ? `<div class="h4-stay-row-pill-wrap">${pill}</div>` : ''}${adminRowActions}</div>`;
       })
       .join('');
 
@@ -690,6 +691,9 @@ function showOccupiedDaySheetH4(dateStr, booking) {
     companions > 0
       ? `<div style="font-size:13px;color:#7c7269;margin-top:4px">+ ${companions} accompagnant${companions > 1 ? 's' : ''}</div>`
       : '';
+  const motifLine = booking.motif
+    ? `<div style="font-size:13px;color:#7c7269;margin-top:10px;font-style:italic">"${_h4EscapeHtml(booking.motif)}"</div>`
+    : '';
 
   const avatarPhoto = booking._currentPhoto || booking.photo || null;
   const av = avatarPhoto
@@ -739,6 +743,7 @@ function showOccupiedDaySheetH4(dateStr, booking) {
           ${occLine}
         </div>
       </div>
+      ${motifLine}
       ${capBlock}
       ${actions}
     </div>`;
