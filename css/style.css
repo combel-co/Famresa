@@ -2292,6 +2292,7 @@ html.ui-large {
     margin-top: 4px;
     text-align: left;
     width: 100%;
+    white-space: nowrap;
   }
   .h4-stay-row-pill-wrap {
     flex-shrink: 0;
