@@ -2257,8 +2257,8 @@ html.ui-large {
   }
   .h4-stay-row-card {
     display: block;
-    width: fit-content;
-    max-width: calc(100% - 52px);
+    flex: 1;
+    min-width: 0;
     background: #f8f8f8;
     border-radius: 22px;
     padding: 12px 16px;
