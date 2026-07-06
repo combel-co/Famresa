@@ -5,6 +5,14 @@ Chaque bump de version doit mettre à jour `version.js` **et** ce fichier.
 
 ---
 
+## [v35] 2026-07-06
+- Build `famresa-build-20260706-1`
+- Onboarding : « Passer » (plein écran) et nouveau « Plus tard » (wizard inscription, étape type) affichent l'état vide guidé (« Créer une maison ou une voiture » / « J'ai un lien d'invitation ») au lieu d'un dashboard fantôme sans ressource.
+- Wizard inscription : points de progression (6 étapes, 4 en flux invitation), touche Entrée / « OK » clavier mobile pour valider chaque étape (prénom, email, famille, ressource), tutoiement harmonisé avec le reste de l'app.
+- Onboarding plein écran : titre décalé pour ne plus chevaucher le bouton retour, libellé « Ajouter une photo (optionnel) » sous l'avatar photo, touche Entrée pour valider les étapes.
+- Célébration : « Invite ta famille pour qu'elle puisse réserver. » (accord corrigé).
+- Dashboard : états « pas encore de ressource » et « demande en attente » enfin visibles — le layer était en `position:absolute` dans une carte de hauteur 0 (sections masquées), il passe en flux normal.
+
 ## [v34] 2026-04-21
 - Build `famresa-build-20260421-2`
 - Planning : « Réserver » uniquement avec début **et** fin choisis sur le calendrier (même jour deux fois = 1 jour, pas 1 nuit) ; plus de date de fin implicite au passage assistant.

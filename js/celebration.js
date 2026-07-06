@@ -226,7 +226,7 @@ function celebrateOnboardingResourceCreated({ resourceId, resourceName, isHouse 
   }
   const celSub = document.getElementById('cel-sub');
   if (celSub) {
-    celSub.textContent = 'Invite ta famille pour qu\'ils puissent réserver.';
+    celSub.textContent = 'Invite ta famille pour qu\'elle puisse réserver.';
     celSub.style.display = '';
   }
 

@@ -1286,17 +1286,17 @@ html.ui-large {
   /* ---- CAR CARD V2 (ccv2) ---- */
   .ccv2-card { margin-top: 13px; margin-bottom:12px; background:#f7f6f2; border:0.5px solid #e5e4df; border-radius:20px; overflow:hidden; }
   #resource-main-card { position: relative; }
+  /* En flux normal (pas absolu) : les sections de la carte sont masquées quand
+     ce layer est affiché, la carte doit donc prendre la hauteur du contenu
+     (en absolu, carte vide = hauteur 0 → état vide/pending invisible). */
   .resource-dashboard-state-layer {
-    position: absolute;
-    inset: 0;
+    position: relative;
     z-index: 3;
     display: none;
     align-items: center;
     justify-content: center;
     background: #f7f6f2;
     border-radius: inherit;
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
   }
   .resource-dashboard-state-inner {
     width: 100%;
@@ -2960,6 +2960,7 @@ html.ui-large {
   }
   .su-link-secondary {
     display: block;
+    width: 100%;
     text-align: center;
     color: var(--text-secondary, #888);
     font-size: calc(13px * var(--ui-text-scale));
@@ -3000,7 +3001,54 @@ html.ui-large {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
   }
+  .su-progress {
+    position: absolute;
+    top: max(26px, env(safe-area-inset-top));
+    left: 0;
+    right: 0;
+    display: none;
+    justify-content: center;
+    gap: 8px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .su-progress-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border, #ddd);
+    transition: transform 0.2s, background 0.2s;
+  }
+  .su-progress-dot.active {
+    background: var(--text, #1a1a1a);
+    transform: scale(1.15);
+  }
+  .su-progress-dot.done {
+    background: #b9b9b4;
+  }
   .fro-step.hidden { display: none !important; }
+  /* Évite le chevauchement titre / bouton retour (← absolu en haut à gauche). */
+  .fro-step .ob-auth-title {
+    padding: 0 44px;
+  }
+  .fro-step .ob-auth-lead {
+    text-align: center;
+  }
+  .fro-photo-row {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .fro-photo-hint {
+    background: none;
+    border: none;
+    color: var(--text-light, #888);
+    font-size: calc(12px * var(--ui-text-scale));
+    cursor: pointer;
+    padding: 2px 8px;
+    font-family: inherit;
+    text-decoration: underline;
+  }
   .fro-onboarding-card {
     max-width: 420px;
     text-align: left;

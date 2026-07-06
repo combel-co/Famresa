@@ -37,6 +37,24 @@ function _froSyncIntroContinue() {
   cont.disabled = !ok;
 }
 
+function _froBindEnterKeys() {
+  const map = [
+    ['fro-family-name', () => froFamilyNext()],
+    ['fro-house-name', () => froSubmitHouse()],
+    ['fro-car-name', () => froSubmitCar()],
+  ];
+  map.forEach(([id, fn]) => {
+    const el = document.getElementById(id);
+    if (!el || el.dataset.enterBound === '1') return;
+    el.dataset.enterBound = '1';
+    el.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      fn();
+    });
+  });
+}
+
 function startFirstResourceOnboarding() {
   if (!currentUser?.id) return;
   document.body.classList.add('auth-mode');
@@ -65,6 +83,7 @@ function startFirstResourceOnboarding() {
 
   _froShowOnly('fro-step-intro');
   _froSyncIntroContinue();
+  _froBindEnterKeys();
   document.getElementById('first-resource-onboarding')?.classList.remove('hidden');
 }
 
@@ -108,6 +127,12 @@ function froIntroNext() {
 function froSkipOnboarding() {
   document.getElementById('first-resource-onboarding')?.classList.add('hidden');
   enterApp('dashboard');
+  // Sans ressource, le dashboard par défaut est une carte fantôme : afficher l'état vide guidé.
+  const hasResources = typeof resources !== 'undefined'
+    && Array.isArray(resources) && resources.length > 0;
+  if (!hasResources && typeof renderNoAccessState === 'function') {
+    renderNoAccessState();
+  }
 }
 
 function froBackToIntro() {

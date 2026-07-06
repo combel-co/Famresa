@@ -724,9 +724,32 @@ function _suStepIndex(stepName) {
   return allSteps.indexOf(stepName);
 }
 
+function _suProgressSteps() {
+  if (_isInvitePreAuthFlow() || _suState.step === 'access' || _suState.joinResourceId) {
+    return ['name', 'email', 'pin', 'access'];
+  }
+  return ['name', 'email', 'pin', 'type', 'family', 'resource'];
+}
+
+function _suRenderProgress(stepName) {
+  const wrap = document.getElementById('su-progress');
+  if (!wrap) return;
+  const steps = _suProgressSteps();
+  const idx = steps.indexOf(stepName);
+  if (idx < 0) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'flex';
+  wrap.innerHTML = steps
+    .map((s, i) => `<span class="su-progress-dot${i === idx ? ' active' : ''}${i < idx ? ' done' : ''}"></span>`)
+    .join('');
+}
+
 function suGoToStep(stepName) {
   _suState.step = stepName;
   const idx = _suStepIndex(stepName);
+  _suRenderProgress(stepName);
   const track = document.getElementById('su-track');
   if (track) track.style.transform = `translateX(-${idx * 100}%)`;
   // Focus the primary input after slide transition
@@ -787,6 +810,26 @@ function _suResetEmailStep() {
   _suState.emailExistsProfile = null;
 }
 
+function _suBindEnterKeys() {
+  // Valide l'étape avec Entrée / « OK » du clavier mobile (les PIN gèrent déjà l'auto-avance).
+  const map = [
+    ['su-name', () => suValidateName()],
+    ['su-email', () => document.getElementById('su-email-btn')?.click()],
+    ['su-family-name', () => suValidateFamily()],
+    ['su-resource-name', () => suSubmitResource()],
+  ];
+  map.forEach(([id, fn]) => {
+    const el = document.getElementById(id);
+    if (!el || el.dataset.enterBound === '1') return;
+    el.dataset.enterBound = '1';
+    el.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      fn();
+    });
+  });
+}
+
 function startSignup() {
   _resetSplashInviteMode();
   hideSplash();
@@ -832,6 +875,7 @@ function startSignup() {
   if (track) { track.style.transition = 'none'; track.style.transform = 'translateX(0)'; }
 
   document.getElementById('signup-overlay').classList.remove('hidden');
+  _suBindEnterKeys();
 
   // Re-enable transitions and go to first step
   requestAnimationFrame(() => {
@@ -846,7 +890,7 @@ function startSignup() {
 function suValidateName() {
   const name = (document.getElementById('su-name')?.value || '').trim();
   const errEl = document.getElementById('su-name-error');
-  if (!name) { if (errEl) errEl.textContent = 'Entrez votre prénom'; return; }
+  if (!name) { if (errEl) errEl.textContent = 'Entre ton prénom'; return; }
   if (errEl) errEl.textContent = '';
   _suState.name = name;
   suGoToStep('email');
@@ -855,7 +899,7 @@ function suValidateName() {
 async function suValidateEmail() {
   const email = (document.getElementById('su-email')?.value || '').trim().toLowerCase();
   const errEl = document.getElementById('su-email-error');
-  if (!email) { if (errEl) errEl.textContent = 'Entrez votre email'; return; }
+  if (!email) { if (errEl) errEl.textContent = 'Entre ton email'; return; }
   if (!email.includes('@') || !email.includes('.')) { if (errEl) errEl.textContent = 'Cet email n\'est pas valide'; return; }
   if (errEl) errEl.textContent = '';
 
@@ -904,7 +948,7 @@ async function suValidateEmail() {
 async function suLoginFromEmail() {
   const pin = getPinFromInputs('#su-email-login-pin input');
   const errEl = document.getElementById('su-email-login-error');
-  if (pin.length < 4) { if (errEl) errEl.textContent = 'Entrez les 4 chiffres'; return; }
+  if (pin.length < 4) { if (errEl) errEl.textContent = 'Entre les 4 chiffres'; return; }
 
   const profile = _suState.emailExistsProfile;
   if (!profile) { if (errEl) errEl.textContent = 'Erreur — rechargez la page'; return; }
@@ -965,7 +1009,7 @@ async function suCreateAccount() {
   const pin = getPinFromInputs('#su-user-pin input');
   const pinConfirm = getPinFromInputs('#su-user-pin-confirm input');
   const errEl = document.getElementById('su-pin-error');
-  if (pin.length < 4) { if (errEl) errEl.textContent = 'Entrez 4 chiffres'; return; }
+  if (pin.length < 4) { if (errEl) errEl.textContent = 'Entre 4 chiffres'; return; }
   if (pin !== pinConfirm) { if (errEl) errEl.textContent = 'Les codes ne correspondent pas'; clearPinInputs('#su-user-pin-confirm input'); return; }
   if (errEl) errEl.textContent = '';
 
@@ -1023,7 +1067,7 @@ async function suCreateAccount() {
 async function suSubmitAccessPin() {
   const pin = getPinFromInputs('#su-access-pin input');
   const errEl = document.getElementById('su-access-error');
-  if (pin.length < 4) { if (errEl) errEl.textContent = 'Entrez les 4 chiffres'; return; }
+  if (pin.length < 4) { if (errEl) errEl.textContent = 'Entre les 4 chiffres'; return; }
   if (!currentUser?.id || !_suState.joinResourceId) {
     if (errEl) errEl.textContent = 'Session invalide — rechargez la page';
     return;
@@ -1094,16 +1138,27 @@ function suPickType(type) {
 function suValidateType() {
   if (!_suState.resourceType) {
     const errEl = document.getElementById('su-type-error');
-    if (errEl) errEl.textContent = 'Choisissez un type';
+    if (errEl) errEl.textContent = 'Choisis maison ou voiture';
     return;
   }
   suGoToStep('family');
 }
 
+function suSkipOnboarding() {
+  document.getElementById('signup-overlay')?.classList.add('hidden');
+  enterApp('dashboard');
+  // Sans ressource, le dashboard par défaut est une carte fantôme : afficher l'état vide guidé.
+  const hasResources = typeof resources !== 'undefined'
+    && Array.isArray(resources) && resources.length > 0;
+  if (!hasResources && typeof renderNoAccessState === 'function') {
+    renderNoAccessState();
+  }
+}
+
 async function suValidateFamily() {
   const name = (document.getElementById('su-family-name')?.value || '').trim();
   const errEl = document.getElementById('su-family-error');
-  if (!name) { if (errEl) errEl.textContent = 'Donnez un nom à votre famille'; return; }
+  if (!name) { if (errEl) errEl.textContent = 'Donne un nom à ta famille'; return; }
   if (errEl) errEl.textContent = '';
 
   const btn = document.querySelector('#su-step-family .su-btn-full');
@@ -1116,10 +1171,10 @@ async function suValidateFamily() {
     const titleEl = document.getElementById('su-resource-title');
     const inputEl = document.getElementById('su-resource-name');
     if (_suState.resourceType === 'house') {
-      if (titleEl) titleEl.textContent = 'Donnez un nom à votre maison';
+      if (titleEl) titleEl.textContent = 'Donne un nom à ta maison';
       if (inputEl) inputEl.placeholder = 'Ex : Maison de Bretagne';
     } else {
-      if (titleEl) titleEl.textContent = 'Donnez un nom à votre voiture';
+      if (titleEl) titleEl.textContent = 'Donne un nom à ta voiture';
       if (inputEl) inputEl.placeholder = 'Ex : Clio familiale';
     }
     if (btn) { btn.disabled = false; btn.textContent = 'Suivant'; }
@@ -1134,7 +1189,7 @@ async function suValidateFamily() {
 async function suSubmitResource() {
   const name = (document.getElementById('su-resource-name')?.value || '').trim();
   const errEl = document.getElementById('su-resource-error');
-  if (!name) { if (errEl) errEl.textContent = 'Donnez un nom'; return; }
+  if (!name) { if (errEl) errEl.textContent = 'Donne un nom'; return; }
   if (errEl) errEl.textContent = '';
 
   const btn = document.querySelector('#su-step-resource .su-btn-full');
