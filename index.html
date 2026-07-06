@@ -43,7 +43,7 @@
 <!-- Non-blocking font loading (preload as style, then swap to stylesheet) -->
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap"></noscript>
-<link rel="stylesheet" href="css/style.css?v=76">
+<link rel="stylesheet" href="css/style.css?v=77">
 <!-- App version (sync, ~60 bytes — must be available to inline SW block) -->
 <script src="version.js"></script>
 <!-- Firebase SDK (defer = non-blocking parse, keeps order) -->
@@ -285,6 +285,15 @@
         <div class="house-section-title">Mes informations voiture</div>
         <div class="house-raw-list" id="car-raw-list"></div>
         <button class="ccv2-btn-manage-link" onclick="showResourceManagePage(selectedResource)">Gerer la ressource</button>
+      </div>
+    </div>
+
+    <div class="ccv2-card house-info-card" id="resource-document-card" style="display:none">
+      <div class="house-raw-info">
+        <div class="house-section-title">Document</div>
+        <div id="resource-document-body"></div>
+        <div class="lock-error" id="resource-document-error" style="margin:0;min-height:0"></div>
+        <input type="file" id="resource-document-input" accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg" class="hidden" onchange="onResourceDocumentFile(this)">
       </div>
     </div>
 
@@ -694,6 +703,15 @@
   </div>
 </div>
 
+<div id="document-viewer-overlay" class="doc-viewer-overlay hidden" aria-hidden="true">
+  <div class="doc-viewer-top">
+    <div class="doc-viewer-title" id="doc-viewer-title">Document</div>
+    <button type="button" class="doc-viewer-close" onclick="closeDocumentViewer()" aria-label="Fermer">×</button>
+  </div>
+  <div class="doc-viewer-body" id="doc-viewer-body"></div>
+  <div class="doc-viewer-actions" id="doc-viewer-actions"></div>
+</div>
+
 <div id="booking-tip-overlay" class="ob-overlay booking-tip-overlay hidden" aria-hidden="true">
   <div class="ob-card ob-card--narrow">
     <p id="booking-tip-copy" class="ob-auth-lead" style="text-align:left;margin-bottom:16px"></p>
@@ -943,16 +961,20 @@
 <script src="src/modules/user/user.service.js?v=4" defer></script>
 <script src="src/modules/resource/resource.repository.js?v=7" defer></script>
 <script src="src/modules/resource/resource.service.js?v=10" defer></script>
+<script src="src/modules/document/document.cache.js?v=1" defer></script>
+<script src="src/modules/document/document.repository.js?v=1" defer></script>
+<script src="src/modules/document/document.service.js?v=1" defer></script>
 <script src="js/booking.js?v=17" defer></script>
 <script src="js/calendar.js?v=22" defer></script>
 <script src="js/history.js?v=7" defer></script>
 <script src="src/modules/profile/profile.service.js?v=2" defer></script>
 <script src="js/profile.js?v=7" defer></script>
 <script src="js/resources.js?v=37" defer></script>
+<script src="js/resource-document.js?v=1" defer></script>
 <script src="js/onboarding-resource.js?v=5" defer></script>
 <script src="js/famresa-completion.js?v=6" defer></script>
 <script src="js/famresa-guides.js?v=10" defer></script>
-<script src="js/dashboard.js?v=24" defer></script>
+<script src="js/dashboard.js?v=25" defer></script>
 <script src="js/stay.js?v=5" defer></script>
 <script src="js/checklist.js?v=4" defer></script>
 <script src="js/events.js?v=4" defer></script>

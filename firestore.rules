@@ -75,7 +75,7 @@ service cloud.firestore {
           'name', 'plaque', 'carLocation', 'lieu', 'assurance', 'observations',
           'seatCount', 'fuelType', 'mileageKm', 'carBluetooth', 'photoUrl',
           'address', 'address_street', 'address_city', 'address_postal_code', 'address_country',
-          'capacite', 'rooms', 'vehicleStatus'
+          'capacite', 'rooms', 'vehicleStatus', 'document'
         ])
         // Les identifiants de rattachement restent immuables côté client.
         && (!resource.data.keys().hasAny(['famille_id']) || request.resource.data.famille_id == resource.data.famille_id)
@@ -136,6 +136,18 @@ service cloud.firestore {
         && (!request.resource.data.keys().hasAny(['role']) || roleIsValid(request.resource.data.role))
         && (!request.resource.data.keys().hasAny(['statut']) || statusIsValid(request.resource.data.statut))
         && (!request.resource.data.keys().hasAny(['status']) || statusIsValid(request.resource.data.status));
+      allow delete: if false;
+    }
+
+    // ── Documents de ressource (contenu base64 ; méta sur ressources.document) ──
+    match /ressource_document_blobs/{docId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasAll(['ressource_id', 'dataBase64']);
+      // Pas de delete client : suppression = soft delete (deleted + contenu vidé).
+      allow update: if signedIn()
+        && changedOnly(['deleted', 'dataBase64', 'updatedAt'])
+        && request.resource.data.ressource_id == resource.data.ressource_id;
       allow delete: if false;
     }
 

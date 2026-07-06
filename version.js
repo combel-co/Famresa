@@ -1,2 +1,2 @@
-var APP_VERSION = 'v35';
-var APP_BUILD = 'famresa-build-20260706-1';
+var APP_VERSION = 'v36';
+var APP_BUILD = 'famresa-build-20260706-2';

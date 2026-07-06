@@ -5,6 +5,15 @@ Chaque bump de version doit mettre à jour `version.js` **et** ce fichier.
 
 ---
 
+## [v36] 2026-07-06
+- Build `famresa-build-20260706-2`
+- Nouveau : carte « Document » par ressource sur l'accueil (un PDF ou JPEG par ressource, admin seul pour ajouter/remplacer/supprimer).
+- Stockage : méta sur `ressources.document`, contenu base64 dans la collection `ressource_document_blobs` (chargé au tap uniquement) ; suppression = soft delete (rules sans delete client). Nouvelles règles `firestore.rules` à déployer (`firebase deploy --only firestore:rules`).
+- Offline : cache IndexedDB rempli à la première consultation ; hors ligne sans cache → carte grisée « Non disponible hors ligne ».
+- JPEG recompressé automatiquement (~1600 px, cible < 500 Ko) ; PDF refusé au-delà de 700 Ko. Libellé personnalisé (pré-rempli avec le nom du fichier).
+- Visionneuse plein écran : image inline, PDF via la visionneuse native (blob URL) ; actions Télécharger (tous) / Remplacer / Supprimer (admin, avec confirmation).
+- Modules : `src/modules/document/` (service, repository, cache) + `js/resource-document.js` (UI).
+
 ## [v35] 2026-07-06
 - Build `famresa-build-20260706-1`
 - Onboarding : « Passer » (plein écran) et nouveau « Plus tard » (wizard inscription, étape type) affichent l'état vide guidé (« Créer une maison ou une voiture » / « J'ai un lien d'invitation ») au lieu d'un dashboard fantôme sans ressource.

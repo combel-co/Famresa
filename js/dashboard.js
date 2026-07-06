@@ -568,9 +568,11 @@ function renderExperiencePanels() {
   if (!resources || resources.length === 0) {
     const houseInfoCard = document.getElementById('house-info-card');
     const carInfoCard = document.getElementById('car-info-card');
+    const documentCard = document.getElementById('resource-document-card');
     const tripBanner = document.getElementById('trip-banner');
     if (houseInfoCard) houseInfoCard.style.display = 'none';
     if (carInfoCard) carInfoCard.style.display = 'none';
+    if (documentCard) documentCard.style.display = 'none';
     if (tripBanner) tripBanner.style.display = 'none';
     return;
   }
@@ -747,6 +749,7 @@ function renderExperiencePanels() {
   renderPostTripReminder();
   maybeShowFamresaSalutOnce();
   if (typeof famresaRenderCompletionCard === 'function') famresaRenderCompletionCard();
+  if (typeof renderResourceDocumentCard === 'function') renderResourceDocumentCard(res);
 }
 
 function renderHistoryList() {
