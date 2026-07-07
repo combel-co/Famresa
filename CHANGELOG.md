@@ -5,6 +5,10 @@ Chaque bump de version doit mettre à jour `version.js` **et** ce fichier.
 
 ---
 
+## [v37] 2026-07-07
+- Build `famresa-build-20260707-1`
+- Visionneuse document : zoom sur les images (pincement à deux doigts, double-tap pour zoomer/dézoomer, molette sur desktop) avec déplacement au doigt une fois zoomé. Le zoom natif du navigateur étant désactivé (`user-scalable=no`), les gestes sont gérés dans la visionneuse (`js/resource-document.js`, UI uniquement).
+
 ## [v36] 2026-07-06
 - Build `famresa-build-20260706-2`
 - Nouveau : carte « Document » par ressource sur l'accueil (un PDF ou JPEG par ressource, admin seul pour ajouter/remplacer/supprimer).
