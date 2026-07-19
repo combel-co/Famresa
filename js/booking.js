@@ -639,27 +639,25 @@ function bmApplyDaySelection(ds) {
 async function loadBookerMembers() {
   const res = resources.find((r) => r.id === selectedResource);
   if (!res) return;
+  const familyId = res.famille_id || res.familyId || currentUser?.familyId || null;
   try {
-    if (res.type === 'house') {
-      bmMembers = await reservationService.getBookersForResource(selectedResource, currentUser?.familyId);
-      if (currentUser?.id && !bmMembers.some((m) => m.id === currentUser.id)) {
-        let name = currentUser.name || 'Moi';
-        let photo = currentUser.photo || null;
-        try {
-          const prof = await userRepository.getProfileById(currentUser.id);
-          if (prof) {
-            name = prof.nom || prof.name || name;
-            photo = prof.photo || photo;
-          }
-        } catch (_) {}
-        const initials = String(name).trim().split(/\s+/).map((p) => p[0] || '').join('').toUpperCase().slice(0, 2) || '?';
-        bmMembers.push({ id: currentUser.id, name, photo, initials });
-      }
-      bmAfterHouseMembersLoaded();
-    } else {
-      if (!currentUser?.familyId) return;
-      bmMembers = await reservationService.getEligibleBookers(currentUser.familyId);
+    // Membres de la ressource (accès acceptés), maison comme voiture — le
+    // service replie sur la famille pour les ressources sans entrées d'accès.
+    bmMembers = await reservationService.getBookersForResource(selectedResource, familyId);
+    if (currentUser?.id && !bmMembers.some((m) => m.id === currentUser.id)) {
+      let name = currentUser.name || 'Moi';
+      let photo = currentUser.photo || null;
+      try {
+        const prof = await userRepository.getProfileById(currentUser.id);
+        if (prof) {
+          name = prof.nom || prof.name || name;
+          photo = prof.photo || photo;
+        }
+      } catch (_) {}
+      const initials = String(name).trim().split(/\s+/).map((p) => p[0] || '').join('').toUpperCase().slice(0, 2) || '?';
+      bmMembers.push({ id: currentUser.id, name, photo, initials });
     }
+    if (res.type === 'house') bmAfterHouseMembersLoaded();
   } catch (_) {
     bmMembers = [];
   }

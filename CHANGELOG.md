@@ -8,6 +8,7 @@ Chaque bump de version doit mettre à jour `version.js` **et** ce fichier.
 ## [v37] 2026-07-07
 - Build `famresa-build-20260707-1`
 - Visionneuse document : zoom sur les images (pincement à deux doigts, double-tap pour zoomer/dézoomer, molette sur desktop) avec déplacement au doigt une fois zoomé. Le zoom natif du navigateur étant désactivé (`user-scalable=no`), les gestes sont gérés dans la visionneuse (`js/resource-document.js`, UI uniquement).
+- Réservation « Pour qui ? » : les voitures listent désormais les membres de la ressource (accès acceptés, comme les maisons) au lieu de toute la famille — les invités hors famille apparaissent, les membres famille sans accès à la ressource n'apparaissent plus. Repli famille conservé pour les ressources sans entrées d'accès.
 
 ## [v36] 2026-07-06
 - Build `famresa-build-20260706-2`
